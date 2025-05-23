@@ -1,0 +1,36 @@
+# 忽略 Python 缓存和虚拟环境
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+.env
+.venv
+
+# 忽略日志文件
+*.log
+
+# 忽略操作系统文件
+.DS_Store
+Thumbs.db
+
+# 忽略编译生成文件
+*.class
+*.o
+*.exe
+
+# 忽略数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 忽略 node_modules（前端项目）
+node_modules/
+
+/training/data/
+
+
+# 忽略所有一级UUID目录
+/[0-9a-fA-F]*-[0-9a-fA-F]*-[0-9a-fA-F]*-[0-9a-fA-F]*-[0-9a-fA-F]*/
+
+
+test/

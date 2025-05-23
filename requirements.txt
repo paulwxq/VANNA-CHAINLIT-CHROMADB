@@ -1,0 +1,2 @@
+vanna[chromadb,openai,postgres]==0.7.9
+flask==3.1.1
