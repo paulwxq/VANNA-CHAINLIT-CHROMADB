@@ -330,40 +330,53 @@ def process_training_files(data_path):
         "question_sql_json": 0
     }
     
-    # 递归遍历目录中的所有文件
-    for root, _, files in os.walk(data_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_lower = file.lower()
+    # 只扫描指定目录下的直接文件，不扫描子目录
+    try:
+        items = os.listdir(data_path)
+        for item in items:
+            item_path = os.path.join(data_path, item)
+            
+            # 只处理文件，跳过目录
+            if not os.path.isfile(item_path):
+                print(f"跳过子目录: {item}")
+                continue
+                
+            file_lower = item.lower()
             
             # 根据文件类型调用相应的处理函数
             try:
                 if file_lower.endswith(".ddl"):
-                    print(f"\n处理DDL文件: {file_path}")
-                    train_ddl_statements(file_path)
+                    print(f"\n处理DDL文件: {item_path}")
+                    train_ddl_statements(item_path)
                     stats["ddl"] += 1
                     
                 elif file_lower.endswith(".md") or file_lower.endswith(".markdown"):
-                    print(f"\n处理文档文件: {file_path}")
-                    train_documentation_blocks(file_path)
+                    print(f"\n处理文档文件: {item_path}")
+                    train_documentation_blocks(item_path)
                     stats["documentation"] += 1
                     
                 elif file_lower.endswith("_pair.json") or file_lower.endswith("_pairs.json"):
-                    print(f"\n处理JSON问答对文件: {file_path}")
-                    train_json_question_sql_pairs(file_path)
+                    print(f"\n处理JSON问答对文件: {item_path}")
+                    train_json_question_sql_pairs(item_path)
                     stats["question_sql_json"] += 1
                     
-                elif file_lower.endswith("_sql_pair.sql") or file_lower.endswith("_sql_pairs.sql"):
-                    print(f"\n处理格式化问答对文件: {file_path}")
-                    train_formatted_question_sql_pairs(file_path)
+                elif file_lower.endswith("_pair.sql") or file_lower.endswith("_pairs.sql"):
+                    print(f"\n处理格式化问答对文件: {item_path}")
+                    train_formatted_question_sql_pairs(item_path)
                     stats["question_sql_formatted"] += 1
                     
-                elif file_lower.endswith(".sql") and not (file_lower.endswith("_sql_pair.sql") or file_lower.endswith("_sql_pairs.sql")):
-                    print(f"\n处理SQL示例文件: {file_path}")
-                    train_sql_examples(file_path)
+                elif file_lower.endswith(".sql") and not (file_lower.endswith("_pair.sql") or file_lower.endswith("_pairs.sql")):
+                    print(f"\n处理SQL示例文件: {item_path}")
+                    train_sql_examples(item_path)
                     stats["sql_example"] += 1
+                else:
+                    print(f"跳过不支持的文件类型: {item}")
             except Exception as e:
-                print(f"处理文件 {file_path} 时出错: {e}")
+                print(f"处理文件 {item_path} 时出错: {e}")
+                
+    except OSError as e:
+        print(f"读取目录失败: {e}")
+        return False
     
     # 打印处理统计
     print("\n===== 训练文件处理统计 =====")

@@ -21,6 +21,7 @@ DEEPSEEK_CONFIG = {
 
 # Qwen模型配置
 QWEN_CONFIG = {
+    "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
     "model": "qwen-plus",
     "allow_llm_to_see_data": True,
     "temperature": 0.7,

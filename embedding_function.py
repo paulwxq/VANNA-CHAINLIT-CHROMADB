@@ -194,57 +194,88 @@ class EmbeddingFunction:
         # 这里不应该到达，但为了完整性添加
         raise RuntimeError("生成embedding失败")
 
-    # def test_connection(self, test_text="测试文本") -> dict:
-    #     """
-    #     测试嵌入模型的连接和功能
+    def test_connection(self, test_text="测试文本") -> dict:
+        """
+        测试嵌入模型的连接和功能
         
-    #     Args:
-    #         test_text (str): 用于测试的文本
+        Args:
+            test_text (str): 用于测试的文本
             
-    #     Returns:
-    #         dict: 包含测试结果的字典，包括是否成功、维度信息等
-    #     """
-    #     result = {
-    #         "success": False,
-    #         "model": self.model_name,
-    #         "base_url": self.base_url,
-    #         "message": "",
-    #         "actual_dimension": None,
-    #         "expected_dimension": self.embedding_dimension
-    #     }
+        Returns:
+            dict: 包含测试结果的字典，包括是否成功、维度信息等
+        """
+        result = {
+            "success": False,
+            "model": self.model_name,
+            "base_url": self.base_url,
+            "message": "",
+            "actual_dimension": None,
+            "expected_dimension": self.embedding_dimension
+        }
         
-    #     try:
-    #         print(f"测试嵌入模型连接 - 模型: {self.model_name}")
-    #         print(f"API服务地址: {self.base_url}")
+        try:
+            print(f"测试嵌入模型连接 - 模型: {self.model_name}")
+            print(f"API服务地址: {self.base_url}")
             
-    #         # 验证配置
-    #         if not self.api_key:
-    #             result["message"] = "API密钥未设置或为空"
-    #             return result
+            # 验证配置
+            if not self.api_key:
+                result["message"] = "API密钥未设置或为空"
+                return result
                 
-    #         if not self.base_url:
-    #             result["message"] = "API服务地址未设置或为空"
-    #             return result
+            if not self.base_url:
+                result["message"] = "API服务地址未设置或为空"
+                return result
                 
-    #         # 测试生成向量
-    #         vector = self.generate_embedding(test_text)
-    #         actual_dimension = len(vector)
+            # 测试生成向量
+            vector = self.generate_embedding(test_text)
+            actual_dimension = len(vector)
             
-    #         result["success"] = True
-    #         result["actual_dimension"] = actual_dimension
+            result["success"] = True
+            result["actual_dimension"] = actual_dimension
             
-    #         # 检查维度是否一致
-    #         if actual_dimension != self.embedding_dimension:
-    #             result["message"] = f"警告: 模型实际生成的向量维度({actual_dimension})与配置维度({self.embedding_dimension})不一致"
-    #         else:
-    #             result["message"] = f"连接测试成功，向量维度: {actual_dimension}"
+            # 检查维度是否一致
+            if actual_dimension != self.embedding_dimension:
+                result["message"] = f"警告: 模型实际生成的向量维度({actual_dimension})与配置维度({self.embedding_dimension})不一致"
+            else:
+                result["message"] = f"连接测试成功，向量维度: {actual_dimension}"
                 
-    #         return result
+            return result
             
-    #     except Exception as e:
-    #         result["message"] = f"连接测试失败: {str(e)}"
-    #         return result
+        except Exception as e:
+            result["message"] = f"连接测试失败: {str(e)}"
+            return result
 
+def test_embedding_connection() -> dict:
+    """
+    测试嵌入模型连接和配置是否正确
+    
+    Returns:
+        dict: 测试结果，包括成功/失败状态、错误消息等
+    """
+    try:
+        # 获取嵌入函数实例
+        embedding_function = get_embedding_function()
+        
+        # 测试连接
+        test_result = embedding_function.test_connection()
+        
+        if test_result["success"]:
+            print(f"嵌入模型连接测试成功!")
+            if "警告" in test_result["message"]:
+                print(test_result["message"])
+                print(f"建议将app_config.py中的EMBEDDING_CONFIG['embedding_dimension']修改为{test_result['actual_dimension']}")
+        else:
+            print(f"嵌入模型连接测试失败: {test_result['message']}")
+            
+        return test_result
+        
+    except Exception as e:
+        error_message = f"无法测试嵌入模型连接: {str(e)}"
+        print(error_message)
+        return {
+            "success": False,
+            "message": error_message
+        }
 
 def get_embedding_function() -> EmbeddingFunction:
     """
@@ -289,36 +320,3 @@ def get_embedding_function() -> EmbeddingFunction:
         base_url=base_url,
         embedding_dimension=embedding_dimension
     )
-
-def test_embedding_connection() -> dict:
-    """
-    测试嵌入模型连接和配置是否正确
-    
-    Returns:
-        dict: 测试结果，包括成功/失败状态、错误消息等
-    """
-    try:
-        # 获取嵌入函数实例
-        embedding_function = get_embedding_function()
-        
-        # 测试连接
-        test_result = embedding_function.test_connection()
-        
-        if test_result["success"]:
-            print(f"嵌入模型连接测试成功!")
-            if "警告" in test_result["message"]:
-                print(test_result["message"])
-                print(f"建议将app_config.py中的EMBEDDING_CONFIG['embedding_dimension']修改为{test_result['actual_dimension']}")
-        else:
-            print(f"嵌入模型连接测试失败: {test_result['message']}")
-            
-        return test_result
-        
-    except Exception as e:
-        error_message = f"无法测试嵌入模型连接: {str(e)}"
-        print(error_message)
-        return {
-            "success": False,
-            "message": error_message
-        }
-
