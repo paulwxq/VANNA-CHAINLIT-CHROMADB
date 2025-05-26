@@ -185,6 +185,51 @@ class QianWenAI_Chat(VannaBase):
         print(f"assistant_content: {message}")
         return {"role": "assistant", "content": message}
 
+    def should_generate_chart(self, df) -> bool:
+        """
+        判断是否应该生成图表
+        对于Flask应用，这个方法决定了前端是否显示图表生成按钮
+        """
+        if df is None or df.empty:
+            print(f"[DEBUG] should_generate_chart: df为空，返回False")
+            return False
+        
+        # 如果数据有多行或多列，通常适合生成图表
+        result = len(df) > 1 or len(df.columns) > 1
+        print(f"[DEBUG] should_generate_chart: df.shape={df.shape}, 返回{result}")
+        
+        if result:
+            return True
+        
+        return False
+
+    # def get_plotly_figure(self, plotly_code: str, df, dark_mode: bool = True):
+    #     """
+    #     重写父类方法，确保Flask应用也使用我们的自定义图表生成逻辑
+    #     这个方法会被VannaFlaskApp调用，而不是generate_plotly_code
+    #     """
+    #     print(f"[DEBUG] get_plotly_figure被调用，plotly_code长度: {len(plotly_code) if plotly_code else 0}")
+        
+    #     # 如果没有提供plotly_code，尝试生成一个
+    #     if not plotly_code or plotly_code.strip() == "":
+    #         print(f"[DEBUG] plotly_code为空，尝试生成默认图表")
+    #         # 生成一个简单的默认图表
+    #         df_metadata = f"DataFrame形状: {df.shape}\n列名: {list(df.columns)}\n数据类型:\n{df.dtypes}"
+    #         plotly_code = self.generate_plotly_code(
+    #             question="数据可视化", 
+    #             sql=None, 
+    #             df_metadata=df_metadata
+    #         )
+        
+    #     # 调用父类方法执行plotly代码
+    #     try:
+    #         return super().get_plotly_figure(plotly_code=plotly_code, df=df, dark_mode=dark_mode)
+    #     except Exception as e:
+    #         print(f"[ERROR] 执行plotly代码失败: {e}")
+    #         print(f"[ERROR] plotly_code: {plotly_code}")
+    #         # 如果执行失败，返回None或生成一个简单的备用图表
+    #         return None
+
     def submit_prompt(self, prompt, **kwargs) -> str:
         if prompt is None:
             raise Exception("Prompt is None")
