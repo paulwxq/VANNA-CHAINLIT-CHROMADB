@@ -65,7 +65,10 @@ async def execute_query(query):
         if df is None or df.empty:
             current_step.output = "查询执行成功，但没有返回数据"
             return None
-            
+        
+        # 调试信息：检查DataFrame的列名
+        print(f"[DEBUG] 执行后DataFrame列名: {list(df.columns)}")
+        print(f"[DEBUG] DataFrame数据预览:\n{df.head()}")
         current_step.output = df.head().to_markdown(index=False)
         print(f"[SUCCESS] SQL执行成功，返回 {len(df)} 行数据")
         return df
@@ -84,7 +87,9 @@ async def plot(human_query, sql, df):
             current_step.output = "无数据可用于生成图表"
             return None
             
-        plotly_code = vn.generate_plotly_code(question=human_query, sql=sql, df=df)
+        # 生成DataFrame的元数据信息
+        df_metadata = f"列名: {list(df.columns)}\n数据类型: {df.dtypes.to_dict()}\n数据形状: {df.shape}\n前几行数据:\n{df.head().to_string()}"
+        plotly_code = vn.generate_plotly_code(question=human_query, sql=sql, df_metadata=df_metadata)
         fig = vn.get_plotly_figure(plotly_code=plotly_code, df=df)
         current_step.output = plotly_code
         return fig
@@ -239,6 +244,8 @@ async def chain(human_query: str):
         fig = await plot(human_query, sql_query, df)
 
         # 创建返回元素
+        # 确保表格显示中文列名
+        print(f"[DEBUG] DataFrame列名: {list(df.columns)}")
         elements = [
             cl.Text(name="data_table", content=df.to_markdown(index=False), display="inline")
         ]
@@ -292,7 +299,7 @@ async def on_chat_start():
 
 请直接输入您的问题，例如：
 - "交易次数最多的前5位客户是谁？"
-- "查看过去30天的交易趋势"
+- "请统计不同类型的卡持卡人数所占的百分比？"
 - "你好，今天天气怎么样？"
 
 让我们开始吧！✨
