@@ -45,25 +45,44 @@ def ask_full():
             browser_session_id=browser_session_id
         )
 
-    sql, df, fig = vn.ask(
-        question=question,
-        print_results=False,
-        visualize=True,
-        allow_llm_to_see_data=True
-    )
+    try:
+        sql, df, fig = vn.ask(
+            question=question,
+            print_results=False,
+            visualize=False,
+            allow_llm_to_see_data=True
+        )
 
-    rows, columns = [], []
-    if isinstance(df, pd.DataFrame) and not df.empty:
-        rows = df.head(1000).to_dict(orient="records")
-        columns = list(df.columns)
+        rows, columns = [], []
+        summary = None
+        
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            rows = df.head(1000).to_dict(orient="records")
+            columns = list(df.columns)
+            
+            # 生成数据摘要
+            try:
+                summary = vn.generate_summary(question=question, df=df)
+                print(f"[INFO] 成功生成摘要: {summary}")
+            except Exception as e:
+                print(f"[WARNING] 生成摘要失败: {str(e)}")
+                summary = None
 
-    return jsonify(result.success(data={
-        "sql": sql,
-        "rows": rows,
-        "columns": columns,
-        "conversation_id": conversation_id if 'conversation_id' in locals() else None,
-        "session_id": browser_session_id
-    }))
+        return jsonify(result.success(data={
+            "sql": sql,
+            "rows": rows,
+            "columns": columns,
+            "summary": summary,  # 添加摘要到返回结果
+            "conversation_id": conversation_id if 'conversation_id' in locals() else None,
+            "session_id": browser_session_id
+        }))
+        
+    except Exception as e:
+        print(f"[ERROR] ask_full执行失败: {str(e)}")
+        return jsonify(result.failed(
+            message=f"查询处理失败: {str(e)}", 
+            code=500
+        )), 500
 
 
 @app.flask_app.route('/api/v1/citu_train_question_sql', methods=['POST'])
