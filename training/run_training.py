@@ -393,6 +393,67 @@ def process_training_files(data_path):
         
     return True
 
+def check_pgvector_connection():
+    """检查 PgVector 数据库连接是否可用
+    
+    Returns:
+        bool: 连接成功返回True，否则返回False
+    """
+    import app_config
+    from sqlalchemy import create_engine, text
+    
+    try:
+        # 构建连接字符串
+        pg_config = app_config.PGVECTOR_CONFIG
+        connection_string = f"postgresql://{pg_config['user']}:{pg_config['password']}@{pg_config['host']}:{pg_config['port']}/{pg_config['dbname']}"
+        
+        print(f"正在测试 PgVector 数据库连接...")
+        print(f"连接地址: {pg_config['host']}:{pg_config['port']}/{pg_config['dbname']}")
+        
+        # 创建数据库引擎并测试连接
+        engine = create_engine(connection_string)
+        
+        with engine.connect() as connection:
+            # 测试基本连接
+            result = connection.execute(text("SELECT 1"))
+            result.fetchone()
+            
+            # 检查是否安装了 pgvector 扩展
+            try:
+                result = connection.execute(text("SELECT extname FROM pg_extension WHERE extname = 'vector'"))
+                extension_exists = result.fetchone() is not None
+                
+                if extension_exists:
+                    print("✓ PgVector 扩展已安装")
+                else:
+                    print("⚠ 警告: PgVector 扩展未安装，请确保已安装 pgvector 扩展")
+                    
+            except Exception as ext_e:
+                print(f"⚠ 无法检查 pgvector 扩展状态: {ext_e}")
+            
+            # 检查训练数据表是否存在
+            try:
+                result = connection.execute(text("SELECT tablename FROM pg_tables WHERE tablename = 'langchain_pg_embedding'"))
+                table_exists = result.fetchone() is not None
+                
+                if table_exists:
+                    # 获取表中的记录数
+                    result = connection.execute(text("SELECT COUNT(*) FROM langchain_pg_embedding"))
+                    count = result.fetchone()[0]
+                    print(f"✓ 训练数据表存在，当前包含 {count} 条记录")
+                else:
+                    print("ℹ 训练数据表尚未创建（首次训练时会自动创建）")
+                    
+            except Exception as table_e:
+                print(f"⚠ 无法检查训练数据表状态: {table_e}")
+        
+        print("✓ PgVector 数据库连接测试成功")
+        return True
+        
+    except Exception as e:
+        print(f"✗ PgVector 数据库连接失败: {e}")
+        return False
+
 def main():
     """主函数：配置和运行训练流程"""
     
@@ -402,12 +463,39 @@ def main():
     
     # 解析命令行参数
     parser = argparse.ArgumentParser(description='训练Vanna NL2SQL模型')
-    parser.add_argument('--data_path', type=str, default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data'),
-                        help='训练数据目录路径 (默认: training/data)')
+    
+    # 获取默认路径并进行智能处理
+    def resolve_training_data_path():
+        """智能解析训练数据路径"""
+        config_path = getattr(app_config, 'TRAINING_DATA_PATH', './training/data')
+        
+        # 如果是绝对路径，直接返回
+        if os.path.isabs(config_path):
+            return config_path
+        
+        # 如果以 . 开头，相对于项目根目录解析
+        if config_path.startswith('./') or config_path.startswith('../'):
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            return os.path.join(project_root, config_path)
+        
+        # 其他情况，相对于项目根目录
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return os.path.join(project_root, config_path)
+    
+    default_path = resolve_training_data_path()
+    
+    parser.add_argument('--data_path', type=str, default=default_path,
+                        help='训练数据目录路径 (默认: 从app_config.TRAINING_DATA_PATH)')
     args = parser.parse_args()
     
     # 使用Path对象处理路径以确保跨平台兼容性
     data_path = Path(args.data_path)
+    
+    # 显示路径解析结果
+    print(f"\n===== 训练数据路径配置 =====")
+    print(f"配置文件中的路径: {getattr(app_config, 'TRAINING_DATA_PATH', '未配置')}")
+    print(f"解析后的绝对路径: {os.path.abspath(data_path)}")
+    print("==============================")
     
     # 设置正确的项目根目录路径
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -415,30 +503,50 @@ def main():
     # 检查嵌入模型连接
     check_embedding_model_connection()
     
-    # 打印ChromaDB相关信息
-    try:
+    # 根据配置的向量数据库类型显示相应信息
+    vector_db_type = app_config.VECTOR_DB_NAME.lower()
+    
+    if vector_db_type == "chromadb":
+        # 打印ChromaDB相关信息
         try:
-            import chromadb
-            chroma_version = chromadb.__version__
-        except ImportError:
-            chroma_version = "未知"
-        
-        # 尝试查看当前使用的ChromaDB文件
-        chroma_file = "chroma.sqlite3"  # 默认文件名
-        
-        # 使用项目根目录作为ChromaDB文件路径
-        db_file_path = os.path.join(project_root, chroma_file)
-
-        if os.path.exists(db_file_path):
-            file_size = os.path.getsize(db_file_path) / 1024  # KB
-            print(f"\n===== ChromaDB数据库: {os.path.abspath(db_file_path)} (大小: {file_size:.2f} KB) =====")
-        else:
-            print(f"\n===== 未找到ChromaDB数据库文件于: {os.path.abspath(db_file_path)} =====")
+            try:
+                import chromadb
+                chroma_version = chromadb.__version__
+            except ImportError:
+                chroma_version = "未知"
             
-        # 打印ChromaDB版本
-        print(f"===== ChromaDB客户端库版本: {chroma_version} =====\n")
-    except Exception as e:
-        print(f"\n===== 无法获取ChromaDB信息: {e} =====\n")
+            # 尝试查看当前使用的ChromaDB文件
+            chroma_file = "chroma.sqlite3"  # 默认文件名
+            
+            # 使用项目根目录作为ChromaDB文件路径
+            db_file_path = os.path.join(project_root, chroma_file)
+
+            if os.path.exists(db_file_path):
+                file_size = os.path.getsize(db_file_path) / 1024  # KB
+                print(f"\n===== ChromaDB数据库: {os.path.abspath(db_file_path)} (大小: {file_size:.2f} KB) =====")
+            else:
+                print(f"\n===== 未找到ChromaDB数据库文件于: {os.path.abspath(db_file_path)} =====")
+                
+            # 打印ChromaDB版本
+            print(f"===== ChromaDB客户端库版本: {chroma_version} =====\n")
+        except Exception as e:
+            print(f"\n===== 无法获取ChromaDB信息: {e} =====\n")
+            
+    elif vector_db_type == "pgvector":
+        # 打印PgVector相关信息并测试连接
+        print(f"\n===== PgVector数据库配置 =====")
+        pg_config = app_config.PGVECTOR_CONFIG
+        print(f"数据库地址: {pg_config['host']}:{pg_config['port']}")
+        print(f"数据库名称: {pg_config['dbname']}")
+        print(f"用户名: {pg_config['user']}")
+        print("==============================\n")
+        
+        # 测试PgVector连接
+        if not check_pgvector_connection():
+            print("PgVector 数据库连接失败，训练过程终止。")
+            sys.exit(1)
+    else:
+        print(f"\n===== 未知的向量数据库类型: {vector_db_type} =====\n")
     
     # 处理训练文件
     process_successful = process_training_files(data_path)
@@ -455,20 +563,26 @@ def main():
         vn = create_vanna_instance()
         
         # 根据向量数据库类型执行不同的验证逻辑
-        # 由于已确定只使用ChromaDB，简化这部分逻辑
         try:
             training_data = vn.get_training_data()
             if training_data is not None and not training_data.empty:
-                # get_training_data 内部通常会打印数量，这里可以补充一个总结
-                print(f"已从ChromaDB中检索到 {len(training_data)} 条训练数据进行验证。")
+                print(f"✓ 已从{vector_db_type.upper()}中检索到 {len(training_data)} 条训练数据进行验证。")
+                
+                # 显示训练数据类型统计
+                if 'training_data_type' in training_data.columns:
+                    type_counts = training_data['training_data_type'].value_counts()
+                    print("训练数据类型统计:")
+                    for data_type, count in type_counts.items():
+                        print(f"  {data_type}: {count} 条")
+                        
             elif training_data is not None and training_data.empty:
-                 print("在ChromaDB中未找到任何训练数据。")
+                print(f"⚠ 在{vector_db_type.upper()}中未找到任何训练数据。")
             else: # training_data is None
-                print("无法从Vanna获取训练数据 (可能返回了None)。请检查连接和Vanna实现。")
+                print(f"⚠ 无法从Vanna获取训练数据 (可能返回了None)。请检查{vector_db_type.upper()}连接和Vanna实现。")
 
         except Exception as e:
-            print(f"验证训练数据失败: {e}")
-            print("请检查ChromaDB连接和表结构。")
+            print(f"✗ 验证训练数据失败: {e}")
+            print(f"请检查{vector_db_type.upper()}连接和表结构。")
     else:
         print("\n===== 未能找到或处理任何训练文件，训练过程终止 =====")
     
@@ -477,9 +591,15 @@ def main():
     print(f"模型名称: {app_config.EMBEDDING_CONFIG.get('model_name')}")
     print(f"向量维度: {app_config.EMBEDDING_CONFIG.get('embedding_dimension')}")
     print(f"API服务: {app_config.EMBEDDING_CONFIG.get('base_url')}")
-    # 打印ChromaDB路径信息
-    chroma_display_path = os.path.abspath(project_root)
-    print(f"向量数据库: ChromaDB ({chroma_display_path})")
+    
+    # 根据配置显示向量数据库信息
+    if vector_db_type == "chromadb":
+        chroma_display_path = os.path.abspath(project_root)
+        print(f"向量数据库: ChromaDB ({chroma_display_path})")
+    elif vector_db_type == "pgvector":
+        pg_config = app_config.PGVECTOR_CONFIG
+        print(f"向量数据库: PgVector ({pg_config['host']}:{pg_config['port']}/{pg_config['dbname']})")
+    
     print("===== 训练流程完成 =====\n")
 
 if __name__ == "__main__":

@@ -5,7 +5,9 @@ import os
 load_dotenv()
 
 # 使用的模型类型（"qwen" 或 "deepseek"）
-MODEL_TYPE = "qwen"
+LLM_MODEL_NAME = "qwen"
+# 向量数据库类型， chromadb 或 pgvector
+VECTOR_DB_NAME = "pgvector"
 
 # DeepSeek模型配置
 DEEPSEEK_CONFIG = {
@@ -54,7 +56,31 @@ APP_DB_CONFIG = {
 # ChromaDB配置
 # CHROMADB_PATH = "."  
 
-# 批处理配置
-BATCH_PROCESSING_ENABLED = True
-BATCH_SIZE = 10
-MAX_WORKERS = 4
+# PgVector数据库连接配置 (向量数据库，独立于业务数据库)
+PGVECTOR_CONFIG = {
+    "host": "192.168.67.1",
+    "port": 5432,
+    "dbname": "pgvector_db",
+    "user": os.getenv("PGVECTOR_DB_USER"),
+    "password": os.getenv("PGVECTOR_DB_PASSWORD")
+}
+
+# 训练脚本批处理配置
+# 这些配置仅用于 training/run_training.py 训练脚本的批处理优化
+TRAINING_BATCH_PROCESSING_ENABLED = True    # 是否启用训练数据批处理
+TRAINING_BATCH_SIZE = 10                    # 每批处理的训练项目数量
+TRAINING_MAX_WORKERS = 4                    # 训练批处理的最大工作线程数
+
+# 训练数据路径配置
+# 支持以下格式：
+# 1. 相对路径（以 . 开头）：
+#    "./training/data"     - 项目根目录下的training/data
+#    "../data"             - 项目根目录上级的data目录
+# 2. 绝对路径：
+#    "/home/user/data"     - Linux绝对路径
+#    "C:/data"             - Windows绝对路径
+#    "D:\\training\\data"  - Windows绝对路径（转义反斜杠）
+# 3. 相对路径（不以.开头）：
+#    "training/data"       - 相对于项目根目录
+#    "my_data"             - 项目根目录下的my_data文件夹
+TRAINING_DATA_PATH = "./training/data"

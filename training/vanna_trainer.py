@@ -31,13 +31,14 @@ if hasattr(app_config, 'EMBEDDING_CONFIG'):
         print(f"API服务: {app_config.EMBEDDING_CONFIG['base_url']}")
 print("==============================")
 
-# 从app_config获取其他配置
-BATCH_PROCESSING_ENABLED = app_config.BATCH_PROCESSING_ENABLED
-BATCH_SIZE = app_config.BATCH_SIZE
-MAX_WORKERS = app_config.MAX_WORKERS
+# 从app_config获取训练批处理配置
+BATCH_PROCESSING_ENABLED = app_config.TRAINING_BATCH_PROCESSING_ENABLED
+BATCH_SIZE = app_config.TRAINING_BATCH_SIZE
+MAX_WORKERS = app_config.TRAINING_MAX_WORKERS
 
 
-# 数据批处理器
+# 训练数据批处理器
+# 专门用于优化训练过程的批处理器，将多个训练项目打包处理以提高效率
 class BatchProcessor:
     def __init__(self, batch_size=BATCH_SIZE, max_workers=MAX_WORKERS):
         self.batch_size = batch_size
@@ -51,7 +52,7 @@ class BatchProcessor:
         # 是否启用批处理
         self.batch_enabled = BATCH_PROCESSING_ENABLED       
 
-        print(f"[DEBUG] 批处理器初始化: 启用={self.batch_enabled}, 批大小={self.batch_size}, 最大工作线程={self.max_workers}")
+        print(f"[DEBUG] 训练批处理器初始化: 启用={self.batch_enabled}, 批大小={self.batch_size}, 最大工作线程={self.max_workers}")
     
     def add_item(self, batch_type: str, item: Dict[str, Any]):
         """添加一个项目到批处理队列"""
@@ -152,15 +153,16 @@ class BatchProcessor:
             # 清空队列
             self.batches = defaultdict(list)
         
-        print("[INFO] 所有批处理项目已完成")
+        print("[INFO] 所有训练批处理项目已完成")
     
     def shutdown(self):
         """关闭处理器和线程池"""
         self.flush_all()
         self.executor.shutdown(wait=True)
-        print("[INFO] 批处理器已关闭")
+        print("[INFO] 训练批处理器已关闭")
 
-# 创建全局批处理器实例
+# 创建全局训练批处理器实例
+# 用于所有训练函数的批处理优化
 batch_processor = BatchProcessor()
 
 # 原始训练函数的批处理增强版本

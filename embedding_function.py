@@ -81,6 +81,29 @@ class EmbeddingFunction:
                 
         return embeddings
     
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        为文档列表生成嵌入向量 (LangChain 接口)
+        
+        Args:
+            texts: 要嵌入的文档列表
+            
+        Returns:
+            List[List[float]]: 嵌入向量列表
+        """
+        return self.__call__(texts)
+    
+    def embed_query(self, text: str) -> List[float]:
+        """
+        为查询文本生成嵌入向量 (LangChain 接口)
+        
+        Args:
+            text: 要嵌入的查询文本
+            
+        Returns:
+            List[float]: 嵌入向量
+        """
+        return self.generate_embedding(text)
     
     def generate_embedding(self, text: str) -> List[float]:
         """
