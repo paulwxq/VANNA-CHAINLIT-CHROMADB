@@ -904,6 +904,51 @@ def cache_cleanup():
             message=f"清理缓存失败: {str(e)}", 
             code=500
         )), 500
+    
+
+@app.flask_app.route('/api/v0/training_error_question_sql', methods=['POST'])
+def training_error_question_sql():
+    """
+    存储错误的question-sql对到error_sql集合中
+    
+    此API将接收的错误question/sql pair写入到error_sql集合中，用于记录和分析错误的SQL查询。
+    
+    Args:
+        question (str, required): 用户问题
+        sql (str, required): 对应的错误SQL查询语句
+    
+    Returns:
+        JSON: 包含训练ID和成功消息的响应
+    """
+    try:
+        data = request.get_json()
+        question = data.get('question')
+        sql = data.get('sql')
+        
+        print(f"[DEBUG] 接收到错误SQL训练请求: question={question}, sql={sql}")
+        
+        if not question or not sql:
+            return jsonify(result.failed(
+                message="question和sql参数都是必需的", 
+                code=400
+            )), 400
+        
+        # 使用vn实例的train_error_sql方法存储错误SQL
+        id = vn.train_error_sql(question=question, sql=sql)
+        
+        print(f"[INFO] 成功存储错误SQL，ID: {id}")
+        
+        return jsonify(result.success(data={
+            "id": id,
+            "message": "错误SQL对已成功存储到error_sql集合"
+        }))
+        
+    except Exception as e:
+        print(f"[ERROR] 存储错误SQL失败: {str(e)}")
+        return jsonify(result.failed(
+            message=f"存储错误SQL失败: {str(e)}", 
+            code=500
+        )), 500
 
 
 
