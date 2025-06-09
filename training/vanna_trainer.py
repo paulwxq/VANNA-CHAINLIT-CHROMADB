@@ -20,16 +20,27 @@ from vanna_llm_factory import create_vanna_instance
 
 vn = create_vanna_instance()
 
-# 直接从配置文件获取模型名称
-embedding_model = app_config.EMBEDDING_CONFIG.get('model_name')
-print(f"\n===== Embedding模型信息 =====")
-print(f"模型名称: {embedding_model}")
-if hasattr(app_config, 'EMBEDDING_CONFIG'):
-    if 'embedding_dimension' in app_config.EMBEDDING_CONFIG:
-        print(f"向量维度: {app_config.EMBEDDING_CONFIG['embedding_dimension']}")
-    if 'base_url' in app_config.EMBEDDING_CONFIG:
-        print(f"API服务: {app_config.EMBEDDING_CONFIG['base_url']}")
-print("==============================")
+# 使用新的配置工具函数获取embedding配置
+try:
+    from common.utils import get_current_embedding_config, get_current_model_info
+    
+    embedding_config = get_current_embedding_config()
+    model_info = get_current_model_info()
+    
+    print(f"\n===== Embedding模型信息 =====")
+    print(f"模型类型: {model_info['embedding_type']}")
+    print(f"模型名称: {model_info['embedding_model']}")
+    print(f"向量维度: {embedding_config.get('embedding_dimension', '未知')}")
+    if 'base_url' in embedding_config:
+        print(f"API服务: {embedding_config['base_url']}")
+    print("==============================")
+except ImportError as e:
+    print(f"警告: 无法导入配置工具函数: {e}")
+    print("使用默认配置...")
+    embedding_config = getattr(app_config, 'API_EMBEDDING_CONFIG', {})
+    print(f"\n===== Embedding模型信息 (默认) =====")
+    print(f"模型名称: {embedding_config.get('model_name', '未知')}")
+    print("==============================")
 
 # 从app_config获取训练批处理配置
 BATCH_PROCESSING_ENABLED = app_config.TRAINING_BATCH_PROCESSING_ENABLED

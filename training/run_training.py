@@ -504,7 +504,7 @@ def main():
     check_embedding_model_connection()
     
     # 根据配置的向量数据库类型显示相应信息
-    vector_db_type = app_config.VECTOR_DB_NAME.lower()
+    vector_db_type = app_config.VECTOR_DB_TYPE.lower()
     
     if vector_db_type == "chromadb":
         # 打印ChromaDB相关信息
@@ -588,9 +588,24 @@ def main():
     
     # 输出embedding模型信息
     print("\n===== Embedding模型信息 =====")
-    print(f"模型名称: {app_config.EMBEDDING_CONFIG.get('model_name')}")
-    print(f"向量维度: {app_config.EMBEDDING_CONFIG.get('embedding_dimension')}")
-    print(f"API服务: {app_config.EMBEDDING_CONFIG.get('base_url')}")
+    try:
+        from common.utils import get_current_embedding_config, get_current_model_info
+        
+        embedding_config = get_current_embedding_config()
+        model_info = get_current_model_info()
+        
+        print(f"模型类型: {model_info['embedding_type']}")
+        print(f"模型名称: {model_info['embedding_model']}")
+        print(f"向量维度: {embedding_config.get('embedding_dimension', '未知')}")
+        if 'base_url' in embedding_config:
+            print(f"API服务: {embedding_config['base_url']}")
+    except ImportError as e:
+        print(f"警告: 无法导入配置工具函数: {e}")
+        # 回退到旧的配置访问方式
+        embedding_config = getattr(app_config, 'API_EMBEDDING_CONFIG', {})
+        print(f"模型名称: {embedding_config.get('model_name', '未知')}")
+        print(f"向量维度: {embedding_config.get('embedding_dimension', '未知')}")
+        print(f"API服务: {embedding_config.get('base_url', '未知')}")
     
     # 根据配置显示向量数据库信息
     if vector_db_type == "chromadb":

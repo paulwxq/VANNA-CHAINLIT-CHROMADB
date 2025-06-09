@@ -300,46 +300,55 @@ def test_embedding_connection() -> dict:
             "message": error_message
         }
 
-def get_embedding_function() -> EmbeddingFunction:
+def get_embedding_function():
     """
-    从 app_config.py 的 EMBEDDING_CONFIG 字典加载配置并创建 EmbeddingFunction 实例。
-    如果任何必需的配置未找到，则抛出异常。
-
+    根据当前配置创建合适的EmbeddingFunction实例
+    支持API和Ollama两种提供商
+    
     Returns:
-        EmbeddingFunction: EmbeddingFunction 的实例。
-
+        EmbeddingFunction或OllamaEmbeddingFunction: 根据配置类型返回相应的实例
+        
     Raises:
-        ImportError: 如果 app_config.py 无法导入。
-        AttributeError: 如果 app_config.py 中缺少 EMBEDDING_CONFIG。
-        KeyError: 如果 EMBEDDING_CONFIG 字典中缺少任何必要的键。
+        ImportError: 如果无法导入必要的模块
+        ValueError: 如果配置无效
     """
     try:
-        import app_config
+        from common.utils import get_current_embedding_config, is_using_ollama_embedding
     except ImportError:
-        raise ImportError("无法导入 app_config.py。请确保该文件存在且在PYTHONPATH中。")
-
-    try:
-        embedding_config_dict = app_config.EMBEDDING_CONFIG
-    except AttributeError:
-        raise AttributeError("app_config.py 中缺少 EMBEDDING_CONFIG 配置字典。")
-
-    try:
-        api_key = embedding_config_dict["api_key"]
-        model_name = embedding_config_dict["model_name"]
-        base_url = embedding_config_dict["base_url"]
-        embedding_dimension = embedding_config_dict["embedding_dimension"]
-        
-        if api_key is None:
-            # 明确指出 api_key (可能来自环境变量) 未设置的问题
-            raise KeyError("EMBEDDING_CONFIG 中的 'api_key' 未设置 (可能环境变量 EMBEDDING_API_KEY 未定义)。")
+        raise ImportError("无法导入 common.utils，请确保该文件存在")
+    
+    # 获取当前embedding配置
+    embedding_config = get_current_embedding_config()
+    
+    if is_using_ollama_embedding():
+        # 使用Ollama Embedding
+        try:
+            from customollama.ollama_embedding import OllamaEmbeddingFunction
+        except ImportError:
+            raise ImportError("无法导入 OllamaEmbeddingFunction，请确保 customollama 包存在")
             
-    except KeyError as e:
-        # 将原始的KeyError e 作为原因传递，可以提供更详细的上下文，比如哪个键确实缺失了
-        raise KeyError(f"app_config.py 的 EMBEDDING_CONFIG 字典中缺少必要的键或值无效：{e}")
+        return OllamaEmbeddingFunction(
+            model_name=embedding_config["model_name"],
+            base_url=embedding_config["base_url"],
+            embedding_dimension=embedding_config["embedding_dimension"]
+        )
+    else:
+        # 使用API Embedding
+        try:
+            api_key = embedding_config["api_key"]
+            model_name = embedding_config["model_name"]
+            base_url = embedding_config["base_url"]
+            embedding_dimension = embedding_config["embedding_dimension"]
+            
+            if api_key is None:
+                raise KeyError("API模式下 'api_key' 未设置 (可能环境变量 EMBEDDING_API_KEY 未定义)")
+                
+        except KeyError as e:
+            raise KeyError(f"API Embedding配置中缺少必要的键或值无效：{e}")
 
-    return EmbeddingFunction(
-        model_name=model_name,
-        api_key=api_key,
-        base_url=base_url,
-        embedding_dimension=embedding_dimension
-    )
+        return EmbeddingFunction(
+            model_name=model_name,
+            api_key=api_key,
+            base_url=base_url,
+            embedding_dimension=embedding_dimension
+        )

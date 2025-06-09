@@ -4,13 +4,23 @@ import os
 # 加载.env文件中的环境变量
 load_dotenv()
 
-# 使用的模型类型（"qwen" 或 "deepseek"）
-LLM_MODEL_NAME = "qwen"
-# 向量数据库类型， chromadb 或 pgvector
-VECTOR_DB_NAME = "pgvector"
+# ===== 模型提供商类型配置 =====
+# LLM模型提供商类型：api 或 ollama
+LLM_MODEL_TYPE = "ollama"  # api, ollama
 
+# Embedding模型提供商类型：api 或 ollama  
+EMBEDDING_MODEL_TYPE = "ollama"  # api, ollama
+
+# ===== 模型名称配置 =====
+# API LLM模型名称（当LLM_MODEL_TYPE="api"时使用：qwen 或 deepseek）
+API_LLM_MODEL = "qwen"
+
+# 向量数据库类型：chromadb 或 pgvector
+VECTOR_DB_TYPE = "pgvector"
+
+# ===== API LLM模型配置 =====
 # DeepSeek模型配置
-DEEPSEEK_CONFIG = {
+API_DEEPSEEK_CONFIG = {
     "api_key": os.getenv("DEEPSEEK_API_KEY"),  # 从环境变量读取API密钥
     "model": "deepseek-reasoner",  # deepseek-chat, deepseek-reasoner
     "allow_llm_to_see_data": True,
@@ -20,9 +30,8 @@ DEEPSEEK_CONFIG = {
     "enable_thinking": False  # 自定义，是否支持流模式
 }
 
-
 # Qwen模型配置
-QWEN_CONFIG = {
+API_QWEN_CONFIG = {
     "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
     "model": "qwen-plus",
     "allow_llm_to_see_data": True,
@@ -36,12 +45,34 @@ QWEN_CONFIG = {
 #qwen-plus-latest
 #qwen-plus
 
-EMBEDDING_CONFIG = {
+# ===== API Embedding模型配置 =====
+API_EMBEDDING_CONFIG = {
     "model_name": "BAAI/bge-m3",
     "api_key": os.getenv("EMBEDDING_API_KEY"),
     "base_url": os.getenv("EMBEDDING_BASE_URL"),
     "embedding_dimension": 1024
 }
+
+
+# ===== Ollama LLM模型配置 =====
+OLLAMA_LLM_CONFIG = {
+    "base_url": "http://192.168.3.204:11434",  # Ollama服务地址
+    "model": "qwen3:32b",  # Ollama模型名称，如：qwen3:32b, deepseek-r1:32b
+    "allow_llm_to_see_data": True,
+    "temperature": 0.7,
+    "n_results": 6,
+    "language": "Chinese",
+    "timeout": 60  # Ollama可能需要更长超时时间
+}
+
+
+# ===== Ollama Embedding模型配置 =====
+OLLAMA_EMBEDDING_CONFIG = {
+    "base_url": "http://192.168.3.204:11434",  # Ollama服务地址
+    "model_name": "bge-m3:567m",  # Ollama embedding模型名称
+    "embedding_dimension": 1024  # 根据实际模型调整
+}
+
 
 
 # 应用数据库连接配置 (业务数据库)

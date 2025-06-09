@@ -204,6 +204,19 @@ def ask_cached():
 
 @app.flask_app.route('/api/v1/citu_train_question_sql', methods=['POST'])
 def citu_train_question_sql():
+    """
+    训练问题-SQL对接口
+    
+    此API将接收的question/sql pair写入到training库中，用于训练和改进AI模型。
+    支持仅传入SQL或同时传入问题和SQL进行训练。
+    
+    Args:
+        question (str, optional): 用户问题
+        sql (str, required): 对应的SQL查询语句
+    
+    Returns:
+        JSON: 包含训练ID和成功消息的响应
+    """
     try:
         req = request.get_json(force=True)
         question = req.get('question')
