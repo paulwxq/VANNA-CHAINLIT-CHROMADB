@@ -224,7 +224,15 @@ class QianWenAI_Chat_CN(VannaBase):
 
         # 添加相关的DDL（如果有）
         if ddl_list and len(ddl_list) > 0:
-            ddl_text = "\n\n".join([f"-- DDL项 {i+1}:\n{ddl}" for i, ddl in enumerate(ddl_list)])
+            ddl_items = []
+            for i, item in enumerate(ddl_list):
+                if isinstance(item, dict) and "content" in item:
+                    similarity_info = f" (相似度: {item.get('similarity', 'N/A')})" if "similarity" in item else ""
+                    ddl_items.append(f"-- DDL项 {i+1}{similarity_info}:\n{item['content']}")
+                elif isinstance(item, str):
+                    ddl_items.append(f"-- DDL项 {i+1}:\n{item}")
+            
+            ddl_text = "\n\n".join(ddl_items)
             messages.append(
                 self.user_message(
                     f"""
@@ -239,7 +247,15 @@ class QianWenAI_Chat_CN(VannaBase):
 
         # 添加相关的文档（如果有）
         if doc_list and len(doc_list) > 0:
-            doc_text = "\n\n".join([f"-- 文档项 {i+1}:\n{doc}" for i, doc in enumerate(doc_list)])
+            doc_items = []
+            for i, item in enumerate(doc_list):
+                if isinstance(item, dict) and "content" in item:
+                    similarity_info = f" (相似度: {item.get('similarity', 'N/A')})" if "similarity" in item else ""
+                    doc_items.append(f"-- 文档项 {i+1}{similarity_info}:\n{item['content']}")
+                elif isinstance(item, str):
+                    doc_items.append(f"-- 文档项 {i+1}:\n{item}")
+            
+            doc_text = "\n\n".join(doc_items)
             messages.append(
                 self.user_message(
                     f"""

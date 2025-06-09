@@ -49,35 +49,14 @@ class EmbeddingFunction:
             
         embeddings = []
         for text in input:
-            payload = {
-                "model": self.model_name,
-                "input": text,
-                "encoding_format": "float"
-            }
-            
+            # 直接调用generate_embedding，让它处理异常
             try:
-                # 修复URL拼接问题
-                url = self.base_url
-                if not url.endswith("/embeddings"):
-                    url = url.rstrip("/")  # 移除尾部斜杠，避免双斜杠
-                    if not url.endswith("/v1/embeddings"):
-                        url = f"{url}/embeddings"
-                
-                response = requests.post(url, json=payload, headers=self.headers)
-                response.raise_for_status()
-                
-                result = response.json()
-                
-                if "data" in result and len(result["data"]) > 0:
-                    vector = result["data"][0]["embedding"]
-                    embeddings.append(vector)
-                else:
-                    raise ValueError(f"API返回无效: {result}")
-                    
+                vector = self.generate_embedding(text)
+                embeddings.append(vector)
             except Exception as e:
-                print(f"获取embedding时出错: {e}")
-                # 使用实例的 embedding_dimension 来创建零向量
-                embeddings.append([0.0] * self.embedding_dimension)
+                print(f"为文本 '{text}' 生成embedding失败: {e}")
+                # 重新抛出异常，不返回零向量
+                raise e
                 
         return embeddings
     
@@ -115,16 +94,10 @@ class EmbeddingFunction:
         Returns:
             List[float]: 嵌入向量
         """
-        print(f"生成嵌入向量，文本长度: {len(text)} 字符")
-        
         # 处理空文本
         if not text or len(text.strip()) == 0:
-            print("输入文本为空，返回零向量")
-            # self.embedding_dimension 在初始化时已被强制要求
-            # 因此不应该为 None 或需要默认值
+            # 空文本返回零向量是合理的行为
             if self.embedding_dimension is None:
-                # 这个分支理论上不应该被执行，因为工厂函数会确保 embedding_dimension 已设置
-                # 但为了健壮性，如果它意外地是 None，则抛出错误
                 raise ValueError("Embedding dimension (self.embedding_dimension) 未被正确初始化。")
             return [0.0] * self.embedding_dimension
         
@@ -145,7 +118,6 @@ class EmbeddingFunction:
                     url = url.rstrip("/")  # 移除尾部斜杠，避免双斜杠
                     if not url.endswith("/v1/embeddings"):
                         url = f"{url}/embeddings"
-                print(f"请求URL: {url}")
                 
                 response = requests.post(
                     url, 
@@ -157,14 +129,13 @@ class EmbeddingFunction:
                 # 检查响应状态
                 if response.status_code != 200:
                     error_msg = f"API请求错误: {response.status_code}, {response.text}"
-                    print(error_msg)
                     
                     # 根据错误码判断是否需要重试
                     if response.status_code in (429, 500, 502, 503, 504):
                         retries += 1
                         if retries <= self.max_retries:
                             wait_time = self.retry_interval * (2 ** (retries - 1))  # 指数退避
-                            print(f"等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
+                            print(f"API请求失败，等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
                             time.sleep(wait_time)
                             continue
                     
@@ -180,39 +151,31 @@ class EmbeddingFunction:
                     # 如果是首次调用且未提供维度，则自动设置
                     if self.embedding_dimension is None:
                         self.embedding_dimension = len(vector)
-                        print(f"自动设置embedding维度为: {self.embedding_dimension}")
                     else:
                         # 验证向量维度
                         actual_dim = len(vector)
                         if actual_dim != self.embedding_dimension:
-                            print(f"向量维度不匹配: 期望 {self.embedding_dimension}, 实际 {actual_dim}")
+                            print(f"警告: 向量维度不匹配: 期望 {self.embedding_dimension}, 实际 {actual_dim}")
                     
                     # 如果需要归一化
                     if self.normalize_embeddings:
                         vector = self._normalize_vector(vector)
                     
-                    print(f"成功生成embedding向量，维度: {len(vector)}")
                     return vector
                 else:
                     error_msg = f"API返回格式异常: {result}"
-                    print(error_msg)
                     raise ValueError(error_msg)
                 
             except Exception as e:
-                print(f"生成embedding时出错: {str(e)}")
                 retries += 1
                 
                 if retries <= self.max_retries:
                     wait_time = self.retry_interval * (2 ** (retries - 1))  # 指数退避
-                    print(f"等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
+                    print(f"生成embedding时出错: {str(e)}, 等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
                     time.sleep(wait_time)
                 else:
-                    print(f"已达到最大重试次数 ({self.max_retries})，生成embedding失败")
-                    # 决定是返回零向量还是重新抛出异常
-                    if self.embedding_dimension:
-                        print(f"返回零向量 (维度: {self.embedding_dimension})")
-                        return [0.0] * self.embedding_dimension
-                    raise
+                    # 抛出异常而不是返回零向量，确保问题不被掩盖
+                    raise RuntimeError(f"生成embedding失败，已重试{self.max_retries}次: {str(e)}")
         
         # 这里不应该到达，但为了完整性添加
         raise RuntimeError("生成embedding失败")

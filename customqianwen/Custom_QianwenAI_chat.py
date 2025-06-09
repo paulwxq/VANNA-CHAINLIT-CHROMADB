@@ -1,6 +1,8 @@
 import os
 from openai import OpenAI
 from vanna.base import VannaBase
+# 导入配置参数
+from app_config import REWRITE_QUESTION_ENABLED
 
 
 class QianWenAI_Chat(VannaBase):
@@ -61,15 +63,33 @@ class QianWenAI_Chat(VannaBase):
             initial_prompt = f"You are a {self.dialect} expert. " + \
             "Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions. "
 
+        # 提取DDL内容（适配新的字典格式）
+        ddl_content_list = []
+        if ddl_list:
+            for item in ddl_list:
+                if isinstance(item, dict) and "content" in item:
+                    ddl_content_list.append(item["content"])
+                elif isinstance(item, str):
+                    ddl_content_list.append(item)
+        
         initial_prompt = self.add_ddl_to_prompt(
-            initial_prompt, ddl_list, max_tokens=self.max_tokens
+            initial_prompt, ddl_content_list, max_tokens=self.max_tokens
         )
 
+        # 提取文档内容（适配新的字典格式）
+        doc_content_list = []
+        if doc_list:
+            for item in doc_list:
+                if isinstance(item, dict) and "content" in item:
+                    doc_content_list.append(item["content"])
+                elif isinstance(item, str):
+                    doc_content_list.append(item)
+        
         if self.static_documentation != "":
-            doc_list.append(self.static_documentation)
+            doc_content_list.append(self.static_documentation)
 
         initial_prompt = self.add_documentation_to_prompt(
-            initial_prompt, doc_list, max_tokens=self.max_tokens
+            initial_prompt, doc_content_list, max_tokens=self.max_tokens
         )
 
         initial_prompt += (
@@ -87,6 +107,7 @@ class QianWenAI_Chat(VannaBase):
             "   - 中文别名要准确反映字段的业务含义\n"
             "   - 绝对不能有任何字段没有中文别名，这会影响表格的可读性\n"
             "   - 这样可以提高图表的可读性和用户体验\n"
+            "   - 不要在where条件中使用中文别名，比如: WHERE gender = 'F' AS 性别, 这是错误的语法\n"
             "   正确示例：SELECT gender AS 性别, card_category AS 卡片类型, COUNT(*) AS 持卡人数 FROM table_name\n"
             "   错误示例：SELECT gender, card_category AS 卡片类型, COUNT(*) AS 持卡人数 FROM table_name\n"
         )
@@ -400,3 +421,43 @@ class QianWenAI_Chat(VannaBase):
         except Exception as e:
             print(f"[ERROR] LLM对话失败: {str(e)}")
             return f"抱歉，我暂时无法回答您的问题。请稍后再试。"
+
+    def generate_rewritten_question(self, last_question: str, new_question: str, **kwargs) -> str:
+        """
+        重写问题合并方法，通过配置参数控制是否启用合并功能
+        
+        Args:
+            last_question (str): 上一个问题
+            new_question (str): 新问题
+            **kwargs: 其他参数
+            
+        Returns:
+            str: 如果启用合并且问题相关则返回合并后的问题，否则返回新问题
+        """
+        # 如果未启用合并功能或没有上一个问题，直接返回新问题
+        if not REWRITE_QUESTION_ENABLED or last_question is None:
+            print(f"[DEBUG] 问题合并功能{'未启用' if not REWRITE_QUESTION_ENABLED else '上一个问题为空'}，直接返回新问题")
+            return new_question
+        
+        print(f"[DEBUG] 启用问题合并功能，尝试合并问题")
+        print(f"[DEBUG] 上一个问题: {last_question}")
+        print(f"[DEBUG] 新问题: {new_question}")
+        
+        try:
+            prompt = [
+                self.system_message(
+                    "你的目标是将一系列相关的问题合并成一个单一的问题。如果第二个问题与第一个问题无关且完全独立，则返回第二个问题。"
+                    "只返回新的合并问题，不要添加任何额外的解释。该问题理论上应该能够用一个SQL语句来回答。"
+                    "请用中文回答。"
+                ),
+                self.user_message(f"第一个问题: {last_question}\n第二个问题: {new_question}")
+            ]
+            
+            rewritten_question = self.submit_prompt(prompt=prompt, **kwargs)
+            print(f"[DEBUG] 合并后的问题: {rewritten_question}")
+            return rewritten_question
+            
+        except Exception as e:
+            print(f"[ERROR] 问题合并失败: {str(e)}")
+            # 如果合并失败，返回新问题
+            return new_question

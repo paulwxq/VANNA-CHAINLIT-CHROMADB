@@ -2,14 +2,15 @@ from dotenv import load_dotenv
 import os
 
 # 加载.env文件中的环境变量
-load_dotenv()
+# 使用 override=True 确保能够重新加载更新的环境变量
+load_dotenv(override=True)
 
 # ===== 模型提供商类型配置 =====
 # LLM模型提供商类型：api 或 ollama
-LLM_MODEL_TYPE = "ollama"  # api, ollama
+LLM_MODEL_TYPE = "api"  # api, ollama
 
 # Embedding模型提供商类型：api 或 ollama  
-EMBEDDING_MODEL_TYPE = "ollama"  # api, ollama
+EMBEDDING_MODEL_TYPE = "api"  # api, ollama
 
 # ===== 模型名称配置 =====
 # API LLM模型名称（当LLM_MODEL_TYPE="api"时使用：qwen 或 deepseek）
@@ -53,6 +54,8 @@ API_EMBEDDING_CONFIG = {
     "embedding_dimension": 1024
 }
 
+# BAAI/bge-m3
+# text-embedding-v4
 
 # ===== Ollama LLM模型配置 =====
 OLLAMA_LLM_CONFIG = {
@@ -115,3 +118,14 @@ TRAINING_MAX_WORKERS = 4                    # 训练批处理的最大工作线�
 #    "training/data"       - 相对于项目根目录
 #    "my_data"             - 项目根目录下的my_data文件夹
 TRAINING_DATA_PATH = "./training/data"
+
+# 是否启用问题重写功能，也就是上下文问题合并。
+REWRITE_QUESTION_ENABLED = False
+
+# 是否启用向量查询结果得分阈值过滤
+# result = max((n + 1) // 2, 1)
+ENABLE_RESULT_VECTOR_SCORE_THRESHOLD = True
+# 向量查询结果得分阈值
+RESULT_VECTOR_SQL_SCORE_THRESHOLD = 0.65
+RESULT_VECTOR_DDL_SCORE_THRESHOLD = 0.5
+RESULT_VECTOR_DOC_SCORE_THRESHOLD = 0.5

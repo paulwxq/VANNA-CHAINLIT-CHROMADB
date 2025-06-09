@@ -3,6 +3,8 @@ import os
 from openai import OpenAI
 from vanna.base import VannaBase
 #from base import VannaBase
+# 导入配置参数
+from app_config import REWRITE_QUESTION_ENABLED
 
 
 # from vanna.chromadb import ChromaDB_VectorStore
@@ -169,3 +171,43 @@ class DeepSeekChat(VannaBase):
         except Exception as e:
             print(f"[ERROR] LLM对话失败: {str(e)}")
             return f"抱歉，我暂时无法回答您的问题。请稍后再试。"
+
+    def generate_rewritten_question(self, last_question: str, new_question: str, **kwargs) -> str:
+        """
+        重写问题合并方法，通过配置参数控制是否启用合并功能
+        
+        Args:
+            last_question (str): 上一个问题
+            new_question (str): 新问题
+            **kwargs: 其他参数
+            
+        Returns:
+            str: 如果启用合并且问题相关则返回合并后的问题，否则返回新问题
+        """
+        # 如果未启用合并功能或没有上一个问题，直接返回新问题
+        if not REWRITE_QUESTION_ENABLED or last_question is None:
+            print(f"[DEBUG] 问题合并功能{'未启用' if not REWRITE_QUESTION_ENABLED else '上一个问题为空'}，直接返回新问题")
+            return new_question
+        
+        print(f"[DEBUG] 启用问题合并功能，尝试合并问题")
+        print(f"[DEBUG] 上一个问题: {last_question}")
+        print(f"[DEBUG] 新问题: {new_question}")
+        
+        try:
+            prompt = [
+                self.system_message(
+                    "你的目标是将一系列相关的问题合并成一个单一的问题。如果第二个问题与第一个问题无关且完全独立，则返回第二个问题。"
+                    "只返回新的合并问题，不要添加任何额外的解释。该问题理论上应该能够用一个SQL语句来回答。"
+                    "请用中文回答。"
+                ),
+                self.user_message(f"第一个问题: {last_question}\n第二个问题: {new_question}")
+            ]
+            
+            rewritten_question = self.submit_prompt(prompt=prompt, **kwargs)
+            print(f"[DEBUG] 合并后的问题: {rewritten_question}")
+            return rewritten_question
+            
+        except Exception as e:
+            print(f"[ERROR] 问题合并失败: {str(e)}")
+            # 如果合并失败，返回新问题
+            return new_question
