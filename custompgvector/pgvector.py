@@ -260,6 +260,62 @@ class PG_VectorStore(VannaBase):
         
         return filtered_results
 
+    def _apply_error_sql_threshold_filter(self, results: list) -> list:
+        """
+        应用错误SQL特有的相似度阈值过滤逻辑
+        
+        与其他方法不同，错误SQL的过滤逻辑是：
+        - 只返回相似度高于阈值的结果
+        - 不设置最低返回数量
+        - 如果都低于阈值，返回空列表
+        
+        Args:
+            results: 原始结果列表，每个元素包含 similarity 字段
+            
+        Returns:
+            过滤后的结果列表
+        """
+        if not results:
+            return results
+            
+        # 导入配置
+        try:
+            import app_config
+            enable_threshold = getattr(app_config, 'ENABLE_RESULT_VECTOR_SCORE_THRESHOLD', False)
+            threshold = getattr(app_config, 'RESULT_VECTOR_ERROR_SQL_SCORE_THRESHOLD', 0.5)
+        except (ImportError, AttributeError) as e:
+            print(f"[WARNING] 无法加载错误SQL阈值配置: {e}，使用默认值")
+            enable_threshold = False
+            threshold = 0.5
+        
+        # 如果未启用阈值过滤，直接返回原结果
+        if not enable_threshold:
+            print(f"[DEBUG] Error SQL 阈值过滤未启用，返回全部 {len(results)} 条结果")
+            return results
+        
+        total_count = len(results)
+        print(f"[DEBUG] Error SQL 阈值过滤: 总数={total_count}, 阈值={threshold}")
+        
+        # 按相似度降序排序（确保最相似的在前面）
+        sorted_results = sorted(results, key=lambda x: x.get('similarity', 0), reverse=True)
+        
+        # 只保留满足阈值的结果，不设置最低返回数量
+        filtered_results = [r for r in sorted_results if r.get('similarity', 0) >= threshold]
+        
+        filtered_count = len(filtered_results)
+        filtered_out_count = total_count - filtered_count
+        
+        if filtered_count > 0:
+            print(f"[DEBUG] Error SQL 过滤结果: 保留 {filtered_count} 条, 过滤掉 {filtered_out_count} 条")
+            # 打印保留的结果详情
+            for i, result in enumerate(filtered_results):
+                similarity = result.get('similarity', 0)
+                print(f"[DEBUG] Error SQL 保留 {i+1}: similarity={similarity} ✓")
+        else:
+            print(f"[DEBUG] Error SQL 过滤结果: 所有 {total_count} 条结果都低于阈值 {threshold}，返回空列表")
+        
+        return filtered_results
+
     def train(
         self,
         question: str | None = None,
@@ -455,10 +511,10 @@ class PG_VectorStore(VannaBase):
         
         return id
     
-    # 3. 获取相似的错误SQL示例
-    def get_error_sql_examples(self, question: str, limit: int = 5) -> list:
+    # 3. 获取相关的错误SQL示例
+    def get_related_error_sql(self, question: str, **kwargs) -> list:
         """
-        获取相似的错误SQL示例
+        获取相关的错误SQL示例
         """
         # 确保集合存在
         self._ensure_error_sql_collection()
@@ -466,7 +522,7 @@ class PG_VectorStore(VannaBase):
         try:
             docs_with_scores = self.error_sql_collection.similarity_search_with_score(
                 query=question,
-                k=limit
+                k=self.n_results
             )
             
             results = []
@@ -489,7 +545,10 @@ class PG_VectorStore(VannaBase):
                     print(f"Error parsing error SQL document: {e}")
                     continue
             
-            return results
+            # 应用错误SQL特有的阈值过滤逻辑
+            filtered_results = self._apply_error_sql_threshold_filter(results)
+            
+            return filtered_results
             
         except Exception as e:
             print(f"Error retrieving error SQL examples: {e}")
