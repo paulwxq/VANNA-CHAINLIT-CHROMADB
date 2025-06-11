@@ -1,2 +1,0 @@
-from .Custom_QianwenAI_chat import QianWenAI_Chat
-from .Custom_QiawenAI_chat_cn import QianWenAI_Chat_CN

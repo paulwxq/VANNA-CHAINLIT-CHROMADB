@@ -11,11 +11,11 @@ except ImportError:
     print("警告: 无法导入 PG_VectorStore，PGVector相关组合类将不可用")
     PG_VectorStore = None
 
-# LLM提供商导入
-from customqianwen.Custom_QianwenAI_chat import QianWenAI_Chat
-from customdeepseek.custom_deepseek_chat import DeepSeekChat
+# LLM提供商导入 - 使用新的重构后的实现
+from customllm.qianwen_chat import QianWenChat
+from customllm.deepseek_chat import DeepSeekChat
 try:
-    from customollama.ollama_chat import OllamaChat
+    from customllm.ollama_chat import OllamaChat
 except ImportError:
     print("警告: 无法导入 OllamaChat，Ollama相关组合类将不可用")
     OllamaChat = None
@@ -23,14 +23,14 @@ except ImportError:
 
 # ===== API LLM + ChromaDB 组合 =====
 
-class Vanna_Qwen_ChromaDB(ChromaDB_VectorStore, QianWenAI_Chat):
-    """Qwen LLM + ChromaDB 向量数据库组合"""
+class QianWenChromaDB(ChromaDB_VectorStore, QianWenChat):
+    """QianWen LLM + ChromaDB 向量数据库组合"""
     def __init__(self, config=None):
         ChromaDB_VectorStore.__init__(self, config=config)
-        QianWenAI_Chat.__init__(self, config=config)
+        QianWenChat.__init__(self, config=config)
 
 
-class Vanna_DeepSeek_ChromaDB(ChromaDB_VectorStore, DeepSeekChat):
+class DeepSeekChromaDB(ChromaDB_VectorStore, DeepSeekChat):
     """DeepSeek LLM + ChromaDB 向量数据库组合"""
     def __init__(self, config=None):
         ChromaDB_VectorStore.__init__(self, config=config)
@@ -40,76 +40,76 @@ class Vanna_DeepSeek_ChromaDB(ChromaDB_VectorStore, DeepSeekChat):
 # ===== API LLM + PGVector 组合 =====
 
 if PG_VectorStore is not None:
-    class Vanna_Qwen_PGVector(PG_VectorStore, QianWenAI_Chat):
-        """Qwen LLM + PGVector 向量数据库组合"""
+    class QianWenPGVector(PG_VectorStore, QianWenChat):
+        """QianWen LLM + PGVector 向量数据库组合"""
         def __init__(self, config=None):
             PG_VectorStore.__init__(self, config=config)
-            QianWenAI_Chat.__init__(self, config=config)
+            QianWenChat.__init__(self, config=config)
 
-    class Vanna_DeepSeek_PGVector(PG_VectorStore, DeepSeekChat):
+    class DeepSeekPGVector(PG_VectorStore, DeepSeekChat):
         """DeepSeek LLM + PGVector 向量数据库组合"""
         def __init__(self, config=None):
             PG_VectorStore.__init__(self, config=config)
             DeepSeekChat.__init__(self, config=config)
 else:
     # 如果PG_VectorStore不可用，创建占位符类
-    class Vanna_Qwen_PGVector:
+    class QianWenPGVector:
         def __init__(self, config=None):
-            raise ImportError("PG_VectorStore 不可用，无法创建 Vanna_Qwen_PGVector 实例")
+            raise ImportError("PG_VectorStore 不可用，无法创建 QianWenPGVector 实例")
     
-    class Vanna_DeepSeek_PGVector:
+    class DeepSeekPGVector:
         def __init__(self, config=None):
-            raise ImportError("PG_VectorStore 不可用，无法创建 Vanna_DeepSeek_PGVector 实例")
+            raise ImportError("PG_VectorStore 不可用，无法创建 DeepSeekPGVector 实例")
 
 
 # ===== Ollama LLM + ChromaDB 组合 =====
 
 if OllamaChat is not None:
-    class Vanna_Ollama_ChromaDB(ChromaDB_VectorStore, OllamaChat):
+    class OllamaChromaDB(ChromaDB_VectorStore, OllamaChat):
         """Ollama LLM + ChromaDB 向量数据库组合"""
         def __init__(self, config=None):
             ChromaDB_VectorStore.__init__(self, config=config)
             OllamaChat.__init__(self, config=config)
 else:
-    class Vanna_Ollama_ChromaDB:
+    class OllamaChromaDB:
         def __init__(self, config=None):
-            raise ImportError("OllamaChat 不可用，无法创建 Vanna_Ollama_ChromaDB 实例")
+            raise ImportError("OllamaChat 不可用，无法创建 OllamaChromaDB 实例")
 
 
 # ===== Ollama LLM + PGVector 组合 =====
 
 if OllamaChat is not None and PG_VectorStore is not None:
-    class Vanna_Ollama_PGVector(PG_VectorStore, OllamaChat):
+    class OllamaPGVector(PG_VectorStore, OllamaChat):
         """Ollama LLM + PGVector 向量数据库组合"""
         def __init__(self, config=None):
             PG_VectorStore.__init__(self, config=config)
             OllamaChat.__init__(self, config=config)
 else:
-    class Vanna_Ollama_PGVector:
+    class OllamaPGVector:
         def __init__(self, config=None):
             error_msg = []
             if OllamaChat is None:
                 error_msg.append("OllamaChat 不可用")
             if PG_VectorStore is None:
                 error_msg.append("PG_VectorStore 不可用")
-            raise ImportError(f"{', '.join(error_msg)}，无法创建 Vanna_Ollama_PGVector 实例")
+            raise ImportError(f"{', '.join(error_msg)}，无法创建 OllamaPGVector 实例")
 
 
 # ===== 组合类映射表 =====
 
 # LLM类型到类名的映射
 LLM_CLASS_MAP = {
-    "qwen": {
-        "chromadb": Vanna_Qwen_ChromaDB,
-        "pgvector": Vanna_Qwen_PGVector,
+    "qianwen": {
+        "chromadb": QianWenChromaDB,
+        "pgvector": QianWenPGVector,
     },
     "deepseek": {
-        "chromadb": Vanna_DeepSeek_ChromaDB,
-        "pgvector": Vanna_DeepSeek_PGVector,
+        "chromadb": DeepSeekChromaDB,
+        "pgvector": DeepSeekPGVector,
     },
     "ollama": {
-        "chromadb": Vanna_Ollama_ChromaDB,
-        "pgvector": Vanna_Ollama_PGVector,
+        "chromadb": OllamaChromaDB,
+        "pgvector": OllamaPGVector,
     }
 }
 
@@ -119,7 +119,7 @@ def get_vanna_class(llm_type: str, vector_db_type: str):
     根据LLM类型和向量数据库类型获取对应的Vanna组合类
     
     Args:
-        llm_type: LLM类型 ("qwen", "deepseek", "ollama")
+        llm_type: LLM类型 ("qianwen", "deepseek", "ollama")
         vector_db_type: 向量数据库类型 ("chromadb", "pgvector")
         
     Returns:
@@ -187,4 +187,4 @@ def print_available_combinations():
 
 # 为了保持向后兼容，可以在这里添加别名
 # 例如：
-# VannaQwenChromaDB = Vanna_Qwen_ChromaDB  # 旧的命名风格 
+# VannaQwenChromaDB = QianWenChromaDB  # 旧的命名风格 

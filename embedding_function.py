@@ -286,9 +286,9 @@ def get_embedding_function():
     if is_using_ollama_embedding():
         # 使用Ollama Embedding
         try:
-            from customollama.ollama_embedding import OllamaEmbeddingFunction
+            from customembedding.ollama_embedding import OllamaEmbeddingFunction
         except ImportError:
-            raise ImportError("无法导入 OllamaEmbeddingFunction，请确保 customollama 包存在")
+            raise ImportError("无法导入 OllamaEmbeddingFunction，请确保 customembedding 包存在")
             
         return OllamaEmbeddingFunction(
             model_name=embedding_config["model_name"],
