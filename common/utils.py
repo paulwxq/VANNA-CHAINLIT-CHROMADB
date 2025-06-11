@@ -46,8 +46,8 @@ def get_current_llm_config():
     if app_config.LLM_MODEL_TYPE == "ollama":
         return app_config.OLLAMA_LLM_CONFIG
     elif app_config.LLM_MODEL_TYPE == "api":
-        if app_config.API_LLM_MODEL == "qwen":
-            return app_config.API_QWEN_CONFIG
+        if app_config.API_LLM_MODEL == "qianwen":
+            return app_config.API_QIANWEN_CONFIG
         elif app_config.API_LLM_MODEL == "deepseek":
             return app_config.API_DEEPSEEK_CONFIG
         else:

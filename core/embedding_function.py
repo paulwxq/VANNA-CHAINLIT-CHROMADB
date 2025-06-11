@@ -314,4 +314,4 @@ def get_embedding_function():
             api_key=api_key,
             base_url=base_url,
             embedding_dimension=embedding_dimension
-        )
+        ) 

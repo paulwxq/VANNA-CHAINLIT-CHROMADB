@@ -301,7 +301,7 @@ class BaseLLMChat(VannaBase, ABC):
                 print(f"[WARNING] 返回内容不像有效SQL: {sql}")
                 return None
                 
-            print(f"[SUCCESS] 成功生成SQL: {sql}")
+            print(f"[SUCCESS] 成功生成SQL:\n {sql}")
             return sql
             
         except Exception as e:

@@ -58,18 +58,37 @@ class QianWenChat(BaseLLMChat):
         # 优先使用参数中传入的值，如果没有则从配置中读取，默认为False
         enable_thinking = kwargs.get("enable_thinking", self.config.get("enable_thinking", False))
         
+        # 从配置和参数中获取stream设置
+        # 优先级：运行时参数 > 配置文件 > 默认值(False)
+        stream_mode = kwargs.get("stream", self.config.get("stream", False))
+        
+        # 千问API约束：enable_thinking=True时必须stream=True
+        # 如果stream=False但enable_thinking=True，则忽略enable_thinking
+        if enable_thinking and not stream_mode:
+            print("WARNING: enable_thinking=True 不生效，因为它需要 stream=True")
+            enable_thinking = False
+        
+        # 创建一个干净的kwargs副本，移除可能导致API错误的自定义参数
+        # 注意：enable_thinking和stream是千问API的有效参数，需要正确传递
+        filtered_kwargs = {k: v for k, v in kwargs.items() 
+                          if k not in ['model', 'engine']}  # 只移除model和engine
+        
         # 公共参数
         common_params = {
             "messages": prompt,
             "stop": None,
             "temperature": self.temperature,
+            "stream": stream_mode,  # 明确设置stream参数
         }
         
-        # 如果启用了thinking，则使用流式处理，但不直接传递enable_thinking参数
+        # 千问OpenAI兼容接口要求enable_thinking参数放在extra_body中
         if enable_thinking:
-            common_params["stream"] = True
-            # 千问API不接受enable_thinking作为参数，可能需要通过header或其他方式传递
-            # 也可能它只是默认启用stream=True时的thinking功能
+            common_params["extra_body"] = {"enable_thinking": True}
+        
+        # 传递其他过滤后的参数（排除enable_thinking，因为我们已经单独处理了）
+        for k, v in filtered_kwargs.items():
+            if k not in ['enable_thinking', 'stream']:  # 避免重复设置
+                common_params[k] = v
         
         model = None
         # 确定使用的模型
@@ -94,12 +113,15 @@ class QianWenChat(BaseLLMChat):
             common_params["model"] = model
         
         print(f"\nUsing model {model} for {num_tokens} tokens (approx)")
+        print(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
         
-        if enable_thinking:
+        if stream_mode:
             # 流式处理模式
-            print("使用流式处理模式，启用thinking功能")
+            if enable_thinking:
+                print("使用流式处理模式，启用thinking功能")
+            else:
+                print("使用流式处理模式，不启用thinking功能")
             
-            # 检查是否需要通过headers传递enable_thinking参数
             response_stream = self.client.chat.completions.create(**common_params)
             
             # 收集流式响应
@@ -107,17 +129,21 @@ class QianWenChat(BaseLLMChat):
             collected_content = []
             
             for chunk in response_stream:
-                # 处理thinking部分
-                if hasattr(chunk, 'thinking') and chunk.thinking:
-                    collected_thinking.append(chunk.thinking)
+                # 处理thinking部分（仅当enable_thinking=True时）
+                if enable_thinking and hasattr(chunk, 'choices') and chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                        collected_thinking.append(delta.reasoning_content)
                 
                 # 处理content部分
-                if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
-                    collected_content.append(chunk.choices[0].delta.content)
+                if hasattr(chunk, 'choices') and chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if hasattr(delta, 'content') and delta.content:
+                        collected_content.append(delta.content)
             
             # 可以在这里处理thinking的展示逻辑，如保存到日志等
-            if collected_thinking:
-                print("Model thinking process:", "".join(collected_thinking))
+            if enable_thinking and collected_thinking:
+                print("Model thinking process:\n", "".join(collected_thinking))
             
             # 返回完整的内容
             return "".join(collected_content)

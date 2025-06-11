@@ -13,8 +13,8 @@ LLM_MODEL_TYPE = "api"  # api, ollama
 EMBEDDING_MODEL_TYPE = "api"  # api, ollama
 
 # ===== 模型名称配置 =====
-# API LLM模型名称（当LLM_MODEL_TYPE="api"时使用：qwen 或 deepseek）
-API_LLM_MODEL = "qwen"
+# API LLM模型名称（当LLM_MODEL_TYPE="api"时使用：qianwen 或 deepseek ）
+API_LLM_MODEL = "deepseek"
 
 # 向量数据库类型：chromadb 或 pgvector
 VECTOR_DB_TYPE = "pgvector"
@@ -28,18 +28,20 @@ API_DEEPSEEK_CONFIG = {
     "temperature": 0.7,
     "n_results": 6,
     "language": "Chinese",
+    "stream": True,  # 是否使用流式模式
     "enable_thinking": False  # 自定义，是否支持流模式
 }
 
 # Qwen模型配置
-API_QWEN_CONFIG = {
+API_QIANWEN_CONFIG = {
     "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
-    "model": "qwen-plus",
+    "model": "qwen3-235b-a22b",
     "allow_llm_to_see_data": True,
     "temperature": 0.7,
     "n_results": 6,
     "language": "Chinese",
-    "enable_thinking": False #自定义，是否支持流模式，仅qwen3模型。
+    "stream": True,  # 是否使用流式模式
+    "enable_thinking": True  # 是否启用思考功能（要求stream=True）
 }
 #qwen3-30b-a3b
 #qwen3-235b-a22b
@@ -65,7 +67,15 @@ OLLAMA_LLM_CONFIG = {
     "temperature": 0.7,
     "n_results": 6,
     "language": "Chinese",
-    "timeout": 60  # Ollama可能需要更长超时时间
+    "timeout": 60,  # Ollama可能需要更长超时时间
+    "stream": True,  # 是否使用流式模式
+    "enable_thinking": True,  # 是否启用思考功能（推理模型支持）
+    
+    # Ollama 特定参数
+    #"num_ctx": 8192,  # 上下文长度
+    #"num_predict": 2048,  # 预测token数量，-1表示无限制
+    #"repeat_penalty": 1.1,  # 重复惩罚
+    #"auto_check_connection": True  # 是否自动检查连接
 }
 
 

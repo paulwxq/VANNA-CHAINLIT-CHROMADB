@@ -16,7 +16,7 @@ import app_config
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 创建vanna实例
-from vanna_llm_factory import create_vanna_instance
+from core.vanna_llm_factory import create_vanna_instance
 
 vn = create_vanna_instance()
 

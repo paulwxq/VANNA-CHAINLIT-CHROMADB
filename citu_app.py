@@ -1,6 +1,6 @@
 # 给dataops 对话助手返回结果
 from vanna.flask import VannaFlaskApp
-from vanna_llm_factory import create_vanna_instance
+from core.vanna_llm_factory import create_vanna_instance
 from flask import request, jsonify
 import pandas as pd
 import common.result as result

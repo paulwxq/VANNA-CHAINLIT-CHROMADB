@@ -26,7 +26,7 @@ def check_embedding_model_connection():
     Returns:
         bool: 连接成功返回True，否则终止程序
     """
-    from embedding_function import test_embedding_connection
+    from core.embedding_function import test_embedding_connection
 
     print("正在检查嵌入模型连接...")
     
@@ -559,7 +559,7 @@ def main():
         
         # 验证数据是否成功写入
         print("\n===== 验证训练数据 =====")
-        from vanna_llm_factory import create_vanna_instance
+        from core.vanna_llm_factory import create_vanna_instance
         vn = create_vanna_instance()
         
         # 根据向量数据库类型执行不同的验证逻辑

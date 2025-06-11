@@ -2,7 +2,7 @@
 Vanna LLM 工厂文件，支持多种LLM提供商和向量数据库
 """
 import app_config, os
-from embedding_function import get_embedding_function
+from core.embedding_function import get_embedding_function
 from common.vanna_combinations import get_vanna_class, print_available_combinations
 
 def create_vanna_instance(config_module=None):
@@ -61,7 +61,7 @@ def create_vanna_instance(config_module=None):
     
     # 配置向量数据库
     if model_info["vector_db"] == "chromadb":
-        config["path"] = os.path.dirname(os.path.abspath(__file__))
+        config["path"] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 返回项目根目录
         print(f"已配置使用ChromaDB，路径：{config['path']}")
     elif model_info["vector_db"] == "pgvector":
         # 构建PostgreSQL连接字符串
@@ -84,4 +84,4 @@ def create_vanna_instance(config_module=None):
           f"{config_module.APP_DB_CONFIG['port']}/"
           f"{config_module.APP_DB_CONFIG['dbname']}")
     
-    return vn
+    return vn 

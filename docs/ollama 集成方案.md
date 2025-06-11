@@ -421,7 +421,7 @@ from customqianwen.Custom_QianwenAI_chat import QianWenAI_Chat
 from customdeepseek.custom_deepseek_chat import DeepSeekChat
 from customollama.ollama_chat import OllamaChat  # 新增
 import app_config 
-from embedding_function import get_embedding_function
+from core.embedding_function import get_embedding_function
 import os
 
 class Vanna_Qwen_ChromaDB(ChromaDB_VectorStore, QianWenAI_Chat):

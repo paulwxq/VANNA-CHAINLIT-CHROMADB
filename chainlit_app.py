@@ -1,6 +1,6 @@
 import chainlit as cl
 from chainlit.input_widget import Select
-from vanna_llm_factory import create_vanna_instance
+from core.vanna_llm_factory import create_vanna_instance
 import os
 
 # vn.set_api_key(os.environ['VANNA_API_KEY'])

@@ -152,7 +152,7 @@ print(model_info)
 ### 2. 创建Vanna实例
 
 ```python
-from vanna_llm_factory import create_vanna_instance
+from core.vanna_llm_factory import create_vanna_instance
 
 # 根据配置自动创建合适的实例
 vn = create_vanna_instance()
