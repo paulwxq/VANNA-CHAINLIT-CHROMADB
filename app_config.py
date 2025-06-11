@@ -77,7 +77,6 @@ OLLAMA_EMBEDDING_CONFIG = {
 }
 
 
-
 # 应用数据库连接配置 (业务数据库)
 APP_DB_CONFIG = {
     "host": "192.168.67.1",
