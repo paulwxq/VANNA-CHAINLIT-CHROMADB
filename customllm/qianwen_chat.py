@@ -143,10 +143,16 @@ class QianWenChat(BaseLLMChat):
             
             # 可以在这里处理thinking的展示逻辑，如保存到日志等
             if enable_thinking and collected_thinking:
-                print("Model thinking process:\n", "".join(collected_thinking))
+                thinking_text = "".join(collected_thinking)
+                print("Model thinking process:\n", thinking_text)
             
-            # 返回完整的内容
-            return "".join(collected_content)
+            # 返回包含 <think></think> 标签的完整内容，与界面显示需求保持一致
+            final_content = "".join(collected_content)
+            if enable_thinking and collected_thinking:
+                thinking_text = "".join(collected_thinking)
+                return f"<think>{thinking_text}</think>\n\n{final_content}"
+            else:
+                return final_content
         else:
             # 非流式处理模式
             print("使用非流式处理模式")

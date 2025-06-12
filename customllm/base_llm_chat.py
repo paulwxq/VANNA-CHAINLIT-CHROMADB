@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from vanna.base import VannaBase
 # 导入配置参数
-from app_config import REWRITE_QUESTION_ENABLED
+from app_config import REWRITE_QUESTION_ENABLED, DISPLAY_SUMMARY_THINKING
 
 
 class BaseLLMChat(VannaBase, ABC):
@@ -60,7 +60,7 @@ class BaseLLMChat(VannaBase, ABC):
         
         if initial_prompt is None:
             initial_prompt = f"You are a {self.dialect} expert. " + \
-            "Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions. "
+            "Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions."
 
         # 提取DDL内容（适配新的字典格式）
         ddl_content_list = []
@@ -380,6 +380,99 @@ class BaseLLMChat(VannaBase, ABC):
             print(f"[ERROR] 问题合并失败: {str(e)}")
             # 如果合并失败，返回新问题
             return new_question
+
+    def generate_summary(self, question: str, df, **kwargs) -> str:
+        """
+        覆盖父类的 generate_summary 方法，添加中文思考和回答指令
+        
+        Args:
+            question (str): 用户提出的问题
+            df: 查询结果的 DataFrame
+            **kwargs: 其他参数
+            
+        Returns:
+            str: 数据摘要
+        """
+        try:
+            # 导入 pandas 用于 DataFrame 处理
+            import pandas as pd
+            
+            # 确保 df 是 pandas DataFrame
+            if not isinstance(df, pd.DataFrame):
+                print(f"[WARNING] df 不是 pandas DataFrame，类型: {type(df)}")
+                return "无法生成摘要：数据格式不正确"
+            
+            if df.empty:
+                return "查询结果为空，无数据可供摘要。"
+            
+            print(f"[DEBUG] 生成摘要 - 问题: {question}")
+            print(f"[DEBUG] DataFrame 形状: {df.shape}")
+            
+            # 构建包含中文指令的系统消息
+            system_content = (
+                f"你是一个专业的数据分析助手。用户提出了问题：'{question}'\n\n"
+                f"以下是查询结果的 pandas DataFrame 数据：\n{df.to_markdown()}\n\n"
+                "请用中文进行思考和分析，并用中文回答。"
+            )
+            
+            # 构建用户消息，强调中文思考和回答
+            user_content = (
+                "请基于用户提出的问题，简要总结这些数据。要求：\n"             
+                "1. 只进行简要总结，不要添加额外的解释\n"
+                "2. 如果数据中有数字，请保留适当的精度\n"            
+            )
+            
+            message_log = [
+                self.system_message(system_content),
+                self.user_message(user_content)
+            ]
+            
+            summary = self.submit_prompt(message_log, **kwargs)
+            
+            # 检查是否需要隐藏 thinking 内容
+            display_thinking = kwargs.get("display_summary_thinking", DISPLAY_SUMMARY_THINKING)
+            
+            if not display_thinking:
+                # 移除 <think></think> 标签及其内容
+                original_summary = summary
+                summary = self._remove_thinking_content(summary)
+                print(f"[DEBUG] 隐藏thinking内容 - 原始长度: {len(original_summary)}, 处理后长度: {len(summary)}")
+            
+            print(f"[DEBUG] 生成的摘要: {summary[:100]}...")
+            return summary
+            
+        except Exception as e:
+            print(f"[ERROR] 生成摘要失败: {str(e)}")
+            import traceback
+            print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+            return f"生成摘要时出现错误：{str(e)}"
+
+    def _remove_thinking_content(self, text: str) -> str:
+        """
+        移除文本中的 <think></think> 标签及其内容
+        
+        Args:
+            text (str): 包含可能的 thinking 标签的文本
+            
+        Returns:
+            str: 移除 thinking 内容后的文本
+        """
+        if not text:
+            return text
+        
+        import re
+        
+        # 移除 <think>...</think> 标签及其内容（支持多行）
+        # 使用 re.DOTALL 标志使 . 匹配包括换行符在内的任何字符
+        cleaned_text = re.sub(r'<think>.*?</think>\s*', '', text, flags=re.DOTALL | re.IGNORECASE)
+        
+        # 移除可能的多余空行
+        cleaned_text = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_text)
+        
+        # 去除开头和结尾的空白字符
+        cleaned_text = cleaned_text.strip()
+        
+        return cleaned_text
 
     @abstractmethod
     def submit_prompt(self, prompt, **kwargs) -> str:

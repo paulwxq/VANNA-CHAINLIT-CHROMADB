@@ -72,7 +72,7 @@ class OllamaChat(BaseLLMChat):
         
         # 模型兼容性提示（但不强制切换）
         if enable_thinking and not is_reasoning_model:
-            print(f"提示：模型 {model} 可能不支持推理功能，推理相关参数将被忽略")
+            print(f"提示：模型 {model} 不是专门的推理模型，但仍会尝试启用推理功能")
 
         print(f"\nUsing Ollama model {model} for {num_tokens} tokens (approx)")
         print(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
@@ -83,26 +83,27 @@ class OllamaChat(BaseLLMChat):
             "model": model,
             "messages": prompt,
             "stream": stream_mode,
-            "options": self._build_options(kwargs, is_reasoning_model)
+            "think": enable_thinking,  # Ollama API 使用 think 参数控制推理功能
+            "options": self._build_options(kwargs, is_reasoning_model, enable_thinking)
         }
 
         try:
             if stream_mode:
                 # 流式处理模式
-                if is_reasoning_model and enable_thinking:
+                if enable_thinking:
                     print("使用流式处理模式，启用推理功能")
                 else:
                     print("使用流式处理模式，常规聊天")
                 
-                return self._handle_stream_response(url, payload, is_reasoning_model and enable_thinking)
+                return self._handle_stream_response(url, payload, enable_thinking)
             else:
                 # 非流式处理模式
-                if is_reasoning_model and enable_thinking:
+                if enable_thinking:
                     print("使用非流式处理模式，启用推理功能")
                 else:
                     print("使用非流式处理模式，常规聊天")
                 
-                return self._handle_non_stream_response(url, payload, is_reasoning_model and enable_thinking)
+                return self._handle_non_stream_response(url, payload, enable_thinking)
                 
         except requests.exceptions.RequestException as e:
             print(f"Ollama API请求失败: {e}")
@@ -266,7 +267,7 @@ class OllamaChat(BaseLLMChat):
         reasoning_keywords = ['r1', 'reasoning', 'think', 'cot', 'chain-of-thought']
         return any(keyword in model.lower() for keyword in reasoning_keywords)
 
-    def _build_options(self, kwargs: dict, is_reasoning_model: bool) -> dict:
+    def _build_options(self, kwargs: dict, is_reasoning_model: bool, enable_thinking: bool = False) -> dict:
         """构建 Ollama options 参数"""
         options = {
             "temperature": self.temperature,
@@ -283,13 +284,17 @@ class OllamaChat(BaseLLMChat):
         for k, v in filtered_kwargs.items():
             options[k] = v
 
-        # 推理模型特定参数调整
-        if is_reasoning_model:
-            # 推理模型可能需要更多的预测token
+        # 推理功能参数调整（当启用推理功能时）
+        if enable_thinking:
+            # 启用推理功能时可能需要更多的预测token
             if options["num_predict"] == -1:
                 options["num_predict"] = 2048
             # 降低重复惩罚，允许更多的推理重复
             options["repeat_penalty"] = min(options["repeat_penalty"], 1.05)
+            # 对于推理模型，可以进一步优化参数
+            if is_reasoning_model:
+                # 推理模型可能需要更长的上下文
+                options["num_ctx"] = max(options["num_ctx"], 8192)
 
         return options
 

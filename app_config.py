@@ -10,9 +10,9 @@ load_dotenv(override=True)
 LLM_MODEL_TYPE = "api"  # api, ollama
 
 # Embedding模型提供商类型：api 或 ollama  
-EMBEDDING_MODEL_TYPE = "api"  # api, ollama
+EMBEDDING_MODEL_TYPE = "ollama"  # api, ollama
 
-# ===== 模型名称配置 =====
+# =====API 模型名称配置 =====
 # API LLM模型名称（当LLM_MODEL_TYPE="api"时使用：qianwen 或 deepseek ）
 API_LLM_MODEL = "deepseek"
 
@@ -25,11 +25,11 @@ API_DEEPSEEK_CONFIG = {
     "api_key": os.getenv("DEEPSEEK_API_KEY"),  # 从环境变量读取API密钥
     "model": "deepseek-reasoner",  # deepseek-chat, deepseek-reasoner
     "allow_llm_to_see_data": True,
-    "temperature": 0.7,
+    "temperature": 0.6,
     "n_results": 6,
     "language": "Chinese",
     "stream": True,  # 是否使用流式模式
-    "enable_thinking": False  # 自定义，是否支持流模式
+    "enable_thinking": True  # 自定义，是否支持流模式
 }
 
 # Qwen模型配置
@@ -131,6 +131,11 @@ TRAINING_DATA_PATH = "./training/data"
 # 是否启用问题重写功能，也就是上下文问题合并。
 REWRITE_QUESTION_ENABLED = False
 
+# 是否在摘要中显示thinking过程
+# True: 显示 <think></think> 内容
+# False: 隐藏 <think></think> 内容，只显示最终答案
+DISPLAY_SUMMARY_THINKING = True
+
 # 是否启用向量查询结果得分阈值过滤
 # result = max((n + 1) // 2, 1)
 ENABLE_RESULT_VECTOR_SCORE_THRESHOLD = True
@@ -138,6 +143,6 @@ ENABLE_RESULT_VECTOR_SCORE_THRESHOLD = True
 RESULT_VECTOR_SQL_SCORE_THRESHOLD = 0.65
 RESULT_VECTOR_DDL_SCORE_THRESHOLD = 0.5
 RESULT_VECTOR_DOC_SCORE_THRESHOLD = 0.5
-RESULT_VECTOR_ERROR_SQL_SCORE_THRESHOLD = 0.5
 
 ENABLE_ERROR_SQL_PROMPT = True
+RESULT_VECTOR_ERROR_SQL_SCORE_THRESHOLD = 0.8
