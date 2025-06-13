@@ -10,11 +10,11 @@ load_dotenv(override=True)
 LLM_MODEL_TYPE = "api"  # api, ollama
 
 # Embedding模型提供商类型：api 或 ollama  
-EMBEDDING_MODEL_TYPE = "ollama"  # api, ollama
+EMBEDDING_MODEL_TYPE = "api"  # api, ollama
 
 # =====API 模型名称配置 =====
 # API LLM模型名称（当LLM_MODEL_TYPE="api"时使用：qianwen 或 deepseek ）
-API_LLM_MODEL = "deepseek"
+API_LLM_MODEL = "qianwen"
 
 # 向量数据库类型：chromadb 或 pgvector
 VECTOR_DB_TYPE = "pgvector"
