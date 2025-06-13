@@ -37,7 +37,7 @@ API_QIANWEN_CONFIG = {
     "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
     "model": "qwen3-235b-a22b",
     "allow_llm_to_see_data": True,
-    "temperature": 0.7,
+    "temperature": 0.6,
     "n_results": 6,
     "language": "Chinese",
     "stream": True,  # 是否使用流式模式
