@@ -134,7 +134,7 @@ REWRITE_QUESTION_ENABLED = False
 # 是否在摘要中显示thinking过程
 # True: 显示 <think></think> 内容
 # False: 隐藏 <think></think> 内容，只显示最终答案
-DISPLAY_SUMMARY_THINKING = True
+DISPLAY_SUMMARY_THINKING = False
 
 # 是否启用向量查询结果得分阈值过滤
 # result = max((n + 1) // 2, 1)
@@ -146,3 +146,6 @@ RESULT_VECTOR_DOC_SCORE_THRESHOLD = 0.5
 
 ENABLE_ERROR_SQL_PROMPT = True
 RESULT_VECTOR_ERROR_SQL_SCORE_THRESHOLD = 0.8
+
+# 接口返回查询记录的最大行数
+API_MAX_RETURN_ROWS = 1000

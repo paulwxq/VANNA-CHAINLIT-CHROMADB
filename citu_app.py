@@ -6,6 +6,11 @@ import pandas as pd
 import common.result as result
 from datetime import datetime, timedelta
 from common.session_aware_cache import WebSessionAwareMemoryCache
+from app_config import API_MAX_RETURN_ROWS
+
+# 设置默认的最大返回行数
+DEFAULT_MAX_RETURN_ROWS = 200
+MAX_RETURN_ROWS = API_MAX_RETURN_ROWS if API_MAX_RETURN_ROWS is not None else DEFAULT_MAX_RETURN_ROWS
 
 vn = create_vanna_instance()
 
@@ -57,7 +62,7 @@ def ask_full():
         summary = None
         
         if isinstance(df, pd.DataFrame) and not df.empty:
-            rows = df.head(1000).to_dict(orient="records")
+            rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
             columns = list(df.columns)
             
             # 生成数据摘要
@@ -98,7 +103,7 @@ def citu_run_sql():
         rows, columns = [], []
         
         if isinstance(df, pd.DataFrame) and not df.empty:
-            rows = df.head(1000).to_dict(orient="records")
+            rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
             columns = list(df.columns)
         
         return jsonify(result.success(data={
@@ -180,7 +185,7 @@ def ask_cached():
         rows, columns = [], []
         
         if isinstance(df, pd.DataFrame) and not df.empty:
-            rows = df.head(1000).to_dict(orient="records")
+            rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
             columns = list(df.columns)
 
         return jsonify(result.success(data={
@@ -202,7 +207,7 @@ def ask_cached():
     
 
 
-@app.flask_app.route('/api/v1/citu_train_question_sql', methods=['POST'])
+@app.flask_app.route('/api/v0/citu_train_question_sql', methods=['POST'])
 def citu_train_question_sql():
     """
     训练问题-SQL对接口
