@@ -13,7 +13,7 @@ class EmbeddingFunction:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
-        self.max_retries = 2  # 设置默认的最大重试次数
+        self.max_retries = 3  # 设置默认的最大重试次数
         self.retry_interval = 2  # 设置默认的重试间隔秒数
         self.normalize_embeddings = True # 设置默认是否归一化
 
@@ -160,6 +160,9 @@ class EmbeddingFunction:
                     # 如果需要归一化
                     if self.normalize_embeddings:
                         vector = self._normalize_vector(vector)
+                    
+                    # 添加成功生成embedding的debug日志
+                    print(f"[DEBUG] ✓ 成功生成embedding向量，维度: {len(vector)}")
                     
                     return vector
                 else:

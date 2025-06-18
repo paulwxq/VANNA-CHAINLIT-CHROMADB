@@ -35,13 +35,13 @@ API_DEEPSEEK_CONFIG = {
 # Qwen模型配置
 API_QIANWEN_CONFIG = {
     "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
-    "model": "qwen3-235b-a22b",
+    "model": "qwen-plus",
     "allow_llm_to_see_data": True,
     "temperature": 0.6,
     "n_results": 6,
     "language": "Chinese",
-    "stream": True,  # 是否使用流式模式
-    "enable_thinking": True  # 是否启用思考功能（要求stream=True）
+    "stream": False,  # 是否使用流式模式
+    "enable_thinking": False  # 是否启用思考功能（要求stream=True）
 }
 #qwen3-30b-a3b
 #qwen3-235b-a22b
@@ -50,7 +50,7 @@ API_QIANWEN_CONFIG = {
 
 # ===== API Embedding模型配置 =====
 API_EMBEDDING_CONFIG = {
-    "model_name": "BAAI/bge-m3",
+    "model_name": "text-embedding-v4",
     "api_key": os.getenv("EMBEDDING_API_KEY"),
     "base_url": os.getenv("EMBEDDING_BASE_URL"),
     "embedding_dimension": 1024
@@ -90,8 +90,8 @@ OLLAMA_EMBEDDING_CONFIG = {
 # 应用数据库连接配置 (业务数据库)
 APP_DB_CONFIG = {
     "host": "192.168.67.1",
-    "port": 5432,
-    "dbname": "bank_db",
+    "port": 6432,
+    "dbname": "highway_db",
     "user": os.getenv("APP_DB_USER"),
     "password": os.getenv("APP_DB_PASSWORD")
 }
@@ -103,16 +103,17 @@ APP_DB_CONFIG = {
 PGVECTOR_CONFIG = {
     "host": "192.168.67.1",
     "port": 5432,
-    "dbname": "pgvector_db",
+    "dbname": "highway_pgvector_db",
     "user": os.getenv("PGVECTOR_DB_USER"),
     "password": os.getenv("PGVECTOR_DB_PASSWORD")
 }
 
 # 训练脚本批处理配置
 # 这些配置仅用于 training/run_training.py 训练脚本的批处理优化
-TRAINING_BATCH_PROCESSING_ENABLED = True    # 是否启用训练数据批处理
+# 注意：当使用阿里云等API服务时，建议关闭批处理或设置单线程以避免并发连接错误
+TRAINING_BATCH_PROCESSING_ENABLED = False   # 是否启用训练数据批处理（关闭以避免并发问题）
 TRAINING_BATCH_SIZE = 10                    # 每批处理的训练项目数量
-TRAINING_MAX_WORKERS = 4                    # 训练批处理的最大工作线程数
+TRAINING_MAX_WORKERS = 1                    # 训练批处理的最大工作线程数（设置为1确保单线程）
 
 # 训练数据路径配置
 # 支持以下格式：

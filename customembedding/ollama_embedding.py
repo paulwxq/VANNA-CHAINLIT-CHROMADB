@@ -8,7 +8,7 @@ class OllamaEmbeddingFunction:
         self.model_name = model_name
         self.base_url = base_url
         self.embedding_dimension = embedding_dimension
-        self.max_retries = 2
+        self.max_retries = 3
         self.retry_interval = 2
 
     def __call__(self, input) -> List[List[float]]:
@@ -87,7 +87,8 @@ class OllamaEmbeddingFunction:
                         else:
                             vector.extend([0.0] * (self.embedding_dimension - actual_dim))
                     
-                    print(f"成功生成Ollama embedding向量，维度: {len(vector)}")
+                    # 添加成功生成embedding的debug日志
+                    print(f"[DEBUG] ✓ 成功生成Ollama embedding向量，维度: {len(vector)}")
                     return vector
                 else:
                     error_msg = f"Ollama API返回格式异常: {result}"
