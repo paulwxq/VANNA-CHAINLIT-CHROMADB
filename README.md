@@ -35,4 +35,5 @@ False	False	False	非流式模式，无thinking
 False	True	True	流式模式，无thinking
 True	False	True (强制)	流式模式，有thinking + 警告日志
 True	True	True	流式模式，有thinking
+
 当前的代码实现完全符合您的两个要求，逻辑正确且健壮！
