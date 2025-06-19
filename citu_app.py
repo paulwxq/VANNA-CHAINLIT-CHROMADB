@@ -388,6 +388,238 @@ def citu_train_question_sql():
             message=f"Training failed: {str(e)}", 
             code=500
         )), 500
+    
+
+# ============ LangGraph Agent 集成 ============
+
+# 全局Agent实例（单例模式）
+citu_langraph_agent = None
+
+def get_citu_langraph_agent():
+    """获取LangGraph Agent实例（懒加载）"""
+    global citu_langraph_agent
+    if citu_langraph_agent is None:
+        try:
+            from agent.citu_agent import CituLangGraphAgent
+            citu_langraph_agent = CituLangGraphAgent()
+            print("[CITU_APP] LangGraph Agent实例创建成功")
+        except Exception as e:
+            print(f"[ERROR] LangGraph Agent实例创建失败: {str(e)}")
+            raise
+    return citu_langraph_agent
+
+@app.flask_app.route('/api/v0/ask_agent', methods=['POST'])
+def ask_agent():
+    """
+    新的LangGraph Agent接口
+    
+    请求格式:
+    {
+        "question": "用户问题",
+        "session_id": "会话ID（可选）"
+    }
+    
+    响应格式:
+    {
+        "success": true/false,
+        "code": 200,
+        "message": "success" 或错误信息,
+        "data": {
+            "response": "最终回答",
+            "type": "DATABASE/CHAT",
+            "sql": "生成的SQL（如果是数据库查询）",
+            "data_result": {
+                "rows": [...],
+                "columns": [...],
+                "row_count": 数字
+            },
+            "summary": "数据摘要（如果是数据库查询）",
+            "session_id": "会话ID",
+            "execution_path": ["classify", "agent_database", "format_response"],
+            "classification_info": {
+                "confidence": 0.95,
+                "reason": "分类原因",
+                "method": "rule_based/llm_based"
+            },
+            "agent_version": "langgraph_v1"
+        }
+    }
+    """
+    req = request.get_json(force=True)
+    question = req.get("question", None)
+    browser_session_id = req.get("session_id", None)
+    
+    if not question:
+        return jsonify(result.failed(message="未提供问题", code=400)), 400
+
+    try:
+        # 获取Agent实例
+        agent = get_citu_langraph_agent()
+        
+        # 调用Agent处理问题
+        agent_result = agent.process_question(
+            question=question,
+            session_id=browser_session_id
+        )
+        
+        # 统一返回格式
+        if agent_result.get("success", False):
+            return jsonify(result.success(data={
+                "response": agent_result.get("response", ""),
+                "type": agent_result.get("type", "UNKNOWN"),
+                "sql": agent_result.get("sql"),
+                "data_result": agent_result.get("data_result"),
+                "summary": agent_result.get("summary"),
+                "session_id": browser_session_id,
+                "execution_path": agent_result.get("execution_path", []),
+                "classification_info": agent_result.get("classification_info", {}),
+                "agent_version": "langgraph_v1",
+                "timestamp": datetime.now().isoformat()
+            }))
+        else:
+            return jsonify(result.failed(
+                message=agent_result.get("error", "Agent处理失败"),
+                code=agent_result.get("error_code", 500),
+                data={
+                    "session_id": browser_session_id,
+                    "execution_path": agent_result.get("execution_path", []),
+                    "classification_info": agent_result.get("classification_info", {}),
+                    "agent_version": "langgraph_v1",
+                    "timestamp": datetime.now().isoformat()
+                }
+            )), 200  # HTTP 200但业务失败
+            
+    except Exception as e:
+        print(f"[ERROR] ask_agent执行失败: {str(e)}")
+        return jsonify(result.failed(
+            message=f"Agent系统异常: {str(e)}", 
+            code=500,
+            data={
+                "timestamp": datetime.now().isoformat()
+            }
+        )), 500
+
+@app.flask_app.route('/api/v0/agent_health', methods=['GET'])
+def agent_health():
+    """
+    Agent健康检查接口
+    
+    响应格式:
+    {
+        "success": true/false,
+        "code": 200/503,
+        "message": "healthy/degraded/unhealthy",
+        "data": {
+            "status": "healthy/degraded/unhealthy",
+            "test_result": true/false,
+            "workflow_compiled": true/false,
+            "tools_count": 4,
+            "message": "详细信息",
+            "timestamp": "2024-01-01T12:00:00",
+            "checks": {
+                "agent_creation": true/false,
+                "tools_import": true/false,
+                "llm_connection": true/false,
+                "classifier_ready": true/false
+            }
+        }
+    }
+    """
+    try:
+        # 基础健康检查
+        health_data = {
+            "status": "unknown",
+            "test_result": False,
+            "workflow_compiled": False,
+            "tools_count": 0,
+            "message": "",
+            "timestamp": datetime.now().isoformat(),
+            "checks": {
+                "agent_creation": False,
+                "tools_import": False,
+                "llm_connection": False,
+                "classifier_ready": False
+            }
+        }
+        
+        # 检查1: Agent创建
+        try:
+            agent = get_citu_langraph_agent()
+            health_data["checks"]["agent_creation"] = True
+            health_data["workflow_compiled"] = agent.workflow is not None
+            health_data["tools_count"] = len(agent.tools) if hasattr(agent, 'tools') else 0
+        except Exception as e:
+            health_data["message"] = f"Agent创建失败: {str(e)}"
+            return jsonify(result.failed(
+                message="Agent状态: unhealthy", 
+                data=health_data,
+                code=503
+            )), 503
+        
+        # 检查2: 工具导入
+        try:
+            from agent.tools import TOOLS
+            health_data["checks"]["tools_import"] = len(TOOLS) > 0
+        except Exception as e:
+            health_data["message"] = f"工具导入失败: {str(e)}"
+        
+        # 检查3: LLM连接（简单测试）
+        try:
+            from agent.utils import get_compatible_llm
+            llm = get_compatible_llm()
+            health_data["checks"]["llm_connection"] = llm is not None
+        except Exception as e:
+            health_data["message"] = f"LLM连接失败: {str(e)}"
+        
+        # 检查4: 分类器准备
+        try:
+            from agent.classifier import QuestionClassifier
+            classifier = QuestionClassifier()
+            health_data["checks"]["classifier_ready"] = True
+        except Exception as e:
+            health_data["message"] = f"分类器失败: {str(e)}"
+        
+        # 检查5: 完整流程测试（可选）
+        try:
+            if all(health_data["checks"].values()):
+                test_result = agent.health_check()
+                health_data["test_result"] = test_result.get("status") == "healthy"
+                health_data["status"] = test_result.get("status", "unknown")
+                health_data["message"] = test_result.get("message", "健康检查完成")
+            else:
+                health_data["status"] = "degraded"
+                health_data["message"] = "部分组件异常"
+        except Exception as e:
+            health_data["status"] = "degraded"
+            health_data["message"] = f"完整测试失败: {str(e)}"
+        
+        # 根据状态返回相应的HTTP代码
+        if health_data["status"] == "healthy":
+            return jsonify(result.success(data=health_data))
+        elif health_data["status"] == "degraded":
+            return jsonify(result.failed(
+                message="Agent状态: degraded", 
+                data=health_data,
+                code=503
+            )), 503
+        else:
+            return jsonify(result.failed(
+                message="Agent状态: unhealthy", 
+                data=health_data,
+                code=503
+            )), 503
+            
+    except Exception as e:
+        print(f"[ERROR] 健康检查异常: {str(e)}")
+        return jsonify(result.failed(
+            message=f"健康检查失败: {str(e)}", 
+            code=500,
+            data={
+                "status": "error",
+                "timestamp": datetime.now().isoformat()
+            }
+        )), 500
+
 
 
 # ==================== 日常管理API ====================

@@ -15,10 +15,12 @@ class DeepSeekChat(BaseLLMChat):
             return
 
         if "api_key" in config:
-            if "base_url" not in config:
-                self.client = OpenAI(api_key=config["api_key"], base_url="https://api.deepseek.com")
-            else:
-                self.client = OpenAI(api_key=config["api_key"], base_url=config["base_url"])
+            # 使用配置中的base_url，如果没有则使用默认值
+            base_url = config.get("base_url", "https://api.deepseek.com")
+            self.client = OpenAI(
+                api_key=config["api_key"], 
+                base_url=base_url
+            )
 
     def submit_prompt(self, prompt, **kwargs) -> str:
         if prompt is None:

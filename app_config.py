@@ -23,6 +23,7 @@ VECTOR_DB_TYPE = "pgvector"
 # DeepSeek模型配置
 API_DEEPSEEK_CONFIG = {
     "api_key": os.getenv("DEEPSEEK_API_KEY"),  # 从环境变量读取API密钥
+    "base_url": "https://api.deepseek.com",  # DeepSeek API地址
     "model": "deepseek-reasoner",  # deepseek-chat, deepseek-reasoner
     "allow_llm_to_see_data": True,
     "temperature": 0.6,
@@ -35,6 +36,7 @@ API_DEEPSEEK_CONFIG = {
 # Qwen模型配置
 API_QIANWEN_CONFIG = {
     "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",  # 千问API地址
     "model": "qwen-plus",
     "allow_llm_to_see_data": True,
     "temperature": 0.6,
