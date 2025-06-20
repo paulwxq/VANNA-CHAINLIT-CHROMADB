@@ -235,14 +235,21 @@
   - 样例值：`False`
   - 功能：将上下文问题合并优化
 
-### 2. 思考过程显示
-- **`DISPLAY_SUMMARY_THINKING`**: 是否在摘要中显示思考过程
+### 2. 结果摘要生成
+- **`ENABLE_RESULT_SUMMARY`**: 是否启用数据库查询结果摘要生成
+  - 可选值：`True` 或 `False`
+  - 默认值：`True`
+  - 样例值：`True`
+  - 功能：控制是否为数据库查询结果生成自然语言摘要。禁用时可节省LLM调用，仅影响数据库查询，不影响一般聊天
+
+### 3. 思考过程显示
+- **`DISPLAY_RESULT_THINKING`**: 是否在返回结果中显示思考过程
   - 可选值：`True` 或 `False`
   - 默认值：`False`
   - 样例值：`False`
   - 功能：控制是否显示 `<think></think>` 标签内容
 
-### 3. SQL错误修正
+### 4. SQL错误修正
 - **`ENABLE_ERROR_SQL_PROMPT`**: 是否启用SQL错误修正提示
   - 可选值：`True` 或 `False`
   - 默认值：`True`

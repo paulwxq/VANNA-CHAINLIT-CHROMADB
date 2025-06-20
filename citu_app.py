@@ -6,7 +6,7 @@ import pandas as pd
 import common.result as result
 from datetime import datetime, timedelta
 from common.session_aware_cache import WebSessionAwareMemoryCache
-from app_config import API_MAX_RETURN_ROWS
+from app_config import API_MAX_RETURN_ROWS, ENABLE_RESULT_SUMMARY
 import re
 import chainlit as cl
 import json
@@ -99,26 +99,34 @@ def ask_full():
         rows, columns = [], []
         summary = None
         
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
+        if isinstance(df, pd.DataFrame):
+            if not df.empty:
+                rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
             columns = list(df.columns)
             
-            # 生成数据摘要（thinking内容已在base_llm_chat.py中统一处理）
-            try:
-                summary = vn.generate_summary(question=question, df=df)
-                print(f"[INFO] 成功生成摘要: {summary}")
-            except Exception as e:
-                print(f"[WARNING] 生成摘要失败: {str(e)}")
-                summary = None
+            # 生成数据摘要（可通过配置控制，仅在有数据时生成）
+            if ENABLE_RESULT_SUMMARY and not df.empty:
+                try:
+                    summary = vn.generate_summary(question=question, df=df)
+                    print(f"[INFO] 成功生成摘要: {summary}")
+                except Exception as e:
+                    print(f"[WARNING] 生成摘要失败: {str(e)}")
+                    summary = None
 
-        return jsonify(result.success(data={
+        # 构建返回数据，根据摘要配置决定是否包含summary字段
+        response_data = {
             "sql": sql,
             "rows": rows,
             "columns": columns,
-            "summary": summary,  # 添加摘要到返回结果
             "conversation_id": conversation_id if 'conversation_id' in locals() else None,
             "session_id": browser_session_id
-        }))
+        }
+        
+        # 只有启用摘要且确实生成了摘要时才添加summary字段
+        if ENABLE_RESULT_SUMMARY and summary is not None:
+            response_data["summary"] = summary
+            
+        return jsonify(result.success(data=response_data))
         
     except Exception as e:
         print(f"[ERROR] ask_full执行失败: {str(e)}")
@@ -262,9 +270,9 @@ def ask_cached():
             app.cache.set(id=conversation_id, field="sql", value=sql)
             app.cache.set(id=conversation_id, field="df", value=df)
             
-            # 生成并缓存摘要
+            # 生成并缓存摘要（可通过配置控制，仅在有数据时生成）
             summary = None
-            if isinstance(df, pd.DataFrame) and not df.empty:
+            if ENABLE_RESULT_SUMMARY and isinstance(df, pd.DataFrame) and not df.empty:
                 try:
                     summary = vn.generate_summary(question=question, df=df)
                     print(f"[INFO] 成功生成摘要: {summary}")
@@ -277,19 +285,26 @@ def ask_cached():
         # 处理返回数据
         rows, columns = [], []
         
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
+        if isinstance(df, pd.DataFrame):
+            if not df.empty:
+                rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
             columns = list(df.columns)
 
-        return jsonify(result.success(data={
+        # 构建返回数据，根据摘要配置决定是否包含summary字段
+        response_data = {
             "sql": sql,
             "rows": rows,
             "columns": columns,
-            "summary": summary,
             "conversation_id": conversation_id,
             "session_id": browser_session_id,
             "cached": cached_sql is not None  # 标识是否来自缓存
-        }))
+        }
+        
+        # 只有启用摘要且确实生成了摘要时才添加summary字段
+        if ENABLE_RESULT_SUMMARY and summary is not None:
+            response_data["summary"] = summary
+            
+        return jsonify(result.success(data=response_data))
         
     except Exception as e:
         print(f"[ERROR] ask_cached执行失败: {str(e)}")

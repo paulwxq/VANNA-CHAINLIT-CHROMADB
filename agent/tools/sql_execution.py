@@ -5,6 +5,7 @@ import pandas as pd
 import time
 import functools
 from common.vanna_instance import get_vanna_instance
+from app_config import API_MAX_RETURN_ROWS
 
 def retry_on_failure(max_retries: int = 2, delay: float = 1.0, backoff_factor: float = 2.0):
     """
@@ -52,13 +53,13 @@ def retry_on_failure(max_retries: int = 2, delay: float = 1.0, backoff_factor: f
 
 @tool
 @retry_on_failure(max_retries=2)
-def execute_sql(sql: str, max_rows: int = 200) -> Dict[str, Any]:
+def execute_sql(sql: str, max_rows: int = None) -> Dict[str, Any]:
     """
     执行SQL查询并返回结果。
     
     Args:
         sql: 要执行的SQL查询语句
-        max_rows: 最大返回行数，默认200
+        max_rows: 最大返回行数，默认使用API_MAX_RETURN_ROWS配置
         
     Returns:
         包含查询结果的字典，格式：
@@ -69,6 +70,10 @@ def execute_sql(sql: str, max_rows: int = 200) -> Dict[str, Any]:
             "can_retry": bool
         }
     """
+    # 设置默认的最大返回行数，与ask()接口保持一致
+    DEFAULT_MAX_RETURN_ROWS = 200
+    if max_rows is None:
+        max_rows = API_MAX_RETURN_ROWS if API_MAX_RETURN_ROWS is not None else DEFAULT_MAX_RETURN_ROWS
     try:
         print(f"[TOOL:execute_sql] 开始执行SQL: {sql[:100]}...")
         

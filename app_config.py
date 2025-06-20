@@ -37,12 +37,12 @@ API_DEEPSEEK_CONFIG = {
 API_QIANWEN_CONFIG = {
     "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
     "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",  # 千问API地址
-    "model": "qwen-plus",
+    "model": "qwen3-235b-a22b",
     "allow_llm_to_see_data": True,
     "temperature": 0.6,
     "n_results": 6,
     "language": "Chinese",
-    "stream": False,  # 是否使用流式模式
+    "stream": True,  # 是否使用流式模式
     "enable_thinking": False  # 是否启用思考功能（要求stream=True）
 }
 #qwen3-30b-a3b
@@ -133,6 +133,11 @@ TRAINING_DATA_PATH = "./training/data"
 
 # 是否启用问题重写功能，也就是上下文问题合并。
 REWRITE_QUESTION_ENABLED = False
+
+# 是否启用数据库查询结果摘要生成
+# True: 执行完SQL后生成摘要（默认）
+# False: 只返回SQL执行结果，跳过摘要生成，节省LLM调用
+ENABLE_RESULT_SUMMARY = True
 
 # 是否在返回结果中显示thinking过程
 # True: 显示 <think></think> 内容

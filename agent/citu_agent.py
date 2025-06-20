@@ -9,6 +9,7 @@ from agent.state import AgentState
 from agent.classifier import QuestionClassifier
 from agent.tools import TOOLS, generate_sql, execute_sql, generate_summary, general_chat
 from agent.utils import get_compatible_llm
+from app_config import ENABLE_RESULT_SUMMARY
 
 class CituLangGraphAgent:
     """Citu LangGraph智能助手主类 - 使用@tool装饰器 + Agent工具调用"""
@@ -136,7 +137,7 @@ class CituLangGraphAgent:
             
             # 步骤2：执行SQL
             print(f"[DATABASE_AGENT] 步骤2：执行SQL")
-            execute_result = execute_sql.invoke({"sql": sql, "max_rows": 200})
+            execute_result = execute_sql.invoke({"sql": sql})
             
             if not execute_result.get("success"):
                 print(f"[DATABASE_AGENT] SQL执行失败: {execute_result.get('error')}")
@@ -150,21 +151,25 @@ class CituLangGraphAgent:
             state["data_result"] = data_result
             print(f"[DATABASE_AGENT] SQL执行成功，返回 {data_result.get('row_count', 0)} 行数据")
             
-            # 步骤3：生成摘要
-            print(f"[DATABASE_AGENT] 步骤3：生成摘要")
-            summary_result = generate_summary.invoke({
-                "question": question,
-                "data_result": data_result,
-                "sql": sql
-            })
-            
-            if not summary_result.get("success"):
-                print(f"[DATABASE_AGENT] 摘要生成失败: {summary_result.get('message')}")
-                # 摘要生成失败不是致命错误，使用默认摘要
-                state["summary"] = f"查询执行完成，共返回 {data_result.get('row_count', 0)} 条记录。"
+            # 步骤3：生成摘要（可通过配置控制，仅在有数据时生成）
+            if ENABLE_RESULT_SUMMARY and data_result.get('row_count', 0) > 0:
+                print(f"[DATABASE_AGENT] 步骤3：生成摘要")
+                summary_result = generate_summary.invoke({
+                    "question": question,
+                    "data_result": data_result,
+                    "sql": sql
+                })
+                
+                if not summary_result.get("success"):
+                    print(f"[DATABASE_AGENT] 摘要生成失败: {summary_result.get('message')}")
+                    # 摘要生成失败不是致命错误，使用默认摘要
+                    state["summary"] = f"查询执行完成，共返回 {data_result.get('row_count', 0)} 条记录。"
+                else:
+                    state["summary"] = summary_result.get("summary")
+                    print(f"[DATABASE_AGENT] 摘要生成成功")
             else:
-                state["summary"] = summary_result.get("summary")
-                print(f"[DATABASE_AGENT] 摘要生成成功")
+                print(f"[DATABASE_AGENT] 跳过摘要生成（ENABLE_RESULT_SUMMARY={ENABLE_RESULT_SUMMARY}，数据行数={data_result.get('row_count', 0)}）")
+                # 不生成摘要时，不设置summary字段，让格式化响应节点决定如何处理
             
             state["current_step"] = "database_completed"
             state["execution_path"].append("agent_database")
@@ -260,6 +265,25 @@ class CituLangGraphAgent:
                         "sql": state.get("sql"),
                         "data_result": state.get("data_result"),  # 可能为None（解释性响应）
                         "summary": state["summary"],
+                        "execution_path": state["execution_path"],
+                        "classification_info": {
+                            "confidence": state["classification_confidence"],
+                            "reason": state["classification_reason"],
+                            "method": state["classification_method"]
+                        }
+                    }
+                elif state.get("data_result"):
+                    # 有数据但没有摘要（摘要被配置禁用）
+                    data_result = state.get("data_result")
+                    row_count = data_result.get("row_count", 0)
+                    
+                    # 构建基本响应，不包含summary字段
+                    state["final_response"] = {
+                        "success": True,
+                        "response": f"查询执行完成，共返回 {row_count} 条记录。",
+                        "type": "DATABASE",
+                        "sql": state.get("sql"),
+                        "data_result": data_result,
                         "execution_path": state["execution_path"],
                         "classification_info": {
                             "confidence": state["classification_confidence"],
