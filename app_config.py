@@ -43,7 +43,7 @@ API_QIANWEN_CONFIG = {
     "n_results": 6,
     "language": "Chinese",
     "stream": True,  # 是否使用流式模式
-    "enable_thinking": False  # 是否启用思考功能（要求stream=True）
+    "enable_thinking": True  # 是否启用思考功能（要求stream=True）
 }
 #qwen3-30b-a3b
 #qwen3-235b-a22b
@@ -143,7 +143,7 @@ ENABLE_RESULT_SUMMARY = True
 # True: 显示 <think></think> 内容
 # False: 隐藏 <think></think> 内容，只显示最终答案
 # 此参数影响：摘要生成、SQL生成解释性文本、API返回结果等所有输出内容
-DISPLAY_RESULT_THINKING = False
+DISPLAY_RESULT_THINKING = True
 
 # 是否启用向量查询结果得分阈值过滤
 # result = max((n + 1) // 2, 1)

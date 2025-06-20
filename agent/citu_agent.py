@@ -119,7 +119,7 @@ class CituLangGraphAgent:
             if error_type == "llm_explanation":
                 # LLM返回了解释性文本，直接作为最终答案
                 explanation = sql_result.get("error", "")
-                state["summary"] = explanation + " 请尝试提问其它问题。"
+                state["chat_response"] = explanation + " 请尝试提问其它问题。"
                 state["current_step"] = "database_completed"
                 state["execution_path"].append("agent_database")
                 print(f"[DATABASE_AGENT] 返回LLM解释性答案: {explanation}")
@@ -129,7 +129,7 @@ class CituLangGraphAgent:
             from agent.utils import _is_valid_sql_format
             if not _is_valid_sql_format(sql):
                 # 内容看起来不是SQL，当作解释性响应处理
-                state["summary"] = sql + " 请尝试提问其它问题。"
+                state["chat_response"] = sql + " 请尝试提问其它问题。"
                 state["current_step"] = "database_completed"  
                 state["execution_path"].append("agent_database")
                 print(f"[DATABASE_AGENT] 内容不是有效SQL，当作解释返回: {sql}")
@@ -256,14 +256,29 @@ class CituLangGraphAgent:
             
             elif state["question_type"] == "DATABASE":
                 # 数据库查询类型
-                if state.get("summary"):
-                    # 有摘要的情况（包括解释性响应和完整查询结果）
+                if state.get("chat_response"):
+                    # SQL生成失败的解释性响应（不受ENABLE_RESULT_SUMMARY配置影响）
                     state["final_response"] = {
                         "success": True,
-                        "response": state["summary"],
+                        "response": state["chat_response"],
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "data_result": state.get("data_result"),  # 可能为None（解释性响应）
+                        "data_result": state.get("data_result"),
+                        "execution_path": state["execution_path"],
+                        "classification_info": {
+                            "confidence": state["classification_confidence"],
+                            "reason": state["classification_reason"],
+                            "method": state["classification_method"]
+                        }
+                    }
+                elif state.get("summary"):
+                    # 正常的数据库查询结果，有摘要的情况
+                    # 不将summary复制到response，让response保持为空
+                    state["final_response"] = {
+                        "success": True,
+                        "type": "DATABASE",
+                        "sql": state.get("sql"),
+                        "data_result": state.get("data_result"),
                         "summary": state["summary"],
                         "execution_path": state["execution_path"],
                         "classification_info": {
@@ -277,10 +292,10 @@ class CituLangGraphAgent:
                     data_result = state.get("data_result")
                     row_count = data_result.get("row_count", 0)
                     
-                    # 构建基本响应，不包含summary字段
+                    # 构建基本响应，不包含summary字段和response字段
+                    # 用户应该直接从data_result.columns和data_result.rows获取数据
                     state["final_response"] = {
                         "success": True,
-                        "response": f"查询执行完成，共返回 {row_count} 条记录。",
                         "type": "DATABASE",
                         "sql": state.get("sql"),
                         "data_result": data_result,
