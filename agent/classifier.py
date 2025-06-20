@@ -17,7 +17,7 @@ class QuestionClassifier:
     """
     
     def __init__(self):
-        # 从配置文件加载阈值参数
+    # 从配置文件加载阈值参数
         try:
             from agent.config import get_current_config, get_nested_config
             config = get_current_config()
@@ -40,10 +40,12 @@ class QuestionClassifier:
             self.uncertain_confidence = 0.2
             print("[CLASSIFIER] 配置文件不可用，使用默认分类器参数")
         
+        # 移除了 LLM 实例存储，现在使用 Vanna 实例
+        
         self.db_keywords = {
             "数据类": [
                 "收入", "销量", "数量", "平均", "总计", "统计", "合计", "累计",
-                "营业额", "利润", "成本", "费用", "金额", "价格", "单价"
+                "营业额", "利润", "成本", "费用", "金额", "价格", "单价", "服务区", "多少个"
             ],
             "分析类": [
                 "分组", "排行", "排名", "增长率", "趋势", "对比", "比较", "占比",
@@ -62,7 +64,7 @@ class QuestionClassifier:
         # SQL关键词
         self.sql_patterns = [
             r"\b(select|from|where|group by|order by|having|join)\b",
-            r"\b(查询|统计|汇总|计算|分析)\b",
+            r"\b(查询|统计|汇总|计算|分析|有多少)\b",
             r"\b(表|字段|数据库)\b"
         ]
         
@@ -156,39 +158,40 @@ class QuestionClassifier:
                 method="rule_based"
             )
     
+
     def _llm_classify(self, question: str) -> ClassificationResult:
         """基于LLM的分类"""
         try:
-            from common.utils import get_current_llm_config
-            from customllm.qianwen_chat import QianWenChat
-            
-            llm_config = get_current_llm_config()
-            llm = QianWenChat(config=llm_config)
+            # 使用 Vanna 实例进行分类
+            from common.vanna_instance import get_vanna_instance
+            vn = get_vanna_instance()
             
             # 分类提示词
             classification_prompt = f"""
-请判断以下问题是否需要查询数据库。
+    请判断以下问题是否需要查询数据库。
 
-问题: {question}
+    问题: {question}
 
-判断标准:
-1. 如果问题涉及数据查询、统计、分析、报表等，返回 "DATABASE"
-2. 如果问题是一般性咨询、概念解释、操作指导、闲聊等，返回 "CHAT"
+    判断标准:
+    1. 如果问题涉及数据查询、统计、分析、报表等，返回 "DATABASE"
+    2. 如果问题是一般性咨询、概念解释、操作指导、闲聊等，返回 "CHAT"
 
-请只返回 "DATABASE" 或 "CHAT"，并在下一行简要说明理由。
+    请只返回 "DATABASE" 或 "CHAT"，并在下一行简要说明理由。
 
-格式:
-分类: [DATABASE/CHAT]
-理由: [简要说明]
-置信度: [0.0-1.0之间的数字]
-"""
+    格式:
+    分类: [DATABASE/CHAT]
+    理由: [简要说明]
+    置信度: [0.0-1.0之间的数字]
+    """
             
-            prompt = [
-                llm.system_message("你是一个专业的问题分类助手，能准确判断问题类型。"),
-                llm.user_message(classification_prompt)
-            ]
+            # 分类专用的系统提示词
+            system_prompt = "你是一个专业的问题分类助手，能准确判断问题类型。请严格按照要求的格式返回分类结果。"
             
-            response = llm.submit_prompt(prompt)
+            # 使用 Vanna 实例的 chat_with_llm 方法
+            response = vn.chat_with_llm(
+                question=classification_prompt,
+                system_prompt=system_prompt
+            )
             
             # 解析响应
             return self._parse_llm_response(response)
@@ -201,7 +204,7 @@ class QuestionClassifier:
                 reason=f"LLM分类异常: {str(e)}",
                 method="llm_error"
             )
-    
+        
     def _parse_llm_response(self, response: str) -> ClassificationResult:
         """解析LLM响应"""
         try:

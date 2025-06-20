@@ -2,9 +2,7 @@
 from langchain.tools import tool
 from typing import Dict, Any
 import pandas as pd
-import re
 from common.vanna_instance import get_vanna_instance
-import app_config
 
 @tool
 def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Dict[str, Any]:
@@ -44,7 +42,7 @@ def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Di
                 "message": "空数据摘要"
             }
         
-        # 调用Vanna生成摘要
+        # 调用Vanna生成摘要（thinking内容已在base_llm_chat.py中统一处理）
         vn = get_vanna_instance()
         summary = vn.generate_summary(question=question, df=df)
         
@@ -52,15 +50,11 @@ def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Di
             # 生成默认摘要
             summary = _generate_default_summary(question, data_result, sql)
         
-        # 处理thinking内容
-        display_summary_thinking = getattr(app_config, 'DISPLAY_SUMMARY_THINKING', False)
-        processed_summary = _process_thinking_content(summary, display_summary_thinking)
-        
-        print(f"[TOOL:generate_summary] 摘要生成成功: {processed_summary[:100]}...")
+        print(f"[TOOL:generate_summary] 摘要生成成功: {summary[:100]}...")
         
         return {
             "success": True,
-            "summary": processed_summary,
+            "summary": summary,
             "message": "摘要生成成功"
         }
         
@@ -90,19 +84,6 @@ def _reconstruct_dataframe(data_result: Dict[str, Any]) -> pd.DataFrame:
     except Exception as e:
         print(f"[WARNING] DataFrame重构失败: {str(e)}")
         return pd.DataFrame()
-
-def _process_thinking_content(summary: str, display_thinking: bool) -> str:
-    """处理thinking内容"""
-    if not summary:
-        return ""
-    
-    if not display_thinking:
-        # 移除thinking标签内容
-        cleaned_summary = re.sub(r'<think>.*?</think>\s*', '', summary, flags=re.DOTALL | re.IGNORECASE)
-        cleaned_summary = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_summary)
-        return cleaned_summary.strip()
-    
-    return summary
 
 def _generate_default_summary(question: str, data_result: Dict[str, Any], sql: str) -> str:
     """生成默认摘要"""

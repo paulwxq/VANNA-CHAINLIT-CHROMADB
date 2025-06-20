@@ -28,7 +28,7 @@ def generate_sql(question: str, allow_llm_to_see_data: bool = True) -> Dict[str,
         sql = vn.generate_sql(question=question, allow_llm_to_see_data=allow_llm_to_see_data)
         
         if sql is None:
-            # 检查是否有LLM解释性文本
+            # 检查是否有LLM解释性文本（已在base_llm_chat.py中处理thinking内容）
             explanation = getattr(vn, 'last_llm_explanation', None)
             if explanation:
                 return {
@@ -65,6 +65,7 @@ def generate_sql(question: str, allow_llm_to_see_data: bool = True) -> Dict[str,
         ]
         
         if any(indicator in sql_clean.lower() for indicator in error_indicators):
+            # 这是解释性文本（已在base_llm_chat.py中处理thinking内容）
             return {
                 "success": False,
                 "sql": None,

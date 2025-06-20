@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objs
 from vanna.base import VannaBase
 # 导入配置参数
-from app_config import REWRITE_QUESTION_ENABLED, DISPLAY_SUMMARY_THINKING
+from app_config import REWRITE_QUESTION_ENABLED, DISPLAY_RESULT_THINKING
 
 
 class BaseLLMChat(VannaBase, ABC):
@@ -220,6 +220,12 @@ class BaseLLMChat(VannaBase, ABC):
 
         # 调用submit_prompt方法，并清理结果
         plotly_code = self.submit_prompt(message_log, **kwargs)
+        
+        # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
+        if not DISPLAY_RESULT_THINKING:
+            original_code = plotly_code
+            plotly_code = self._remove_thinking_content(plotly_code)
+            print(f"[DEBUG] generate_plotly_code隐藏thinking内容 - 原始长度: {len(original_code)}, 处理后长度: {len(plotly_code)}")
 
         return self._sanitize_plotly_code(self._extract_python_code(plotly_code))
 
@@ -290,7 +296,11 @@ class BaseLLMChat(VannaBase, ABC):
             
             if not sql or sql.strip() == "":
                 print(f"[WARNING] 生成的SQL为空")
-                self.last_llm_explanation = "无法生成SQL查询，可能是问题描述不够清晰或缺少必要的数据表信息。"
+                explanation = "无法生成SQL查询，可能是问题描述不够清晰或缺少必要的数据表信息。"
+                # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
+                if not DISPLAY_RESULT_THINKING:
+                    explanation = self._remove_thinking_content(explanation)
+                self.last_llm_explanation = explanation
                 return None
             
             # 替换 "\_" 为 "_"，解决特殊字符转义问题
@@ -309,16 +319,24 @@ class BaseLLMChat(VannaBase, ABC):
             for indicator in error_indicators:
                 if indicator in sql_lower:
                     print(f"[WARNING] LLM返回错误信息而非SQL: {sql}")
-                    # 保存LLM的解释性文本
-                    self.last_llm_explanation = sql
+                    # 保存LLM的解释性文本，并根据配置处理thinking内容
+                    explanation = sql
+                    if not DISPLAY_RESULT_THINKING:
+                        explanation = self._remove_thinking_content(explanation)
+                        print(f"[DEBUG] 隐藏thinking内容 - SQL生成解释性文本")
+                    self.last_llm_explanation = explanation
                     return None
             
             # 简单检查是否像SQL语句（至少包含一些SQL关键词）
             sql_keywords = ["select", "insert", "update", "delete", "with", "from", "where"]
             if not any(keyword in sql_lower for keyword in sql_keywords):
                 print(f"[WARNING] 返回内容不像有效SQL: {sql}")
-                # 保存LLM的解释性文本
-                self.last_llm_explanation = sql
+                # 保存LLM的解释性文本，并根据配置处理thinking内容
+                explanation = sql
+                if not DISPLAY_RESULT_THINKING:
+                    explanation = self._remove_thinking_content(explanation)
+                    print(f"[DEBUG] 隐藏thinking内容 - SQL生成非有效SQL内容")
+                self.last_llm_explanation = explanation
                 return None
                 
             print(f"[SUCCESS] 成功生成SQL:\n {sql}")
@@ -332,7 +350,11 @@ class BaseLLMChat(VannaBase, ABC):
             # 导入traceback以获取详细错误信息
             import traceback
             print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
-            self.last_llm_explanation = f"SQL生成过程中出现异常: {str(e)}"
+            explanation = f"SQL生成过程中出现异常: {str(e)}"
+            # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
+            if not DISPLAY_RESULT_THINKING:
+                explanation = self._remove_thinking_content(explanation)
+            self.last_llm_explanation = explanation
             return None
 
     def generate_question(self, sql: str, **kwargs) -> str:
@@ -344,21 +366,64 @@ class BaseLLMChat(VannaBase, ABC):
             self.user_message(sql)
         ]
         response = self.submit_prompt(prompt, **kwargs)
+        
+        # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
+        if not DISPLAY_RESULT_THINKING:
+            original_response = response
+            response = self._remove_thinking_content(response)
+            print(f"[DEBUG] generate_question隐藏thinking内容 - 原始长度: {len(original_response)}, 处理后长度: {len(response)}")
+        
         return response
 
-    def chat_with_llm(self, question: str, **kwargs) -> str:
+    # def chat_with_llm(self, question: str, **kwargs) -> str:
+    #     """
+    #     直接与LLM对话，不涉及SQL生成
+    #     """
+    #     try:
+    #         prompt = [
+    #             self.system_message(
+    #                 "你是一个友好的AI助手。如果用户询问的是数据库相关问题，请建议他们重新表述问题以便进行SQL查询。对于其他问题，请尽力提供有帮助的回答。"
+    #             ),
+    #             self.user_message(question)
+    #         ]
+    #         response = self.submit_prompt(prompt, **kwargs)
+    #         return response
+    #     except Exception as e:
+    #         print(f"[ERROR] LLM对话失败: {str(e)}")
+    #         return f"抱歉，我暂时无法回答您的问题。请稍后再试。"
+
+    def chat_with_llm(self, question: str, system_prompt: str = None, **kwargs) -> str:
         """
-        直接与LLM对话，不涉及SQL生成
+        直接与LLM对话，不涉及SQL生成        
+        Args:
+            question: 用户问题
+            system_prompt: 自定义系统提示词，如果为None则使用默认提示词
+            **kwargs: 其他传递给submit_prompt的参数            
+        Returns:
+            LLM的响应文本
         """
         try:
+            # 如果没有提供自定义系统提示词，使用默认的
+            if system_prompt is None:
+                system_prompt = (
+                    "你是一个友好的AI助手，请用中文回答用户的问题。"
+                )
+            
             prompt = [
-                self.system_message(
-                    "你是一个友好的AI助手。如果用户询问的是数据库相关问题，请建议他们重新表述问题以便进行SQL查询。对于其他问题，请尽力提供有帮助的回答。"
-                ),
+                self.system_message(system_prompt),
                 self.user_message(question)
             ]
+            
             response = self.submit_prompt(prompt, **kwargs)
+            
+            # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
+            if not DISPLAY_RESULT_THINKING:
+                original_response = response
+                response = self._remove_thinking_content(response)
+                print(f"[DEBUG] chat_with_llm隐藏thinking内容 - 原始长度: {len(original_response)}, 处理后长度: {len(response)}")
+            
             return response
+            
         except Exception as e:
             print(f"[ERROR] LLM对话失败: {str(e)}")
             return f"抱歉，我暂时无法回答您的问题。请稍后再试。"
@@ -395,6 +460,13 @@ class BaseLLMChat(VannaBase, ABC):
             ]
             
             rewritten_question = self.submit_prompt(prompt=prompt, **kwargs)
+            
+            # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
+            if not DISPLAY_RESULT_THINKING:
+                original_question = rewritten_question
+                rewritten_question = self._remove_thinking_content(rewritten_question)
+                print(f"[DEBUG] generate_rewritten_question隐藏thinking内容 - 原始长度: {len(original_question)}, 处理后长度: {len(rewritten_question)}")
+            
             print(f"[DEBUG] 合并后的问题: {rewritten_question}")
             return rewritten_question
             
@@ -452,7 +524,7 @@ class BaseLLMChat(VannaBase, ABC):
             summary = self.submit_prompt(message_log, **kwargs)
             
             # 检查是否需要隐藏 thinking 内容
-            display_thinking = kwargs.get("display_summary_thinking", DISPLAY_SUMMARY_THINKING)
+            display_thinking = kwargs.get("display_result_thinking", DISPLAY_RESULT_THINKING)
             
             if not display_thinking:
                 # 移除 <think></think> 标签及其内容

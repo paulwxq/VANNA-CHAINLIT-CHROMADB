@@ -134,10 +134,11 @@ TRAINING_DATA_PATH = "./training/data"
 # 是否启用问题重写功能，也就是上下文问题合并。
 REWRITE_QUESTION_ENABLED = False
 
-# 是否在摘要中显示thinking过程
+# 是否在返回结果中显示thinking过程
 # True: 显示 <think></think> 内容
 # False: 隐藏 <think></think> 内容，只显示最终答案
-DISPLAY_SUMMARY_THINKING = False
+# 此参数影响：摘要生成、SQL生成解释性文本、API返回结果等所有输出内容
+DISPLAY_RESULT_THINKING = False
 
 # 是否启用向量查询结果得分阈值过滤
 # result = max((n + 1) // 2, 1)

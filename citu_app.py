@@ -6,8 +6,10 @@ import pandas as pd
 import common.result as result
 from datetime import datetime, timedelta
 from common.session_aware_cache import WebSessionAwareMemoryCache
-from app_config import API_MAX_RETURN_ROWS, DISPLAY_SUMMARY_THINKING
+from app_config import API_MAX_RETURN_ROWS
 import re
+import chainlit as cl
+import json
 
 # 设置默认的最大返回行数
 DEFAULT_MAX_RETURN_ROWS = 200
@@ -31,34 +33,6 @@ app = VannaFlaskApp(
     followup_questions=True,
     debug=True
 )
-
-
-def _remove_thinking_content(text: str) -> str:
-    """
-    移除文本中的 <think></think> 标签及其内容
-    复用自 base_llm_chat.py 中的同名方法
-    
-    Args:
-        text (str): 包含可能的 thinking 标签的文本
-        
-    Returns:
-        str: 移除 thinking 内容后的文本
-    """
-    if not text:
-        return text
-    
-    # 移除 <think>...</think> 标签及其内容（支持多行）
-    # 使用 re.DOTALL 标志使 . 匹配包括换行符在内的任何字符
-    cleaned_text = re.sub(r'<think>.*?</think>\s*', '', text, flags=re.DOTALL | re.IGNORECASE)
-    
-    # 移除可能的多余空行
-    cleaned_text = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_text)
-    
-    # 去除开头和结尾的空白字符
-    cleaned_text = cleaned_text.strip()
-    
-    return cleaned_text
-
 
 # 修改ask接口，支持前端传递session_id
 @app.flask_app.route('/api/v0/ask', methods=['POST'])
@@ -89,18 +63,12 @@ def ask_full():
 
         # 关键：检查是否有LLM解释性文本（无法生成SQL的情况）
         if sql is None and hasattr(vn, 'last_llm_explanation') and vn.last_llm_explanation:
-            # 根据 DISPLAY_SUMMARY_THINKING 参数决定是否移除 thinking 内容
-            explanation_message = vn.last_llm_explanation
-            if not DISPLAY_SUMMARY_THINKING:
-                explanation_message = _remove_thinking_content(explanation_message)
-                print(f"[DEBUG] 隐藏thinking内容 - 原始长度: {len(vn.last_llm_explanation)}, 处理后长度: {len(explanation_message)}")
-            
             # 在解释性文本末尾添加提示语
-            explanation_message = explanation_message + "请尝试提问其它问题。"
+            explanation_message = vn.last_llm_explanation + "请尝试提问其它问题。"
             
             # 使用 result.failed 返回，success为false，但在message中包含LLM友好的解释
             return jsonify(result.failed(
-                message=explanation_message,  # 处理后的解释性文本
+                message=explanation_message,  # 已处理的解释性文本
                 code=400,  # 业务逻辑错误，使用400
                 data={
                     "sql": None,
@@ -135,7 +103,7 @@ def ask_full():
             rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
             columns = list(df.columns)
             
-            # 生成数据摘要
+            # 生成数据摘要（thinking内容已在base_llm_chat.py中统一处理）
             try:
                 summary = vn.generate_summary(question=question, df=df)
                 print(f"[INFO] 成功生成摘要: {summary}")
@@ -157,14 +125,8 @@ def ask_full():
         
         # 即使发生异常，也检查是否有业务层面的解释
         if hasattr(vn, 'last_llm_explanation') and vn.last_llm_explanation:
-            # 根据 DISPLAY_SUMMARY_THINKING 参数决定是否移除 thinking 内容
-            explanation_message = vn.last_llm_explanation
-            if not DISPLAY_SUMMARY_THINKING:
-                explanation_message = _remove_thinking_content(explanation_message)
-                print(f"[DEBUG] 异常处理中隐藏thinking内容 - 原始长度: {len(vn.last_llm_explanation)}, 处理后长度: {len(explanation_message)}")
-            
             # 在解释性文本末尾添加提示语
-            explanation_message = explanation_message + "请尝试提问其它问题。"
+            explanation_message = vn.last_llm_explanation + "请尝试提问其它问题。"
             
             return jsonify(result.failed(
                 message=explanation_message,
@@ -262,14 +224,8 @@ def ask_cached():
             
             # 检查是否有LLM解释性文本（无法生成SQL的情况）
             if sql is None and hasattr(vn, 'last_llm_explanation') and vn.last_llm_explanation:
-                # 根据 DISPLAY_SUMMARY_THINKING 参数决定是否移除 thinking 内容
-                explanation_message = vn.last_llm_explanation
-                if not DISPLAY_SUMMARY_THINKING:
-                    explanation_message = _remove_thinking_content(explanation_message)
-                    print(f"[DEBUG] ask_cached中隐藏thinking内容 - 原始长度: {len(vn.last_llm_explanation)}, 处理后长度: {len(explanation_message)}")
-                
                 # 在解释性文本末尾添加提示语
-                explanation_message = explanation_message + "请尝试用其它方式提问。"
+                explanation_message = vn.last_llm_explanation + "请尝试用其它方式提问。"
                 
                 return jsonify(result.failed(
                     message=explanation_message,
