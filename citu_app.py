@@ -401,11 +401,24 @@ def get_citu_langraph_agent():
     if citu_langraph_agent is None:
         try:
             from agent.citu_agent import CituLangGraphAgent
+            print("[CITU_APP] 开始创建LangGraph Agent实例...")
             citu_langraph_agent = CituLangGraphAgent()
             print("[CITU_APP] LangGraph Agent实例创建成功")
+        except ImportError as e:
+            print(f"[CRITICAL] Agent模块导入失败: {str(e)}")
+            print("[CRITICAL] 请检查agent模块是否存在以及依赖是否正确安装")
+            raise Exception(f"Agent模块导入失败: {str(e)}")
         except Exception as e:
-            print(f"[ERROR] LangGraph Agent实例创建失败: {str(e)}")
-            raise
+            print(f"[CRITICAL] LangGraph Agent实例创建失败: {str(e)}")
+            print(f"[CRITICAL] 错误类型: {type(e).__name__}")
+            # 提供更有用的错误信息
+            if "config" in str(e).lower():
+                print("[CRITICAL] 可能是配置文件问题，请检查配置")
+            elif "llm" in str(e).lower():
+                print("[CRITICAL] 可能是LLM连接问题，请检查LLM配置")
+            elif "tool" in str(e).lower():
+                print("[CRITICAL] 可能是工具加载问题，请检查工具模块")
+            raise Exception(f"Agent初始化失败: {str(e)}")
     return citu_langraph_agent
 
 @app.flask_app.route('/api/v0/ask_agent', methods=['POST'])
@@ -453,8 +466,22 @@ def ask_agent():
         return jsonify(result.failed(message="未提供问题", code=400)), 400
 
     try:
-        # 获取Agent实例
-        agent = get_citu_langraph_agent()
+        # 专门处理Agent初始化异常
+        try:
+            agent = get_citu_langraph_agent()
+        except Exception as e:
+            print(f"[CRITICAL] Agent初始化失败: {str(e)}")
+            return jsonify(result.failed(
+                message="AI服务暂时不可用，请稍后重试", 
+                code=503,
+                data={
+                    "session_id": browser_session_id,
+                    "execution_path": ["agent_init_error"],
+                    "agent_version": "langgraph_v1",
+                    "timestamp": datetime.now().isoformat(),
+                    "error_type": "agent_initialization_failed"
+                }
+            )), 503
         
         # 调用Agent处理问题
         agent_result = agent.process_question(
@@ -492,10 +519,14 @@ def ask_agent():
     except Exception as e:
         print(f"[ERROR] ask_agent执行失败: {str(e)}")
         return jsonify(result.failed(
-            message=f"Agent系统异常: {str(e)}", 
+            message="请求处理异常，请稍后重试", 
             code=500,
             data={
-                "timestamp": datetime.now().isoformat()
+                "session_id": browser_session_id,
+                "execution_path": ["general_error"],
+                "agent_version": "langgraph_v1",
+                "timestamp": datetime.now().isoformat(),
+                "error_type": "request_processing_failed"
             }
         )), 500
 

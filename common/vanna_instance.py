@@ -4,7 +4,6 @@ Vanna实例单例管理器
 """
 import threading
 from typing import Optional
-from core.vanna_llm_factory import create_vanna_instance
 
 # 全局变量
 _vanna_instance: Optional[object] = None
@@ -25,6 +24,8 @@ def get_vanna_instance():
             if _vanna_instance is None:
                 print("[VANNA_SINGLETON] 创建 Vanna 实例...")
                 try:
+                    # 延迟导入，避免循环导入
+                    from core.vanna_llm_factory import create_vanna_instance
                     _vanna_instance = create_vanna_instance()
                     print("[VANNA_SINGLETON] Vanna 实例创建成功")
                 except Exception as e:
