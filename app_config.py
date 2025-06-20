@@ -158,3 +158,8 @@ RESULT_VECTOR_ERROR_SQL_SCORE_THRESHOLD = 0.8
 
 # 接口返回查询记录的最大行数
 API_MAX_RETURN_ROWS = 1000
+
+
+# 仅LLM分类:"llm_only", 直接数据库查询："database_direct", 直接聊天对话: "chat_direct", 混合模式: "hybrid"
+# 混合模式 hybrid（推荐）
+QUESTION_ROUTING_MODE = "hybrid"

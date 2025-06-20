@@ -1,4 +1,5 @@
-# agent/state.py
+# 在 agent/state.py 中更新 AgentState 定义
+
 from typing import TypedDict, Literal, Optional, List, Dict, Any
 
 class AgentState(TypedDict):
@@ -12,7 +13,7 @@ class AgentState(TypedDict):
     question_type: Literal["DATABASE", "CHAT", "UNCERTAIN"]
     classification_confidence: float
     classification_reason: str
-    classification_method: str  # "rule", "llm", "hybrid"
+    classification_method: str  # "rule_based_*", "enhanced_llm", "direct_database", "direct_chat", etc.
     
     # 数据库查询流程状态
     sql: Optional[str]
@@ -38,3 +39,6 @@ class AgentState(TypedDict):
     
     # 调试信息
     debug_info: Dict[str, Any]
+    
+    # 路由模式相关
+    routing_mode: Optional[str]  # 记录使用的路由模式

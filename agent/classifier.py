@@ -114,9 +114,46 @@ class QuestionClassifier:
             "教程", "指南", "手册"
         ]
     
+# 修改 agent/classifier.py 中的 classify 方法
+
     def classify(self, question: str) -> ClassificationResult:
         """
-        主分类方法：规则预筛选 + 增强LLM分类
+        主分类方法：根据配置的路由模式进行分类
+        """
+        try:
+            from app_config import QUESTION_ROUTING_MODE
+            print(f"[CLASSIFIER] 使用路由模式: {QUESTION_ROUTING_MODE}")
+        except ImportError:
+            QUESTION_ROUTING_MODE = "hybrid"
+            print(f"[CLASSIFIER] 配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
+        
+        # 根据路由模式选择分类策略
+        if QUESTION_ROUTING_MODE == "hybrid":
+            return self._hybrid_classify(question)
+        elif QUESTION_ROUTING_MODE == "llm_only":
+            return self._enhanced_llm_classify(question)
+        elif QUESTION_ROUTING_MODE == "database_direct":
+            return ClassificationResult(
+                question_type="DATABASE",
+                confidence=1.0,
+                reason="配置为直接数据库查询模式",
+                method="direct_database"
+            )
+        elif QUESTION_ROUTING_MODE == "chat_direct":
+            return ClassificationResult(
+                question_type="CHAT",
+                confidence=1.0,
+                reason="配置为直接聊天模式",
+                method="direct_chat"
+            )
+        else:
+            print(f"[WARNING] 未知的路由模式: {QUESTION_ROUTING_MODE}，使用默认hybrid模式")
+            return self._hybrid_classify(question)
+
+    def _hybrid_classify(self, question: str) -> ClassificationResult:
+        """
+        混合分类模式：规则预筛选 + 增强LLM分类
+        这是原来的 classify 方法逻辑
         """
         # 第一步：规则预筛选
         rule_result = self._rule_based_classify(question)
