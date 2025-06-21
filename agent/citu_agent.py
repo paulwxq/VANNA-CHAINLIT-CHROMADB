@@ -276,11 +276,15 @@ class CituLangGraphAgent:
             
             question = state["question"]
             
-            # 构建上下文
+            # 构建上下文 - 仅使用真实的对话历史上下文
+            # 注意：不要将分类原因传递给LLM，那是系统内部的路由信息
             enable_context_injection = self.config.get("chat_agent", {}).get("enable_context_injection", True)
             context = None
-            if enable_context_injection and state.get("classification_reason"):
-                context = f"分类原因: {state['classification_reason']}"
+            if enable_context_injection:
+                # TODO: 在这里可以添加真实的对话历史上下文
+                # 例如从Redis或其他存储中获取最近的对话记录
+                # context = get_conversation_history(state.get("session_id"))
+                pass
             
             # 直接调用general_chat工具
             print(f"[CHAT_AGENT] 调用general_chat工具")
