@@ -10,6 +10,18 @@ from app_config import API_MAX_RETURN_ROWS, ENABLE_RESULT_SUMMARY
 import re
 import chainlit as cl
 import json
+from flask import session  # 添加session导入
+from common.redis_conversation_manager import RedisConversationManager  # 添加Redis对话管理器导入
+from common.result import (  # 统一导入所有需要的响应函数
+    bad_request_response, service_unavailable_response, 
+    agent_success_response, agent_error_response,
+    internal_error_response, success_response,
+    validation_failed_response
+)
+from app_config import (  # 添加Redis相关配置导入
+    USER_MAX_CONVERSATIONS,
+    CONVERSATION_CONTEXT_COUNT
+)
 
 # 设置默认的最大返回行数
 DEFAULT_MAX_RETURN_ROWS = 200
@@ -33,6 +45,9 @@ app = VannaFlaskApp(
     followup_questions=True,
     debug=True
 )
+
+# 创建Redis对话管理器实例
+redis_conversation_manager = RedisConversationManager()
 
 # 修改ask接口，支持前端传递session_id
 @app.flask_app.route('/api/v0/ask', methods=['POST'])
@@ -418,113 +433,166 @@ def get_citu_langraph_agent():
 @app.flask_app.route('/api/v0/ask_agent', methods=['POST'])
 def ask_agent():
     """
-    新的LangGraph Agent接口
-    
-    请求格式:
-    {
-        "question": "用户问题",
-        "session_id": "会话ID（可选）"
-    }
-    
-    响应格式:
-    {
-        "success": true/false,
-        "code": 200,
-        "message": "success" 或错误信息,
-        "data": {
-            "response": "最终回答",
-            "type": "DATABASE/CHAT",
-            "sql": "生成的SQL（如果是数据库查询）",
-            "query_result": {
-                "rows": [...],
-                "columns": [...],
-                "row_count": 数字
-            },
-            "summary": "数据摘要（如果是数据库查询）",
-            "session_id": "会话ID",
-            "execution_path": ["classify", "agent_database", "format_response"],
-            "classification_info": {
-                "confidence": 0.95,
-                "reason": "分类原因",
-                "method": "rule_based/llm_based"
-            },
-            "agent_version": "langgraph_v1"
-        }
-    }
+    支持对话上下文的ask_agent API - 修正版
     """
     req = request.get_json(force=True)
     question = req.get("question", None)
     browser_session_id = req.get("session_id", None)
     
+    # 新增参数解析
+    user_id_input = req.get("user_id", None)
+    conversation_id_input = req.get("conversation_id", None)
+    continue_conversation = req.get("continue_conversation", False)
+    
     if not question:
-        from common.result import bad_request_response
         return jsonify(bad_request_response(
             response_text="缺少必需参数：question",
             missing_params=["question"]
         )), 400
 
     try:
-        # 专门处理Agent初始化异常
+        # 1. 获取登录用户ID（修正：在函数中获取session信息）
+        login_user_id = session.get('user_id') if 'user_id' in session else None
+        
+        # 2. 智能ID解析（修正：传入登录用户ID）
+        user_id = redis_conversation_manager.resolve_user_id(
+            user_id_input, browser_session_id, request.remote_addr, login_user_id
+        )
+        conversation_id, conversation_status = redis_conversation_manager.resolve_conversation_id(
+            user_id, conversation_id_input, continue_conversation
+        )
+        
+        # 3. 获取上下文（提前到缓存检查之前）
+        context = redis_conversation_manager.get_context(conversation_id)
+        
+        # 4. 检查缓存（修正：传入context以实现真正的上下文感知）
+        cached_answer = redis_conversation_manager.get_cached_answer(question, context)
+        if cached_answer:
+            print(f"[AGENT_API] 使用缓存答案")
+            
+            # 更新对话历史
+            redis_conversation_manager.save_message(conversation_id, "user", question)
+            redis_conversation_manager.save_message(
+                conversation_id, "assistant", 
+                cached_answer.get("response", ""),
+                metadata={"from_cache": True}
+            )
+            
+            # 添加对话信息到缓存结果
+            cached_answer["conversation_id"] = conversation_id
+            cached_answer["user_id"] = user_id
+            cached_answer["from_cache"] = True
+            cached_answer.update(conversation_status)
+            
+            # 使用agent_success_response返回标准格式
+            return jsonify(agent_success_response(
+                response_type=cached_answer.get("type", "UNKNOWN"),
+                response_text=cached_answer.get("response", ""),
+                sql=cached_answer.get("sql"),
+                query_result=cached_answer.get("query_result"),
+                summary=cached_answer.get("summary"),
+                session_id=browser_session_id,
+                execution_path=cached_answer.get("execution_path", []),
+                classification_info=cached_answer.get("classification_info", {}),
+                conversation_id=conversation_id,
+                user_id=user_id,
+                is_guest_user=user_id.startswith("guest"),
+                context_used=bool(context),
+                from_cache=True,
+                conversation_status=conversation_status["status"],
+                conversation_message=conversation_status["message"],
+                requested_conversation_id=conversation_status.get("requested_id")
+            ))
+        
+        # 5. 保存用户消息
+        redis_conversation_manager.save_message(conversation_id, "user", question)
+        
+        # 6. 构建带上下文的问题
+        if context:
+            enhanced_question = f"对话历史:\n{context}\n\n当前问题: {question}"
+            print(f"[AGENT_API] 使用上下文，长度: {len(context)}字符")
+        else:
+            enhanced_question = question
+            print(f"[AGENT_API] 新对话，无上下文")
+        
+        # 7. 现有Agent处理逻辑（保持不变）
         try:
             agent = get_citu_langraph_agent()
         except Exception as e:
             print(f"[CRITICAL] Agent初始化失败: {str(e)}")
-            from common.result import service_unavailable_response
             return jsonify(service_unavailable_response(
                 response_text="AI服务暂时不可用，请稍后重试",
                 can_retry=True
             )), 503
         
-        # 调用Agent处理问题
         agent_result = agent.process_question(
-            question=question,
+            question=enhanced_question,  # 使用增强后的问题
             session_id=browser_session_id
         )
         
-        # 统一返回格式 - 使用标准化的agent_success_response
+        # 8. 处理Agent结果
         if agent_result.get("success", False):
-            from common.result import agent_success_response
+            # 修正：直接从agent_result获取字段，因为它就是final_response
+            response_type = agent_result.get("type", "UNKNOWN")
+            response_text = agent_result.get("response", "")
+            sql = agent_result.get("sql")
+            query_result = agent_result.get("query_result")
+            summary = agent_result.get("summary")
+            execution_path = agent_result.get("execution_path", [])
+            classification_info = agent_result.get("classification_info", {})
+            assistant_response = response_text  # 使用response_text作为助手回复
+            
+            # 保存助手回复
+            redis_conversation_manager.save_message(
+                conversation_id, "assistant", assistant_response,
+                metadata={
+                    "type": response_type,
+                    "sql": sql,
+                    "execution_path": execution_path
+                }
+            )
+            
+            # 缓存成功的答案（修正：缓存完整的agent_result）
+            # 直接缓存agent_result，它已经包含所有需要的字段
+            redis_conversation_manager.cache_answer(question, agent_result, context)
+            
+            # 使用agent_success_response的正确方式
             return jsonify(agent_success_response(
-                response_type=agent_result.get("type", "UNKNOWN"),
+                response_type=response_type,
+                response_text=response_text,
+                sql=sql,
+                query_result=query_result,
+                summary=summary,
                 session_id=browser_session_id,
-                execution_path=agent_result.get("execution_path", []),
-                classification_info=agent_result.get("classification_info", {}),
-                response=agent_result.get("response", ""),
-                sql=agent_result.get("sql"),
-                query_result=agent_result.get("query_result"),  # 修复：从query_result字段获取数据
-                summary=agent_result.get("summary")
+                execution_path=execution_path,
+                classification_info=classification_info,
+                conversation_id=conversation_id,
+                user_id=user_id,
+                is_guest_user=user_id.startswith("guest"),
+                context_used=bool(context),
+                from_cache=False,
+                conversation_status=conversation_status["status"],
+                conversation_message=conversation_status["message"],
+                requested_conversation_id=conversation_status.get("requested_id")
             ))
         else:
-            # 使用标准化的agent_error_response
-            from common.result import agent_error_response
-            from common.messages import MessageTemplate, ErrorType
-            
-            # 根据错误代码选择合适的message
+            # 错误处理（修正：确保使用现有的错误响应格式）
+            error_message = agent_result.get("error", "Agent处理失败")
             error_code = agent_result.get("error_code", 500)
-            if error_code == 400:
-                message = MessageTemplate.BAD_REQUEST
-            elif error_code == 422:
-                message = MessageTemplate.VALIDATION_FAILED
-            elif error_code == 503:
-                message = MessageTemplate.SERVICE_UNAVAILABLE
-            else:
-                message = MessageTemplate.PROCESSING_FAILED
             
             return jsonify(agent_error_response(
-                response_text=agent_result.get("error", "Agent处理失败"),
-                error_type=ErrorType.REQUEST_PROCESSING_FAILED,
-                message=message,
+                response_text=error_message,
+                error_type="agent_processing_failed",
                 code=error_code,
                 session_id=browser_session_id,
-                execution_path=agent_result.get("execution_path", []),
-                classification_info=agent_result.get("classification_info", {})
-            )), 200  # HTTP 200但业务失败
-            
+                conversation_id=conversation_id,
+                user_id=user_id
+            )), error_code
+        
     except Exception as e:
         print(f"[ERROR] ask_agent执行失败: {str(e)}")
-        from common.result import internal_error_response
         return jsonify(internal_error_response(
-            response_text="请求处理异常，请稍后重试"
+            response_text="查询处理失败，请稍后重试"
         )), 500
 
 @app.flask_app.route('/api/v0/agent_health', methods=['GET'])
@@ -1380,6 +1448,105 @@ def training_error_question_sql():
             response_text="存储错误SQL失败，请稍后重试"
         )), 500
 
+
+
+# ==================== Redis对话管理API ====================
+
+@app.flask_app.route('/api/v0/user/<user_id>/conversations', methods=['GET'])
+def get_user_conversations(user_id: str):
+    """获取用户的对话列表（按时间倒序）"""
+    try:
+        limit = request.args.get('limit', USER_MAX_CONVERSATIONS, type=int)
+        conversations = redis_conversation_manager.get_conversations(user_id, limit)
+        
+        return jsonify(success_response(
+            response_text="获取用户对话列表成功",
+            data={
+                "user_id": user_id,
+                "conversations": conversations,
+                "total_count": len(conversations)
+            }
+        ))
+        
+    except Exception as e:
+        return jsonify(internal_error_response(
+            response_text="获取对话列表失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/conversation/<conversation_id>/messages', methods=['GET'])
+def get_conversation_messages(conversation_id: str):
+    """获取特定对话的消息历史"""
+    try:
+        limit = request.args.get('limit', type=int)  # 可选参数
+        messages = redis_conversation_manager.get_conversation_messages(conversation_id, limit)
+        meta = redis_conversation_manager.get_conversation_meta(conversation_id)
+        
+        return jsonify(success_response(
+            response_text="获取对话消息成功",
+            data={
+                "conversation_id": conversation_id,
+                "conversation_meta": meta,
+                "messages": messages,
+                "message_count": len(messages)
+            }
+        ))
+        
+    except Exception as e:
+        return jsonify(internal_error_response(
+            response_text="获取对话消息失败"
+        )), 500
+
+@app.flask_app.route('/api/v0/conversation/<conversation_id>/context', methods=['GET'])  
+def get_conversation_context(conversation_id: str):
+    """获取对话上下文（格式化用于LLM）"""
+    try:
+        count = request.args.get('count', CONVERSATION_CONTEXT_COUNT, type=int)
+        context = redis_conversation_manager.get_context(conversation_id, count)
+        
+        return jsonify(success_response(
+            response_text="获取对话上下文成功",
+            data={
+                "conversation_id": conversation_id,
+                "context": context,
+                "context_message_count": count
+            }
+        ))
+        
+    except Exception as e:
+        return jsonify(internal_error_response(
+            response_text="获取对话上下文失败"
+        )), 500
+
+@app.flask_app.route('/api/v0/conversation_stats', methods=['GET'])
+def conversation_stats():
+    """获取对话系统统计信息"""
+    try:
+        stats = redis_conversation_manager.get_stats()
+        
+        return jsonify(success_response(
+            response_text="获取统计信息成功",
+            data=stats
+        ))
+        
+    except Exception as e:
+        return jsonify(internal_error_response(
+            response_text="获取统计信息失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/conversation_cleanup', methods=['POST'])
+def conversation_cleanup():
+    """手动清理过期对话"""
+    try:
+        redis_conversation_manager.cleanup_expired_conversations()
+        
+        return jsonify(success_response(
+            response_text="对话清理完成"
+        ))
+        
+    except Exception as e:
+        return jsonify(internal_error_response(
+            response_text="对话清理失败，请稍后重试"
+        )), 500
 
 
 # 前端JavaScript示例 - 如何维持会话

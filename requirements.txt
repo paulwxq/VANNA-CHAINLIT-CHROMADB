@@ -5,3 +5,4 @@ langchain-core==0.3.64
 langchain-postgres==0.0.14
 langgraph==0.4.8
 langchain==0.3.23
+redis==5.0.1
