@@ -442,16 +442,10 @@ def ask_agent():
             agent = get_citu_langraph_agent()
         except Exception as e:
             print(f"[CRITICAL] Agent初始化失败: {str(e)}")
-            return jsonify(result.failed(
-                message="AI服务暂时不可用，请稍后重试", 
-                code=503,
-                data={
-                    "session_id": browser_session_id,
-                    "execution_path": ["agent_init_error"],
-                    "agent_version": "langgraph_v1",
-                    "timestamp": datetime.now().isoformat(),
-                    "error_type": "agent_initialization_failed"
-                }
+            from common.result import service_unavailable_response
+            return jsonify(service_unavailable_response(
+                response_text="AI服务暂时不可用，请稍后重试",
+                can_retry=True
             )), 503
         
         # 调用Agent处理问题
@@ -460,31 +454,43 @@ def ask_agent():
             session_id=browser_session_id
         )
         
-        # 统一返回格式
+        # 统一返回格式 - 使用标准化的agent_success_response
         if agent_result.get("success", False):
-            return jsonify(result.success(data={
-                "response": agent_result.get("response", ""),
-                "type": agent_result.get("type", "UNKNOWN"),
-                "sql": agent_result.get("sql"),
-                "data_result": agent_result.get("data_result"),
-                "summary": agent_result.get("summary"),
-                "session_id": browser_session_id,
-                "execution_path": agent_result.get("execution_path", []),
-                "classification_info": agent_result.get("classification_info", {}),
-                "agent_version": "langgraph_v1",
-                "timestamp": datetime.now().isoformat()
-            }))
+            from common.result import agent_success_response
+            return jsonify(agent_success_response(
+                response_type=agent_result.get("type", "UNKNOWN"),
+                session_id=browser_session_id,
+                execution_path=agent_result.get("execution_path", []),
+                classification_info=agent_result.get("classification_info", {}),
+                response=agent_result.get("response", ""),
+                sql=agent_result.get("sql"),
+                query_result=agent_result.get("data_result"),  # 字段重命名：data_result → query_result
+                summary=agent_result.get("summary")
+            ))
         else:
-            return jsonify(result.failed(
-                message=agent_result.get("error", "Agent处理失败"),
-                code=agent_result.get("error_code", 500),
-                data={
-                    "session_id": browser_session_id,
-                    "execution_path": agent_result.get("execution_path", []),
-                    "classification_info": agent_result.get("classification_info", {}),
-                    "agent_version": "langgraph_v1",
-                    "timestamp": datetime.now().isoformat()
-                }
+            # 使用标准化的agent_error_response
+            from common.result import agent_error_response
+            from common.messages import MessageTemplate, ErrorType
+            
+            # 根据错误代码选择合适的message
+            error_code = agent_result.get("error_code", 500)
+            if error_code == 400:
+                message = MessageTemplate.BAD_REQUEST
+            elif error_code == 422:
+                message = MessageTemplate.VALIDATION_FAILED
+            elif error_code == 503:
+                message = MessageTemplate.SERVICE_UNAVAILABLE
+            else:
+                message = MessageTemplate.PROCESSING_FAILED
+            
+            return jsonify(agent_error_response(
+                response_text=agent_result.get("error", "Agent处理失败"),
+                error_type=ErrorType.REQUEST_PROCESSING_FAILED,
+                message=message,
+                code=error_code,
+                session_id=browser_session_id,
+                execution_path=agent_result.get("execution_path", []),
+                classification_info=agent_result.get("classification_info", {})
             )), 200  # HTTP 200但业务失败
             
     except Exception as e:
@@ -595,21 +601,15 @@ def agent_health():
             health_data["status"] = "degraded"
             health_data["message"] = f"完整测试失败: {str(e)}"
         
-        # 根据状态返回相应的HTTP代码
+        # 根据状态返回相应的HTTP代码 - 使用标准化健康检查响应
+        from common.result import health_success_response, health_error_response
+        
         if health_data["status"] == "healthy":
-            return jsonify(result.success(data=health_data))
+            return jsonify(health_success_response(**health_data))
         elif health_data["status"] == "degraded":
-            return jsonify(result.failed(
-                message="Agent状态: degraded", 
-                data=health_data,
-                code=503
-            )), 503
+            return jsonify(health_error_response(status="degraded", **health_data)), 503
         else:
-            return jsonify(result.failed(
-                message="Agent状态: unhealthy", 
-                data=health_data,
-                code=503
-            )), 503
+            return jsonify(health_error_response(status="unhealthy", **health_data)), 503
             
     except Exception as e:
         print(f"[ERROR] 健康检查异常: {str(e)}")

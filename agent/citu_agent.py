@@ -345,7 +345,7 @@ class CituLangGraphAgent:
                         "response": state["chat_response"],
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "data_result": state.get("data_result"),
+                        "query_result": state.get("data_result"),  # 字段重命名：data_result → query_result
                         "execution_path": state["execution_path"],
                         "classification_info": {
                             "confidence": state["classification_confidence"],
@@ -360,7 +360,7 @@ class CituLangGraphAgent:
                         "success": True,
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "data_result": state.get("data_result"),
+                        "query_result": state.get("data_result"),  # 字段重命名：data_result → query_result
                         "summary": state["summary"],
                         "execution_path": state["execution_path"],
                         "classification_info": {
@@ -375,12 +375,12 @@ class CituLangGraphAgent:
                     row_count = data_result.get("row_count", 0)
                     
                     # 构建基本响应，不包含summary字段和response字段
-                    # 用户应该直接从data_result.columns和data_result.rows获取数据
+                    # 用户应该直接从query_result.columns和query_result.rows获取数据
                     state["final_response"] = {
                         "success": True,
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "data_result": data_result,
+                        "query_result": data_result,  # 字段重命名：data_result → query_result
                         "execution_path": state["execution_path"],
                         "classification_info": {
                             "confidence": state["classification_confidence"],
