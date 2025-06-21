@@ -42,7 +42,11 @@ def ask_full():
     browser_session_id = req.get("session_id", None)  # 前端传递的会话ID
     
     if not question:
-        return jsonify(result.failed(message="未提供问题", code=400)), 400
+        from common.result import bad_request_response
+        return jsonify(bad_request_response(
+            response_text="缺少必需参数：question",
+            missing_params=["question"]
+        )), 400
 
     # 如果使用WebSessionAwareMemoryCache
     if hasattr(app.cache, 'generate_id_with_browser_session') and browser_session_id:
@@ -66,67 +70,67 @@ def ask_full():
             # 在解释性文本末尾添加提示语
             explanation_message = vn.last_llm_explanation + "请尝试提问其它问题。"
             
-            # 使用 result.failed 返回，success为false，但在message中包含LLM友好的解释
-            return jsonify(result.failed(
-                message=explanation_message,  # 已处理的解释性文本
-                code=400,  # 业务逻辑错误，使用400
-                data={
-                    "sql": None,
-                    "rows": [],
-                    "columns": [],
-                    "summary": None,
-                    "conversation_id": conversation_id if 'conversation_id' in locals() else None,
-                    "session_id": browser_session_id
-                }
-            )), 200  # HTTP状态码仍为200，因为请求本身成功处理了
+            # 使用标准化错误响应
+            from common.result import validation_failed_response
+            return jsonify(validation_failed_response(
+                response_text=explanation_message
+            )), 422  # 修改HTTP状态码为422
 
         # 如果sql为None但没有解释性文本，返回通用错误
         if sql is None:
-            return jsonify(result.failed(
-                message="无法生成SQL查询，请检查问题描述或数据表结构",
-                code=400,
-                data={
-                    "sql": None,
-                    "rows": [],
-                    "columns": [],
-                    "summary": None,
-                    "conversation_id": conversation_id if 'conversation_id' in locals() else None,
-                    "session_id": browser_session_id
-                }
-            )), 200
+            from common.result import validation_failed_response
+            return jsonify(validation_failed_response(
+                response_text="无法生成SQL查询，请检查问题描述或数据表结构"
+            )), 422
 
-        # 正常SQL流程
-        rows, columns = [], []
+        # 处理返回数据 - 使用新的query_result结构
+        query_result = {
+            "rows": [],
+            "columns": [],
+            "row_count": 0,
+            "is_limited": False,
+            "total_row_count": 0
+        }
+        
         summary = None
         
         if isinstance(df, pd.DataFrame):
+            query_result["columns"] = list(df.columns)
             if not df.empty:
-                rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
-            columns = list(df.columns)
-            
-            # 生成数据摘要（可通过配置控制，仅在有数据时生成）
-            if ENABLE_RESULT_SUMMARY and not df.empty:
-                try:
-                    summary = vn.generate_summary(question=question, df=df)
-                    print(f"[INFO] 成功生成摘要: {summary}")
-                except Exception as e:
-                    print(f"[WARNING] 生成摘要失败: {str(e)}")
-                    summary = None
+                total_rows = len(df)
+                limited_df = df.head(MAX_RETURN_ROWS)
+                query_result["rows"] = limited_df.to_dict(orient="records")
+                query_result["row_count"] = len(limited_df)
+                query_result["total_row_count"] = total_rows
+                query_result["is_limited"] = total_rows > MAX_RETURN_ROWS
+                
+                # 生成数据摘要（可通过配置控制，仅在有数据时生成）
+                if ENABLE_RESULT_SUMMARY:
+                    try:
+                        summary = vn.generate_summary(question=question, df=df)
+                        print(f"[INFO] 成功生成摘要: {summary}")
+                    except Exception as e:
+                        print(f"[WARNING] 生成摘要失败: {str(e)}")
+                        summary = None
 
-        # 构建返回数据，根据摘要配置决定是否包含summary字段
+        # 构建返回数据
         response_data = {
             "sql": sql,
-            "rows": rows,
-            "columns": columns,
+            "query_result": query_result,
             "conversation_id": conversation_id if 'conversation_id' in locals() else None,
             "session_id": browser_session_id
         }
         
-        # 只有启用摘要且确实生成了摘要时才添加summary字段
+        # 添加摘要（如果启用且生成成功）
         if ENABLE_RESULT_SUMMARY and summary is not None:
             response_data["summary"] = summary
+            response_data["response"] = summary  # 同时添加response字段
             
-        return jsonify(result.success(data=response_data))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text="查询执行完成" if summary is None else None,
+            data=response_data
+        ))
         
     except Exception as e:
         print(f"[ERROR] ask_full执行失败: {str(e)}")
@@ -136,23 +140,15 @@ def ask_full():
             # 在解释性文本末尾添加提示语
             explanation_message = vn.last_llm_explanation + "请尝试提问其它问题。"
             
-            return jsonify(result.failed(
-                message=explanation_message,
-                code=400,
-                data={
-                    "sql": None,
-                    "rows": [],
-                    "columns": [],
-                    "summary": None,
-                    "conversation_id": conversation_id if 'conversation_id' in locals() else None,
-                    "session_id": browser_session_id
-                }
-            )), 200
+            from common.result import validation_failed_response
+            return jsonify(validation_failed_response(
+                response_text=explanation_message
+            )), 422
         else:
             # 技术错误，使用500错误码
-            return jsonify(result.failed(
-                message=f"查询处理失败: {str(e)}", 
-                code=500
+            from common.result import internal_error_response
+            return jsonify(internal_error_response(
+                response_text="查询处理失败，请稍后重试"
             )), 500
 
 @app.flask_app.route('/api/v0/citu_run_sql', methods=['POST'])
@@ -161,28 +157,49 @@ def citu_run_sql():
     sql = req.get('sql')
     
     if not sql:
-        return jsonify(result.failed(message="未提供SQL查询", code=400)), 400
+        from common.result import bad_request_response
+        return jsonify(bad_request_response(
+            response_text="缺少必需参数：sql",
+            missing_params=["sql"]
+        )), 400
     
     try:
         df = vn.run_sql(sql)
         
-        rows, columns = [], []
+        # 处理返回数据 - 使用新的query_result结构
+        query_result = {
+            "rows": [],
+            "columns": [],
+            "row_count": 0,
+            "is_limited": False,
+            "total_row_count": 0
+        }
         
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
-            columns = list(df.columns)
+        if isinstance(df, pd.DataFrame):
+            query_result["columns"] = list(df.columns)
+            if not df.empty:
+                total_rows = len(df)
+                limited_df = df.head(MAX_RETURN_ROWS)
+                query_result["rows"] = limited_df.to_dict(orient="records")
+                query_result["row_count"] = len(limited_df)
+                query_result["total_row_count"] = total_rows
+                query_result["is_limited"] = total_rows > MAX_RETURN_ROWS
         
-        return jsonify(result.success(data={
-            "sql": sql,
-            "rows": rows,
-            "columns": columns
-        }))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text=f"SQL执行完成，共返回 {query_result['total_row_count']} 条记录" + 
+                         (f"，已限制显示前 {MAX_RETURN_ROWS} 条" if query_result["is_limited"] else ""),
+            data={
+                "sql": sql,
+                "query_result": query_result
+            }
+        ))
         
     except Exception as e:
         print(f"[ERROR] citu_run_sql执行失败: {str(e)}")
-        return jsonify(result.failed(
-            message=f"SQL执行失败: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text=f"SQL执行失败，请检查SQL语句是否正确"
         )), 500
 
 @app.flask_app.route('/api/v0/ask_cached', methods=['POST'])
@@ -196,7 +213,11 @@ def ask_cached():
     browser_session_id = req.get("session_id", None)
     
     if not question:
-        return jsonify(result.failed(message="未提供问题", code=400)), 400
+        from common.result import bad_request_response
+        return jsonify(bad_request_response(
+            response_text="缺少必需参数：question",
+            missing_params=["question"]
+        )), 400
 
     try:
         # 生成conversation_id
@@ -235,35 +256,17 @@ def ask_cached():
                 # 在解释性文本末尾添加提示语
                 explanation_message = vn.last_llm_explanation + "请尝试用其它方式提问。"
                 
-                return jsonify(result.failed(
-                    message=explanation_message,
-                    code=400,
-                    data={
-                        "sql": None,
-                        "rows": [],
-                        "columns": [],
-                        "summary": None,
-                        "conversation_id": conversation_id,
-                        "session_id": browser_session_id,
-                        "cached": False
-                    }
-                )), 200
+                from common.result import validation_failed_response
+                return jsonify(validation_failed_response(
+                    response_text=explanation_message
+                )), 422
             
             # 如果sql为None但没有解释性文本，返回通用错误
             if sql is None:
-                return jsonify(result.failed(
-                    message="无法生成SQL查询，请检查问题描述或数据表结构",
-                    code=400,
-                    data={
-                        "sql": None,
-                        "rows": [],
-                        "columns": [],
-                        "summary": None,
-                        "conversation_id": conversation_id,
-                        "session_id": browser_session_id,
-                        "cached": False
-                    }
-                )), 200
+                from common.result import validation_failed_response
+                return jsonify(validation_failed_response(
+                    response_text="无法生成SQL查询，请检查问题描述或数据表结构"
+                )), 422
             
             # 缓存结果
             app.cache.set(id=conversation_id, field="question", value=question)
@@ -282,35 +285,50 @@ def ask_cached():
             
             app.cache.set(id=conversation_id, field="summary", value=summary)
 
-        # 处理返回数据
-        rows, columns = [], []
+        # 处理返回数据 - 使用新的query_result结构
+        query_result = {
+            "rows": [],
+            "columns": [],
+            "row_count": 0,
+            "is_limited": False,
+            "total_row_count": 0
+        }
         
         if isinstance(df, pd.DataFrame):
+            query_result["columns"] = list(df.columns)
             if not df.empty:
-                rows = df.head(MAX_RETURN_ROWS).to_dict(orient="records")
-            columns = list(df.columns)
+                total_rows = len(df)
+                limited_df = df.head(MAX_RETURN_ROWS)
+                query_result["rows"] = limited_df.to_dict(orient="records")
+                query_result["row_count"] = len(limited_df)
+                query_result["total_row_count"] = total_rows
+                query_result["is_limited"] = total_rows > MAX_RETURN_ROWS
 
-        # 构建返回数据，根据摘要配置决定是否包含summary字段
+        # 构建返回数据
         response_data = {
             "sql": sql,
-            "rows": rows,
-            "columns": columns,
+            "query_result": query_result,
             "conversation_id": conversation_id,
             "session_id": browser_session_id,
             "cached": cached_sql is not None  # 标识是否来自缓存
         }
         
-        # 只有启用摘要且确实生成了摘要时才添加summary字段
+        # 添加摘要（如果启用且生成成功）
         if ENABLE_RESULT_SUMMARY and summary is not None:
             response_data["summary"] = summary
+            response_data["response"] = summary  # 同时添加response字段
             
-        return jsonify(result.success(data=response_data))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text="查询执行完成" if summary is None else None,
+            data=response_data
+        ))
         
     except Exception as e:
         print(f"[ERROR] ask_cached执行失败: {str(e)}")
-        return jsonify(result.failed(
-            message=f"查询处理失败: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="查询处理失败，请稍后重试"
         )), 500
     
 
@@ -336,9 +354,10 @@ def citu_train_question_sql():
         sql = req.get('sql')
         
         if not sql:
-            return jsonify(result.failed(
-                message="'sql' are required", 
-                code=400
+            from common.result import bad_request_response
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：sql",
+                missing_params=["sql"]
             )), 400
         
         # 正确的调用方式：同时传递question和sql
@@ -349,15 +368,19 @@ def citu_train_question_sql():
             training_id = vn.train(sql=sql)
             print(f"训练成功，训练ID为：{training_id}，SQL：{sql}")
 
-        return jsonify(result.success(data={
-            "training_id": training_id,
-            "message": "Question-SQL pair trained successfully"
-        }))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text="问题-SQL对训练成功",
+            data={
+                "training_id": training_id,
+                "message": "Question-SQL pair trained successfully"
+            }
+        ))
         
     except Exception as e:
-        return jsonify(result.failed(
-            message=f"Training failed: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="训练失败，请稍后重试"
         )), 500
     
 
@@ -434,7 +457,11 @@ def ask_agent():
     browser_session_id = req.get("session_id", None)
     
     if not question:
-        return jsonify(result.failed(message="未提供问题", code=400)), 400
+        from common.result import bad_request_response
+        return jsonify(bad_request_response(
+            response_text="缺少必需参数：question",
+            missing_params=["question"]
+        )), 400
 
     try:
         # 专门处理Agent初始化异常
@@ -495,16 +522,9 @@ def ask_agent():
             
     except Exception as e:
         print(f"[ERROR] ask_agent执行失败: {str(e)}")
-        return jsonify(result.failed(
-            message="请求处理异常，请稍后重试", 
-            code=500,
-            data={
-                "session_id": browser_session_id,
-                "execution_path": ["general_error"],
-                "agent_version": "langgraph_v1",
-                "timestamp": datetime.now().isoformat(),
-                "error_type": "request_processing_failed"
-            }
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="请求处理异常，请稍后重试"
         )), 500
 
 @app.flask_app.route('/api/v0/agent_health', methods=['GET'])
@@ -558,10 +578,10 @@ def agent_health():
             health_data["tools_count"] = len(agent.tools) if hasattr(agent, 'tools') else 0
         except Exception as e:
             health_data["message"] = f"Agent创建失败: {str(e)}"
-            return jsonify(result.failed(
-                message="Agent状态: unhealthy", 
-                data=health_data,
-                code=503
+            from common.result import health_error_response
+            return jsonify(health_error_response(
+                status="unhealthy",
+                **health_data
             )), 503
         
         # 检查2: 工具导入
@@ -613,13 +633,9 @@ def agent_health():
             
     except Exception as e:
         print(f"[ERROR] 健康检查异常: {str(e)}")
-        return jsonify(result.failed(
-            message=f"健康检查失败: {str(e)}", 
-            code=500,
-            data={
-                "status": "error",
-                "timestamp": datetime.now().isoformat()
-            }
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="健康检查失败，请稍后重试"
         )), 500
 
 
@@ -692,12 +708,16 @@ def cache_overview():
             conversation_list.sort(key=lambda x: x['conversation_start_time'] or '', reverse=True)
             result_data['recent_conversations'] = conversation_list[:10]
         
-        return jsonify(result.success(data=result_data))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text="缓存概览查询完成",
+            data=result_data
+        ))
         
     except Exception as e:
-        return jsonify(result.failed(
-            message=f"获取缓存概览失败: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="获取缓存概览失败，请稍后重试"
         )), 500
 
 
@@ -816,12 +836,16 @@ def cache_stats():
         # 按最近活动排序会话详情
         stats['session_details'].sort(key=lambda x: x['last_activity'], reverse=True)
         
-        return jsonify(result.success(data=stats))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text="缓存统计信息查询完成",
+            data=stats
+        ))
         
     except Exception as e:
-        return jsonify(result.failed(
-            message=f"获取缓存统计失败: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="获取缓存统计失败，请稍后重试"
         )), 500
 
 
@@ -835,10 +859,16 @@ def cache_export():
         
         # 验证缓存的实际结构
         if not hasattr(cache, 'cache'):
-            return jsonify(result.failed(message="缓存对象没有cache属性", code=500)), 500
+            from common.result import internal_error_response
+            return jsonify(internal_error_response(
+                response_text="缓存对象结构异常，请联系系统管理员"
+            )), 500
         
         if not isinstance(cache.cache, dict):
-            return jsonify(result.failed(message="缓存不是字典类型", code=500)), 500
+            from common.result import internal_error_response
+            return jsonify(internal_error_response(
+                response_text="缓存数据类型异常，请联系系统管理员"
+            )), 500
         
         # 定义JSON序列化辅助函数
         def make_json_serializable(obj):
@@ -1060,7 +1090,11 @@ def cache_export():
             'has_conversation_timing': 'conversation_start_time' in field_frequency
         }
         
-        return jsonify(result.success(data=export_data))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text="缓存数据导出完成",
+            data=export_data
+        ))
         
     except Exception as e:
         import traceback
@@ -1069,10 +1103,9 @@ def cache_export():
             'error_type': type(e).__name__,
             'traceback': traceback.format_exc()
         }
-        return jsonify(result.failed(
-            message=f"导出缓存失败: {str(e)}", 
-            code=500,
-            data=error_details
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="导出缓存失败，请稍后重试"
         )), 500
 
 
@@ -1107,14 +1140,15 @@ def cache_preview_cleanup():
                 cutoff_time = datetime.strptime(before_timestamp, '%Y-%m-%d %H:%M:%S')
                 time_condition = f"before_timestamp: {before_timestamp}"
             except ValueError:
-                return jsonify(result.failed(
-                    message="before_timestamp格式错误，请使用 YYYY-MM-DD HH:MM:SS 格式", 
-                    code=400
-                )), 400
+                from common.result import validation_failed_response
+                return jsonify(validation_failed_response(
+                    response_text="before_timestamp格式错误，请使用 YYYY-MM-DD HH:MM:SS 格式"
+                )), 422
         else:
-            return jsonify(result.failed(
-                message="必须提供时间条件：older_than_hours, older_than_days 或 before_timestamp (YYYY-MM-DD HH:MM:SS)", 
-                code=400
+            from common.result import bad_request_response
+            return jsonify(bad_request_response(
+                response_text="必须提供时间条件：older_than_hours, older_than_days 或 before_timestamp (YYYY-MM-DD HH:MM:SS)",
+                missing_params=["older_than_hours", "older_than_days", "before_timestamp"]
             )), 400
         
         preview = {
@@ -1173,12 +1207,16 @@ def cache_preview_cleanup():
             'conversations_to_keep': preview['will_be_kept']['conversations_count']
         }
         
-        return jsonify(result.success(data=preview))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text=f"清理预览完成，将删除 {sessions_to_remove_count} 个会话和 {conversations_to_remove_count} 个对话",
+            data=preview
+        ))
         
     except Exception as e:
-        return jsonify(result.failed(
-            message=f"预览清理操作失败: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="预览清理操作失败，请稍后重试"
         )), 500
 
 
@@ -1196,10 +1234,10 @@ def cache_cleanup():
         cache = app.cache
         
         if not hasattr(cache, 'session_info'):
-            return jsonify(result.failed(
-                message="缓存不支持会话功能", 
-                code=400
-            )), 400
+            from common.result import service_unavailable_response
+            return jsonify(service_unavailable_response(
+                response_text="缓存不支持会话功能"
+            )), 503
         
         # 计算截止时间
         cutoff_time = None
@@ -1217,14 +1255,15 @@ def cache_cleanup():
                 cutoff_time = datetime.strptime(before_timestamp, '%Y-%m-%d %H:%M:%S')
                 time_condition = f"before_timestamp: {before_timestamp}"
             except ValueError:
-                return jsonify(result.failed(
-                    message="before_timestamp格式错误，请使用 YYYY-MM-DD HH:MM:SS 格式", 
-                    code=400
-                )), 400
+                from common.result import validation_failed_response
+                return jsonify(validation_failed_response(
+                    response_text="before_timestamp格式错误，请使用 YYYY-MM-DD HH:MM:SS 格式"
+                )), 422
         else:
-            return jsonify(result.failed(
-                message="必须提供时间条件：older_than_hours, older_than_days 或 before_timestamp (YYYY-MM-DD HH:MM:SS)", 
-                code=400
+            from common.result import bad_request_response
+            return jsonify(bad_request_response(
+                response_text="必须提供时间条件：older_than_hours, older_than_days 或 before_timestamp (YYYY-MM-DD HH:MM:SS)",
+                missing_params=["older_than_hours", "older_than_days", "before_timestamp"]
             )), 400
         
         cleanup_stats = {
@@ -1273,12 +1312,16 @@ def cache_cleanup():
         cleanup_stats['sessions_kept'] = len(cache.session_info)
         cleanup_stats['conversations_kept'] = len(cache.cache)
         
-        return jsonify(result.success(data=cleanup_stats))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text=f"缓存清理完成，删除了 {cleanup_stats['sessions_removed']} 个会话和 {cleanup_stats['conversations_removed']} 个对话",
+            data=cleanup_stats
+        ))
         
     except Exception as e:
-        return jsonify(result.failed(
-            message=f"清理缓存失败: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="缓存清理失败，请稍后重试"
         )), 500
     
 
@@ -1304,9 +1347,16 @@ def training_error_question_sql():
         print(f"[DEBUG] 接收到错误SQL训练请求: question={question}, sql={sql}")
         
         if not question or not sql:
-            return jsonify(result.failed(
-                message="question和sql参数都是必需的", 
-                code=400
+            from common.result import bad_request_response
+            missing_params = []
+            if not question:
+                missing_params.append("question")
+            if not sql:
+                missing_params.append("sql")
+            
+            return jsonify(bad_request_response(
+                response_text="question和sql参数都是必需的",
+                missing_params=missing_params
             )), 400
         
         # 使用vn实例的train_error_sql方法存储错误SQL
@@ -1314,16 +1364,20 @@ def training_error_question_sql():
         
         print(f"[INFO] 成功存储错误SQL，ID: {id}")
         
-        return jsonify(result.success(data={
-            "id": id,
-            "message": "错误SQL对已成功存储到error_sql集合"
-        }))
+        from common.result import success_response
+        return jsonify(success_response(
+            response_text="错误SQL对已成功存储",
+            data={
+                "id": id,
+                "message": "错误SQL对已成功存储到error_sql集合"
+            }
+        ))
         
     except Exception as e:
         print(f"[ERROR] 存储错误SQL失败: {str(e)}")
-        return jsonify(result.failed(
-            message=f"存储错误SQL失败: {str(e)}", 
-            code=500
+        from common.result import internal_error_response
+        return jsonify(internal_error_response(
+            response_text="存储错误SQL失败，请稍后重试"
         )), 500
 
 
