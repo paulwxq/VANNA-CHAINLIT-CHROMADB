@@ -65,7 +65,7 @@ def execute_sql(sql: str, max_rows: int = None) -> Dict[str, Any]:
         包含查询结果的字典，格式：
         {
             "success": bool,
-            "data_result": dict或None,
+            "data_result": dict或None,  # 注意：工具内部仍使用data_result，但会被Agent重命名为query_result
             "error": str或None,
             "can_retry": bool
         }

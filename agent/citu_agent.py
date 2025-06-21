@@ -229,28 +229,28 @@ class CituLangGraphAgent:
                 state["execution_path"].append("agent_database_error")
                 return state
             
-            data_result = execute_result.get("data_result")
-            state["data_result"] = data_result
-            print(f"[DATABASE_AGENT] SQL执行成功，返回 {data_result.get('row_count', 0)} 行数据")
+            query_result = execute_result.get("data_result")
+            state["query_result"] = query_result
+            print(f"[DATABASE_AGENT] SQL执行成功，返回 {query_result.get('row_count', 0)} 行数据")
             
             # 步骤3：生成摘要（可通过配置控制，仅在有数据时生成）
-            if ENABLE_RESULT_SUMMARY and data_result.get('row_count', 0) > 0:
+            if ENABLE_RESULT_SUMMARY and query_result.get('row_count', 0) > 0:
                 print(f"[DATABASE_AGENT] 步骤3：生成摘要")
                 summary_result = generate_summary.invoke({
                     "question": question,
-                    "data_result": data_result,
+                    "query_result": query_result,
                     "sql": sql
                 })
                 
                 if not summary_result.get("success"):
                     print(f"[DATABASE_AGENT] 摘要生成失败: {summary_result.get('message')}")
                     # 摘要生成失败不是致命错误，使用默认摘要
-                    state["summary"] = f"查询执行完成，共返回 {data_result.get('row_count', 0)} 条记录。"
+                    state["summary"] = f"查询执行完成，共返回 {query_result.get('row_count', 0)} 条记录。"
                 else:
                     state["summary"] = summary_result.get("summary")
                     print(f"[DATABASE_AGENT] 摘要生成成功")
             else:
-                print(f"[DATABASE_AGENT] 跳过摘要生成（ENABLE_RESULT_SUMMARY={ENABLE_RESULT_SUMMARY}，数据行数={data_result.get('row_count', 0)}）")
+                print(f"[DATABASE_AGENT] 跳过摘要生成（ENABLE_RESULT_SUMMARY={ENABLE_RESULT_SUMMARY}，数据行数={query_result.get('row_count', 0)}）")
                 # 不生成摘要时，不设置summary字段，让格式化响应节点决定如何处理
             
             state["current_step"] = "database_completed"
@@ -345,7 +345,7 @@ class CituLangGraphAgent:
                         "response": state["chat_response"],
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "query_result": state.get("data_result"),  # 字段重命名：data_result → query_result
+                        "query_result": state.get("query_result"),  # 获取query_result字段
                         "execution_path": state["execution_path"],
                         "classification_info": {
                             "confidence": state["classification_confidence"],
@@ -360,7 +360,7 @@ class CituLangGraphAgent:
                         "success": True,
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "query_result": state.get("data_result"),  # 字段重命名：data_result → query_result
+                        "query_result": state.get("query_result"),  # 获取query_result字段
                         "summary": state["summary"],
                         "execution_path": state["execution_path"],
                         "classification_info": {
@@ -369,10 +369,10 @@ class CituLangGraphAgent:
                             "method": state["classification_method"]
                         }
                     }
-                elif state.get("data_result"):
+                elif state.get("query_result"):
                     # 有数据但没有摘要（摘要被配置禁用）
-                    data_result = state.get("data_result")
-                    row_count = data_result.get("row_count", 0)
+                    query_result = state.get("query_result")
+                    row_count = query_result.get("row_count", 0)
                     
                     # 构建基本响应，不包含summary字段和response字段
                     # 用户应该直接从query_result.columns和query_result.rows获取数据
@@ -380,7 +380,7 @@ class CituLangGraphAgent:
                         "success": True,
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "query_result": data_result,  # 字段重命名：data_result → query_result
+                        "query_result": query_result,  # 获取query_result字段
                         "execution_path": state["execution_path"],
                         "classification_info": {
                             "confidence": state["classification_confidence"],
@@ -509,7 +509,7 @@ class CituLangGraphAgent:
             # 数据库查询流程状态
             sql=None,
             sql_generation_attempts=0,
-            data_result=None,
+            query_result=None,
             summary=None,
             
             # 聊天响应

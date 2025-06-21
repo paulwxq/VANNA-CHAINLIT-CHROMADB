@@ -435,7 +435,7 @@ def ask_agent():
             "response": "最终回答",
             "type": "DATABASE/CHAT",
             "sql": "生成的SQL（如果是数据库查询）",
-            "data_result": {
+            "query_result": {
                 "rows": [...],
                 "columns": [...],
                 "row_count": 数字
@@ -491,7 +491,7 @@ def ask_agent():
                 classification_info=agent_result.get("classification_info", {}),
                 response=agent_result.get("response", ""),
                 sql=agent_result.get("sql"),
-                query_result=agent_result.get("data_result"),  # 字段重命名：data_result → query_result
+                query_result=agent_result.get("query_result"),  # 修复：从query_result字段获取数据
                 summary=agent_result.get("summary")
             ))
         else:

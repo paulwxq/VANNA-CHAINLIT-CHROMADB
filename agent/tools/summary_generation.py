@@ -5,13 +5,13 @@ import pandas as pd
 from common.vanna_instance import get_vanna_instance
 
 @tool
-def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Dict[str, Any]:
+def generate_summary(question: str, query_result: Dict[str, Any], sql: str) -> Dict[str, Any]:
     """
     为查询结果生成自然语言摘要。
     
     Args:
         question: 原始问题
-        data_result: 查询结果数据
+        query_result: 查询结果数据
         sql: 执行的SQL语句
         
     Returns:
@@ -25,7 +25,7 @@ def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Di
     try:
         print(f"[TOOL:generate_summary] 开始生成摘要，问题: {question}")
         
-        if not data_result or not data_result.get("rows"):
+        if not query_result or not query_result.get("rows"):
             return {
                 "success": True,
                 "summary": "查询执行完成，但没有找到符合条件的数据。",
@@ -33,7 +33,7 @@ def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Di
             }
         
         # 重构DataFrame用于摘要生成
-        df = _reconstruct_dataframe(data_result)
+        df = _reconstruct_dataframe(query_result)
         
         if df is None or df.empty:
             return {
@@ -48,7 +48,7 @@ def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Di
         
         if summary is None:
             # 生成默认摘要
-            summary = _generate_default_summary(question, data_result, sql)
+            summary = _generate_default_summary(question, query_result, sql)
         
         print(f"[TOOL:generate_summary] 摘要生成成功: {summary[:100]}...")
         
@@ -62,7 +62,7 @@ def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Di
         print(f"[ERROR] 摘要生成异常: {str(e)}")
         
         # 生成备用摘要
-        fallback_summary = _generate_fallback_summary(question, data_result, sql)
+        fallback_summary = _generate_fallback_summary(question, query_result, sql)
         
         return {
             "success": True,  # 即使异常也返回成功，因为有备用摘要
@@ -70,11 +70,11 @@ def generate_summary(question: str, data_result: Dict[str, Any], sql: str) -> Di
             "message": f"使用备用摘要生成: {str(e)}"
         }
 
-def _reconstruct_dataframe(data_result: Dict[str, Any]) -> pd.DataFrame:
+def _reconstruct_dataframe(query_result: Dict[str, Any]) -> pd.DataFrame:
     """从查询结果重构DataFrame"""
     try:
-        rows = data_result.get("rows", [])
-        columns = data_result.get("columns", [])
+        rows = query_result.get("rows", [])
+        columns = query_result.get("columns", [])
         
         if not rows or not columns:
             return pd.DataFrame()
@@ -85,11 +85,11 @@ def _reconstruct_dataframe(data_result: Dict[str, Any]) -> pd.DataFrame:
         print(f"[WARNING] DataFrame重构失败: {str(e)}")
         return pd.DataFrame()
 
-def _generate_default_summary(question: str, data_result: Dict[str, Any], sql: str) -> str:
+def _generate_default_summary(question: str, query_result: Dict[str, Any], sql: str) -> str:
     """生成默认摘要"""
     try:
-        row_count = data_result.get("row_count", 0)
-        columns = data_result.get("columns", [])
+        row_count = query_result.get("row_count", 0)
+        columns = query_result.get("columns", [])
         
         if row_count == 0:
             return "查询执行完成，但没有找到符合条件的数据。"
@@ -102,11 +102,11 @@ def _generate_default_summary(question: str, data_result: Dict[str, Any], sql: s
         return ' '.join(summary_parts)
         
     except Exception:
-        return f"查询执行完成，共返回 {data_result.get('row_count', 0)} 条记录。"
+        return f"查询执行完成，共返回 {query_result.get('row_count', 0)} 条记录。"
 
-def _generate_fallback_summary(question: str, data_result: Dict[str, Any], sql: str) -> str:
+def _generate_fallback_summary(question: str, query_result: Dict[str, Any], sql: str) -> str:
     """生成备用摘要"""
-    row_count = data_result.get("row_count", 0)
+    row_count = query_result.get("row_count", 0)
     
     if row_count == 0:
         return "查询执行完成，但没有找到符合条件的数据。请检查查询条件是否正确。"

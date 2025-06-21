@@ -18,7 +18,7 @@ class AgentState(TypedDict):
     # 数据库查询流程状态
     sql: Optional[str]
     sql_generation_attempts: int
-    data_result: Optional[Dict[str, Any]]
+    query_result: Optional[Dict[str, Any]]
     summary: Optional[str]
     
     # 聊天响应
