@@ -144,13 +144,19 @@ class CituLangGraphAgent:
             return state
     
     def _classify_question_node(self, state: AgentState) -> AgentState:
-        """问题分类节点 - 支持路由模式"""
+        """问题分类节点 - 支持渐进式分类策略"""
         try:
             from app_config import QUESTION_ROUTING_MODE
             
             print(f"[CLASSIFY_NODE] 开始分类问题: {state['question']}")
             
-            classification_result = self.classifier.classify(state["question"])
+            # 获取上下文类型（如果有的话）
+            context_type = state.get("context_type")
+            if context_type:
+                print(f"[CLASSIFY_NODE] 检测到上下文类型: {context_type}")
+            
+            # 使用渐进式分类策略
+            classification_result = self.classifier.classify(state["question"], context_type)
             
             # 更新状态
             state["question_type"] = classification_result.question_type
@@ -456,22 +462,25 @@ class CituLangGraphAgent:
             # 聊天Agent可以处理不确定的情况，并在必要时引导用户提供更多信息
             return "CHAT"
     
-    def process_question(self, question: str, session_id: str = None) -> Dict[str, Any]:
+    def process_question(self, question: str, session_id: str = None, context_type: str = None) -> Dict[str, Any]:
         """
         统一的问题处理入口
         
         Args:
             question: 用户问题
             session_id: 会话ID
+            context_type: 上下文类型 ("DATABASE" 或 "CHAT")，用于渐进式分类
             
         Returns:
             Dict包含完整的处理结果
         """
         try:
             print(f"[CITU_AGENT] 开始处理问题: {question}")
+            if context_type:
+                print(f"[CITU_AGENT] 上下文类型: {context_type}")
             
             # 初始化状态
-            initial_state = self._create_initial_state(question, session_id)
+            initial_state = self._create_initial_state(question, session_id, context_type)
             
             # 执行工作流
             final_state = self.workflow.invoke(
@@ -497,8 +506,8 @@ class CituLangGraphAgent:
                 "execution_path": ["error"]
             }
     
-    def _create_initial_state(self, question: str, session_id: str = None) -> AgentState:
-        """创建初始状态 - 支持路由模式"""
+    def _create_initial_state(self, question: str, session_id: str = None, context_type: str = None) -> AgentState:
+        """创建初始状态 - 支持渐进式分类"""
         try:
             from app_config import QUESTION_ROUTING_MODE
         except ImportError:
@@ -508,6 +517,9 @@ class CituLangGraphAgent:
             # 输入信息
             question=question,
             session_id=session_id,
+            
+            # 上下文信息
+            context_type=context_type,
             
             # 分类结果 (初始值，会在分类节点或直接模式初始化节点中更新)
             question_type="UNCERTAIN",

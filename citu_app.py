@@ -463,8 +463,24 @@ def ask_agent():
             user_id, conversation_id_input, continue_conversation
         )
         
-        # 3. 获取上下文（提前到缓存检查之前）
+        # 3. 获取上下文和上下文类型（提前到缓存检查之前）
         context = redis_conversation_manager.get_context(conversation_id)
+        
+        # 获取上下文类型：从最后一条助手消息的metadata中获取类型
+        context_type = None
+        if context:
+            try:
+                # 获取最后一条助手消息的metadata
+                messages = redis_conversation_manager.get_messages(conversation_id, limit=10)
+                for message in reversed(messages):  # 从最新的开始找
+                    if message.get("role") == "assistant":
+                        metadata = message.get("metadata", {})
+                        context_type = metadata.get("type")
+                        if context_type:
+                            print(f"[AGENT_API] 检测到上下文类型: {context_type}")
+                            break
+            except Exception as e:
+                print(f"[WARNING] 获取上下文类型失败: {str(e)}")
         
         # 4. 检查缓存（新逻辑：放宽使用条件，严控存储条件）
         cached_answer = redis_conversation_manager.get_cached_answer(question, context)
@@ -550,7 +566,8 @@ def ask_agent():
         
         agent_result = agent.process_question(
             question=enhanced_question,  # 使用增强后的问题
-            session_id=browser_session_id
+            session_id=browser_session_id,
+            context_type=context_type  # 传递上下文类型
         )
         
         # 8. 处理Agent结果
