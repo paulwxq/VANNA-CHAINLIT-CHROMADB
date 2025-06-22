@@ -183,8 +183,13 @@ REDIS_PASSWORD = None
 # 缓存开关配置
 ENABLE_CONVERSATION_CONTEXT = True      # 是否启用对话上下文
 ENABLE_QUESTION_ANSWER_CACHE = True     # 是否启用问答结果缓存
+ENABLE_EMBEDDING_CACHE = True           # 是否启用embedding向量缓存
 
 # TTL配置（单位：秒）
 CONVERSATION_TTL = 7 * 24 * 3600        # 对话保存7天
 USER_CONVERSATIONS_TTL = 7 * 24 * 3600  # 用户对话列表保存7天（所有用户统一）
 QUESTION_ANSWER_TTL = 24 * 3600         # 问答结果缓存24小时
+EMBEDDING_CACHE_TTL = 30 * 24 * 3600    # embedding向量缓存30天
+
+# Embedding缓存管理配置
+EMBEDDING_CACHE_MAX_SIZE = 5000        # 最大缓存问题数量

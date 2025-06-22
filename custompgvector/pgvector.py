@@ -12,6 +12,9 @@ from vanna.exceptions import ValidationError
 from vanna.base import VannaBase
 from vanna.types import TrainingPlan, TrainingPlanItem
 
+# 导入embedding缓存管理器
+from common.embedding_cache_manager import get_embedding_cache_manager
+
 
 class PG_VectorStore(VannaBase):
     def __init__(self, config=None):
@@ -108,10 +111,31 @@ class PG_VectorStore(VannaBase):
 
     # 在原来的基础之上，增加相似度的值。
     def get_similar_question_sql(self, question: str) -> list:
-        docs_with_scores = self.sql_collection.similarity_search_with_score(
-            query=question,
-            k=self.n_results
-        )
+        # 尝试使用embedding缓存
+        embedding_cache = get_embedding_cache_manager()
+        cached_embedding = embedding_cache.get_cached_embedding(question)
+        
+        if cached_embedding is not None:
+            # 使用缓存的embedding进行向量搜索
+            docs_with_scores = self.sql_collection.similarity_search_with_score_by_vector(
+                embedding=cached_embedding,
+                k=self.n_results
+            )
+        else:
+            # 执行常规的向量搜索（会自动生成embedding）
+            docs_with_scores = self.sql_collection.similarity_search_with_score(
+                query=question,
+                k=self.n_results
+            )
+            
+            # 获取刚生成的embedding并缓存
+            try:
+                # 通过embedding_function生成向量并缓存
+                generated_embedding = self.embedding_function.generate_embedding(question)
+                if generated_embedding:
+                    embedding_cache.cache_embedding(question, generated_embedding)
+            except Exception as e:
+                print(f"[WARNING] 缓存embedding失败: {e}")
 
         results = []
         for doc, score in docs_with_scores:
@@ -138,10 +162,31 @@ class PG_VectorStore(VannaBase):
         return filtered_results
 
     def get_related_ddl(self, question: str, **kwargs) -> list:
-        docs_with_scores = self.ddl_collection.similarity_search_with_score(
-            query=question,
-            k=self.n_results
-        )
+        # 尝试使用embedding缓存
+        embedding_cache = get_embedding_cache_manager()
+        cached_embedding = embedding_cache.get_cached_embedding(question)
+        
+        if cached_embedding is not None:
+            # 使用缓存的embedding进行向量搜索
+            docs_with_scores = self.ddl_collection.similarity_search_with_score_by_vector(
+                embedding=cached_embedding,
+                k=self.n_results
+            )
+        else:
+            # 执行常规的向量搜索（会自动生成embedding）
+            docs_with_scores = self.ddl_collection.similarity_search_with_score(
+                query=question,
+                k=self.n_results
+            )
+            
+            # 获取刚生成的embedding并缓存
+            try:
+                # 通过embedding_function生成向量并缓存
+                generated_embedding = self.embedding_function.generate_embedding(question)
+                if generated_embedding:
+                    embedding_cache.cache_embedding(question, generated_embedding)
+            except Exception as e:
+                print(f"[WARNING] 缓存embedding失败: {e}")
 
         results = []
         for doc, score in docs_with_scores:
@@ -168,10 +213,31 @@ class PG_VectorStore(VannaBase):
         return filtered_results
 
     def get_related_documentation(self, question: str, **kwargs) -> list:
-        docs_with_scores = self.documentation_collection.similarity_search_with_score(
-            query=question,
-            k=self.n_results
-        )
+        # 尝试使用embedding缓存
+        embedding_cache = get_embedding_cache_manager()
+        cached_embedding = embedding_cache.get_cached_embedding(question)
+        
+        if cached_embedding is not None:
+            # 使用缓存的embedding进行向量搜索
+            docs_with_scores = self.documentation_collection.similarity_search_with_score_by_vector(
+                embedding=cached_embedding,
+                k=self.n_results
+            )
+        else:
+            # 执行常规的向量搜索（会自动生成embedding）
+            docs_with_scores = self.documentation_collection.similarity_search_with_score(
+                query=question,
+                k=self.n_results
+            )
+            
+            # 获取刚生成的embedding并缓存
+            try:
+                # 通过embedding_function生成向量并缓存
+                generated_embedding = self.embedding_function.generate_embedding(question)
+                if generated_embedding:
+                    embedding_cache.cache_embedding(question, generated_embedding)
+            except Exception as e:
+                print(f"[WARNING] 缓存embedding失败: {e}")
 
         results = []
         for doc, score in docs_with_scores:
@@ -520,10 +586,31 @@ class PG_VectorStore(VannaBase):
         self._ensure_error_sql_collection()
         
         try:
-            docs_with_scores = self.error_sql_collection.similarity_search_with_score(
-                query=question,
-                k=self.n_results
-            )
+            # 尝试使用embedding缓存
+            embedding_cache = get_embedding_cache_manager()
+            cached_embedding = embedding_cache.get_cached_embedding(question)
+            
+            if cached_embedding is not None:
+                # 使用缓存的embedding进行向量搜索
+                docs_with_scores = self.error_sql_collection.similarity_search_with_score_by_vector(
+                    embedding=cached_embedding,
+                    k=self.n_results
+                )
+            else:
+                # 执行常规的向量搜索（会自动生成embedding）
+                docs_with_scores = self.error_sql_collection.similarity_search_with_score(
+                    query=question,
+                    k=self.n_results
+                )
+                
+                # 获取刚生成的embedding并缓存
+                try:
+                    # 通过embedding_function生成向量并缓存
+                    generated_embedding = self.embedding_function.generate_embedding(question)
+                    if generated_embedding:
+                        embedding_cache.cache_embedding(question, generated_embedding)
+                except Exception as e:
+                    print(f"[WARNING] 缓存embedding失败: {e}")
             
             results = []
             for doc, score in docs_with_scores:

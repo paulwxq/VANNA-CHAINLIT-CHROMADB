@@ -21,7 +21,8 @@ from common.result import (  # 统一导入所有需要的响应函数
 from app_config import (  # 添加Redis相关配置导入
     USER_MAX_CONVERSATIONS,
     CONVERSATION_CONTEXT_COUNT,
-    DEFAULT_ANONYMOUS_USER
+    DEFAULT_ANONYMOUS_USER,
+    ENABLE_QUESTION_ANSWER_CACHE
 )
 
 # 设置默认的最大返回行数
@@ -1701,6 +1702,96 @@ def get_user_conversations_with_messages(user_id: str):
         print(f"[ERROR] 获取用户完整对话数据失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取用户对话数据失败，请稍后重试"
+        )), 500
+
+
+# ==================== Embedding缓存管理接口 ====================
+
+@app.flask_app.route('/api/v0/embedding_cache_stats', methods=['GET'])
+def embedding_cache_stats():
+    """获取embedding缓存统计信息"""
+    try:
+        from common.embedding_cache_manager import get_embedding_cache_manager
+        
+        cache_manager = get_embedding_cache_manager()
+        stats = cache_manager.get_cache_stats()
+        
+        return jsonify(success_response(
+            response_text="获取embedding缓存统计成功",
+            data=stats
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] 获取embedding缓存统计失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取embedding缓存统计失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/embedding_cache_cleanup', methods=['POST'])
+def embedding_cache_cleanup():
+    """清空所有embedding缓存"""
+    try:
+        from common.embedding_cache_manager import get_embedding_cache_manager
+        
+        cache_manager = get_embedding_cache_manager()
+        
+        if not cache_manager.is_available():
+            return jsonify(internal_error_response(
+                response_text="Embedding缓存功能未启用或不可用"
+            )), 400
+        
+        success = cache_manager.clear_all_cache()
+        
+        if success:
+            return jsonify(success_response(
+                response_text="所有embedding缓存已清空",
+                data={"cleared": True}
+            ))
+        else:
+            return jsonify(internal_error_response(
+                response_text="清空embedding缓存失败"
+            )), 500
+        
+    except Exception as e:
+        print(f"[ERROR] 清空embedding缓存失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="清空embedding缓存失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/cache_overview_full', methods=['GET'])
+def cache_overview_full():
+    """获取所有缓存系统的综合概览"""
+    try:
+        from common.embedding_cache_manager import get_embedding_cache_manager
+        from common.vanna_instance import get_vanna_instance
+        from common.session_aware_cache import get_cache
+        
+        # 获取现有的缓存统计
+        vanna_cache = get_vanna_instance()
+        cache = get_cache()
+        
+        cache_overview = {
+            "conversation_aware_cache": {
+                "enabled": True,
+                "total_items": len(cache.cache),
+                "sessions": list(cache.cache.keys()) if hasattr(cache, 'cache') else []
+            },
+            "question_answer_cache": {
+                "enabled": ENABLE_QUESTION_ANSWER_CACHE,
+                "stats": redis_conversation_manager.get_stats() if redis_conversation_manager.is_available() else None
+            },
+            "embedding_cache": get_embedding_cache_manager().get_cache_stats()
+        }
+        
+        return jsonify(success_response(
+            response_text="获取综合缓存概览成功",
+            data=cache_overview
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] 获取综合缓存概览失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取缓存概览失败，请稍后重试"
         )), 500
 
 
