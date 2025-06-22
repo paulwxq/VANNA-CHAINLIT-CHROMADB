@@ -133,20 +133,26 @@ class QuestionClassifier:
             "平台", "系统", "AI", "助手", "谢谢", "再见"
         ]
 
-    def classify(self, question: str, context_type: Optional[str] = None) -> ClassificationResult:
+    def classify(self, question: str, context_type: Optional[str] = None, routing_mode: Optional[str] = None) -> ClassificationResult:
         """
         主分类方法：支持渐进式分类策略
         
         Args:
             question: 当前问题
             context_type: 上下文类型 ("DATABASE" 或 "CHAT")，可选
+            routing_mode: 路由模式，可选，用于覆盖配置文件设置
         """
-        try:
-            from app_config import QUESTION_ROUTING_MODE
-            print(f"[CLASSIFIER] 使用路由模式: {QUESTION_ROUTING_MODE}")
-        except ImportError:
-            QUESTION_ROUTING_MODE = "hybrid"
-            print(f"[CLASSIFIER] 配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
+        # 确定使用的路由模式
+        if routing_mode:
+            QUESTION_ROUTING_MODE = routing_mode
+            print(f"[CLASSIFIER] 使用传入的路由模式: {QUESTION_ROUTING_MODE}")
+        else:
+            try:
+                from app_config import QUESTION_ROUTING_MODE
+                print(f"[CLASSIFIER] 使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
+            except ImportError:
+                QUESTION_ROUTING_MODE = "hybrid"
+                print(f"[CLASSIFIER] 配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
         
         # 根据路由模式选择分类策略
         if QUESTION_ROUTING_MODE == "database_direct":

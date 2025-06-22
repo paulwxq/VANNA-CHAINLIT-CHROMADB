@@ -445,10 +445,21 @@ def ask_agent():
     conversation_id_input = req.get("conversation_id", None)
     continue_conversation = req.get("continue_conversation", False)
     
+    # 新增：路由模式参数解析和验证
+    api_routing_mode = req.get("routing_mode", None)
+    VALID_ROUTING_MODES = ["database_direct", "chat_direct", "hybrid", "llm_only"]
+    
     if not question:
         return jsonify(bad_request_response(
             response_text="缺少必需参数：question",
             missing_params=["question"]
+        )), 400
+    
+    # 验证routing_mode参数
+    if api_routing_mode and api_routing_mode not in VALID_ROUTING_MODES:
+        return jsonify(bad_request_response(
+            response_text=f"无效的routing_mode参数值: {api_routing_mode}，支持的值: {VALID_ROUTING_MODES}",
+            invalid_params=["routing_mode"]
         )), 400
 
     try:
@@ -554,7 +565,22 @@ def ask_agent():
             enhanced_question = question
             print(f"[AGENT_API] 新对话，无上下文")
         
-        # 7. 现有Agent处理逻辑（保持不变）
+        # 7. 确定最终使用的路由模式（优先级逻辑）
+        if api_routing_mode:
+            # API传了参数，优先使用
+            effective_routing_mode = api_routing_mode
+            print(f"[AGENT_API] 使用API指定的路由模式: {effective_routing_mode}")
+        else:
+            # API没传参数，使用配置文件
+            try:
+                from app_config import QUESTION_ROUTING_MODE
+                effective_routing_mode = QUESTION_ROUTING_MODE
+                print(f"[AGENT_API] 使用配置文件路由模式: {effective_routing_mode}")
+            except ImportError:
+                effective_routing_mode = "hybrid"
+                print(f"[AGENT_API] 配置文件读取失败，使用默认路由模式: {effective_routing_mode}")
+        
+        # 8. 现有Agent处理逻辑（修改为传递路由模式）
         try:
             agent = get_citu_langraph_agent()
         except Exception as e:
@@ -567,7 +593,8 @@ def ask_agent():
         agent_result = agent.process_question(
             question=enhanced_question,  # 使用增强后的问题
             session_id=browser_session_id,
-            context_type=context_type  # 传递上下文类型
+            context_type=context_type,  # 传递上下文类型
+            routing_mode=effective_routing_mode  # 新增：传递路由模式
         )
         
         # 8. 处理Agent结果
@@ -632,7 +659,9 @@ def ask_agent():
                 from_cache=False,
                 conversation_status=conversation_status["status"],
                 conversation_message=conversation_status["message"],
-                requested_conversation_id=conversation_status.get("requested_id")
+                requested_conversation_id=conversation_status.get("requested_id"),
+                routing_mode_used=effective_routing_mode,  # 新增：实际使用的路由模式
+                routing_mode_source="api" if api_routing_mode else "config"  # 新增：路由模式来源
             ))
         else:
             # 错误处理（修正：确保使用现有的错误响应格式）
