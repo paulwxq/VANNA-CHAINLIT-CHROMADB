@@ -167,15 +167,12 @@ QUESTION_ROUTING_MODE = "hybrid"
 # ==================== Redis对话管理配置 ====================
 
 # 对话上下文配置
-CONVERSATION_CONTEXT_COUNT = 5          # 传递给LLM的上下文消息条数
+CONVERSATION_CONTEXT_COUNT = 2          # 传递给LLM的上下文消息条数
 CONVERSATION_MAX_LENGTH = 20            # 单个对话最大消息数
 USER_MAX_CONVERSATIONS = 5              # 用户最大对话数
 
 # 用户管理配置
-DEFAULT_ANONYMOUS_USER_PREFIX = "guest" # 匿名用户前缀
-GUEST_USER_TTL = 7 * 24 * 3600         # guest用户数据保存7天
-MAX_GUEST_CONVERSATIONS = 3             # guest用户最多3个对话
-MAX_REGISTERED_CONVERSATIONS = 10       # 注册用户最多10个对话
+DEFAULT_ANONYMOUS_USER = "guest"        # 匿名用户统一ID
 
 # Redis配置
 REDIS_HOST = "localhost"
@@ -187,8 +184,7 @@ REDIS_PASSWORD = None
 ENABLE_CONVERSATION_CONTEXT = True      # 是否启用对话上下文
 ENABLE_QUESTION_ANSWER_CACHE = True     # 是否启用问答结果缓存
 
-# TTL配置（单位：秒）- 修正TTL逻辑
+# TTL配置（单位：秒）
 CONVERSATION_TTL = 7 * 24 * 3600        # 对话保存7天
-USER_CONVERSATIONS_TTL = 7 * 24 * 3600  # 用户对话列表保存7天（与对话TTL一致）
+USER_CONVERSATIONS_TTL = 7 * 24 * 3600  # 用户对话列表保存7天（所有用户统一）
 QUESTION_ANSWER_TTL = 24 * 3600         # 问答结果缓存24小时
-GUEST_USER_TTL = 7 * 24 * 3600         # guest用户数据保存7天

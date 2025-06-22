@@ -10,8 +10,7 @@ from app_config import (
     CONVERSATION_CONTEXT_COUNT, CONVERSATION_MAX_LENGTH, USER_MAX_CONVERSATIONS,
     CONVERSATION_TTL, USER_CONVERSATIONS_TTL, QUESTION_ANSWER_TTL,
     ENABLE_CONVERSATION_CONTEXT, ENABLE_QUESTION_ANSWER_CACHE,
-    DEFAULT_ANONYMOUS_USER_PREFIX, MAX_GUEST_CONVERSATIONS, MAX_REGISTERED_CONVERSATIONS,
-    GUEST_USER_TTL
+    DEFAULT_ANONYMOUS_USER
 )
 
 class RedisConversationManager:
@@ -49,13 +48,13 @@ class RedisConversationManager:
                        session_id: Optional[str], request_ip: str,
                        login_user_id: Optional[str] = None) -> str:
         """
-        智能解析用户ID - 修正版
+        智能解析用户ID - 统一版
         
         Args:
             user_id_from_request: 请求参数中的user_id
-            session_id: 浏览器session_id
+            session_id: 浏览器session_id  
             request_ip: 请求IP地址
-            login_user_id: 从Flask session中获取的登录用户ID（在ask_agent中获取）
+            login_user_id: 从Flask session中获取的登录用户ID
         """
         
         # 1. 优先使用登录用户ID
@@ -68,18 +67,9 @@ class RedisConversationManager:
             print(f"[REDIS_CONV] 使用请求参数user_id: {user_id_from_request}")
             return user_id_from_request
         
-        # 3. 都没有则为匿名用户（guest）
-        if session_id:
-            guest_suffix = hashlib.md5(session_id.encode()).hexdigest()[:8]
-            guest_id = f"{DEFAULT_ANONYMOUS_USER_PREFIX}_{guest_suffix}"
-            print(f"[REDIS_CONV] 生成稳定guest用户: {guest_id}")
-            return guest_id
-        
-        # 4. 最后基于IP的临时guest ID
-        ip_suffix = hashlib.md5(request_ip.encode()).hexdigest()[:8]
-        temp_guest_id = f"{DEFAULT_ANONYMOUS_USER_PREFIX}_temp_{ip_suffix}"
-        print(f"[REDIS_CONV] 生成临时guest用户: {temp_guest_id}")
-        return temp_guest_id
+        # 3. 都没有则为匿名用户（统一为guest）
+        print(f"[REDIS_CONV] 使用匿名用户: {DEFAULT_ANONYMOUS_USER}")
+        return DEFAULT_ANONYMOUS_USER
     
     def resolve_conversation_id(self, user_id: str, conversation_id_input: Optional[str], 
                               continue_conversation: bool) -> tuple[str, dict]:
@@ -264,9 +254,9 @@ class RedisConversationManager:
                     content = msg_data.get("content", "")
                     
                     if role == "user":
-                        context_parts.append(f"用户: {content}")
+                        context_parts.append(f"User: {content}")
                     elif role == "assistant":
-                        context_parts.append(f"助手: {content}")
+                        context_parts.append(f"Assistant: {content}")
                         
                 except json.JSONDecodeError:
                     continue
@@ -349,16 +339,18 @@ class RedisConversationManager:
     # ==================== 智能缓存（修正版）====================
     
     def get_cached_answer(self, question: str, context: str = "") -> Optional[Dict]:
-        """检查问答缓存 - 真正上下文感知版"""
+        """检查问答缓存 - 放宽使用条件，无论是否有上下文都可以查找缓存"""
         if not self.is_available() or not ENABLE_QUESTION_ANSWER_CACHE:
             return None
         
+        # 移除上下文检查，允许任何情况下查找缓存
         try:
-            cache_key = self._get_cache_key(question, context)
-            cached_answer = self.redis_client.get(cache_key)  # 使用独立key而不是hash
+            cache_key = self._get_cache_key(question)
+            cached_answer = self.redis_client.get(cache_key)
             
             if cached_answer:
-                print(f"[REDIS_CONV] 缓存命中: {cache_key}")
+                context_info = "有上下文" if context else "无上下文"
+                print(f"[REDIS_CONV] 缓存命中: {cache_key} ({context_info})")
                 return json.loads(cached_answer)
             
             return None
@@ -368,19 +360,23 @@ class RedisConversationManager:
             return None
     
     def cache_answer(self, question: str, answer: Dict, context: str = ""):
-        """缓存问答结果 - 真正上下文感知版"""
+        """缓存问答结果 - 只缓存无上下文的问答"""
         if not self.is_available() or not ENABLE_QUESTION_ANSWER_CACHE:
             return
         
+        # 新增：如果有上下文，不缓存
+        if context:
+            print(f"[REDIS_CONV] 跳过缓存存储：存在上下文")
+            return
+        
         try:
-            cache_key = self._get_cache_key(question, context)
+            cache_key = self._get_cache_key(question)
             
-            # 添加缓存时间戳和上下文哈希
+            # 添加缓存时间戳
             answer_with_meta = {
                 **answer,
                 "cached_at": datetime.now().isoformat(),
-                "original_question": question,
-                "context_hash": hashlib.md5(context.encode()).hexdigest()[:8] if context else ""
+                "original_question": question
             }
             
             # 使用独立key，每个缓存项单独设置TTL
@@ -395,15 +391,9 @@ class RedisConversationManager:
         except Exception as e:
             print(f"[ERROR] 缓存答案失败: {str(e)}")
     
-    def _get_cache_key(self, question: str, context: str = "") -> str:
-        """生成真正包含上下文的缓存键"""
-        if context and ENABLE_CONVERSATION_CONTEXT:
-            # 使用上下文内容而不是conversation_id
-            cache_input = f"context:{context}\nquestion:{question}"
-        else:
-            cache_input = question
-        
-        normalized = cache_input.strip().lower()
+    def _get_cache_key(self, question: str) -> str:
+        """生成缓存键 - 简化版，只基于问题本身"""
+        normalized = question.strip().lower()
         question_hash = hashlib.md5(normalized.encode('utf-8')).hexdigest()[:16]
         return f"qa_cache:{question_hash}"
     
@@ -412,39 +402,23 @@ class RedisConversationManager:
     def _add_conversation_to_user(self, user_id: str, conversation_id: str):
         """添加对话到用户列表，按时间自动排序"""
         try:
-            # 获取用户类型配置
-            config = self._get_user_type_config(user_id)
-            
             # LPUSH添加到列表头部（最新的）
             self.redis_client.lpush(f"user:{user_id}:conversations", conversation_id)
             
-            # 根据用户类型限制数量
+            # 统一限制数量
             self.redis_client.ltrim(
                 f"user:{user_id}:conversations", 
-                0, config["max_conversations"] - 1
+                0, USER_MAX_CONVERSATIONS - 1
             )
             
-            # 设置TTL
+            # 统一设置TTL
             self.redis_client.expire(
                 f"user:{user_id}:conversations", 
-                config["ttl"]
+                USER_CONVERSATIONS_TTL
             )
             
         except Exception as e:
             print(f"[ERROR] 添加对话到用户列表失败: {str(e)}")
-    
-    def _get_user_type_config(self, user_id: str) -> Dict:
-        """根据用户类型返回不同的配置 - 修正版"""
-        if user_id.startswith(DEFAULT_ANONYMOUS_USER_PREFIX):
-            return {
-                "max_conversations": MAX_GUEST_CONVERSATIONS,
-                "ttl": GUEST_USER_TTL  # 使用专门的guest TTL
-            }
-        else:
-            return {
-                "max_conversations": MAX_REGISTERED_CONVERSATIONS,
-                "ttl": USER_CONVERSATIONS_TTL
-            }
     
     def _update_conversation_meta(self, conversation_id: str):
         """更新对话元信息"""

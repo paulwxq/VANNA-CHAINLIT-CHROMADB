@@ -236,8 +236,13 @@ class CituLangGraphAgent:
             # 步骤3：生成摘要（可通过配置控制，仅在有数据时生成）
             if ENABLE_RESULT_SUMMARY and query_result.get('row_count', 0) > 0:
                 print(f"[DATABASE_AGENT] 步骤3：生成摘要")
+                
+                # 重要：提取原始问题用于摘要生成，避免历史记录循环嵌套
+                original_question = self._extract_original_question(question)
+                print(f"[DATABASE_AGENT] 原始问题: {original_question}")
+                
                 summary_result = generate_summary.invoke({
-                    "question": question,
+                    "question": original_question,  # 使用原始问题而不是enhanced_question
                     "query_result": query_result,
                     "sql": sql
                 })
@@ -539,6 +544,32 @@ class CituLangGraphAgent:
             routing_mode=QUESTION_ROUTING_MODE
         )
     
+    def _extract_original_question(self, question: str) -> str:
+        """
+        从enhanced_question中提取原始问题
+        
+        Args:
+            question: 可能包含上下文的问题
+            
+        Returns:
+            str: 原始问题
+        """
+        try:
+            # 检查是否为enhanced_question格式
+            if "\n[CONTEXT]\n" in question and "\n[CURRENT]\n" in question:
+                # 提取[CURRENT]标签后的内容
+                current_start = question.find("\n[CURRENT]\n")
+                if current_start != -1:
+                    original_question = question[current_start + len("\n[CURRENT]\n"):].strip()
+                    return original_question
+            
+            # 如果不是enhanced_question格式，直接返回原问题
+            return question.strip()
+            
+        except Exception as e:
+            print(f"[WARNING] 提取原始问题失败: {str(e)}")
+            return question.strip()
+
     def health_check(self) -> Dict[str, Any]:
         """健康检查"""
         try:

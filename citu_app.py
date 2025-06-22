@@ -20,7 +20,8 @@ from common.result import (  # 统一导入所有需要的响应函数
 )
 from app_config import (  # 添加Redis相关配置导入
     USER_MAX_CONVERSATIONS,
-    CONVERSATION_CONTEXT_COUNT
+    CONVERSATION_CONTEXT_COUNT,
+    DEFAULT_ANONYMOUS_USER
 )
 
 # 设置默认的最大返回行数
@@ -465,16 +466,38 @@ def ask_agent():
         # 3. 获取上下文（提前到缓存检查之前）
         context = redis_conversation_manager.get_context(conversation_id)
         
-        # 4. 检查缓存（修正：传入context以实现真正的上下文感知）
+        # 4. 检查缓存（新逻辑：放宽使用条件，严控存储条件）
         cached_answer = redis_conversation_manager.get_cached_answer(question, context)
         if cached_answer:
             print(f"[AGENT_API] 使用缓存答案")
+            
+            # 确定缓存答案的助手回复内容（使用与非缓存相同的优先级逻辑）
+            cached_response_type = cached_answer.get("type", "UNKNOWN")
+            if cached_response_type == "DATABASE":
+                # DATABASE类型：按优先级选择内容
+                if cached_answer.get("response"):
+                    # 优先级1：错误或解释性回复（如SQL生成失败）
+                    assistant_response = cached_answer.get("response")
+                elif cached_answer.get("summary"):
+                    # 优先级2：查询成功的摘要
+                    assistant_response = cached_answer.get("summary")
+                elif cached_answer.get("query_result"):
+                    # 优先级3：构造简单描述
+                    query_result = cached_answer.get("query_result")
+                    row_count = query_result.get("row_count", 0)
+                    assistant_response = f"查询执行完成，共返回 {row_count} 条记录。"
+                else:
+                    # 异常情况
+                    assistant_response = "数据库查询已处理。"
+            else:
+                # CHAT类型：直接使用response
+                assistant_response = cached_answer.get("response", "")
             
             # 更新对话历史
             redis_conversation_manager.save_message(conversation_id, "user", question)
             redis_conversation_manager.save_message(
                 conversation_id, "assistant", 
-                cached_answer.get("response", ""),
+                assistant_response,
                 metadata={"from_cache": True}
             )
             
@@ -487,7 +510,7 @@ def ask_agent():
             # 使用agent_success_response返回标准格式
             return jsonify(agent_success_response(
                 response_type=cached_answer.get("type", "UNKNOWN"),
-                response_text=cached_answer.get("response", ""),
+                response=cached_answer.get("response", ""),  # 修正：使用response而不是response_text
                 sql=cached_answer.get("sql"),
                 query_result=cached_answer.get("query_result"),
                 summary=cached_answer.get("summary"),
@@ -496,7 +519,7 @@ def ask_agent():
                 classification_info=cached_answer.get("classification_info", {}),
                 conversation_id=conversation_id,
                 user_id=user_id,
-                is_guest_user=user_id.startswith("guest"),
+                is_guest_user=(user_id == DEFAULT_ANONYMOUS_USER),
                 context_used=bool(context),
                 from_cache=True,
                 conversation_status=conversation_status["status"],
@@ -509,7 +532,7 @@ def ask_agent():
         
         # 6. 构建带上下文的问题
         if context:
-            enhanced_question = f"对话历史:\n{context}\n\n当前问题: {question}"
+            enhanced_question = f"\n[CONTEXT]\n{context}\n\n[CURRENT]\n{question}"
             print(f"[AGENT_API] 使用上下文，长度: {len(context)}字符")
         else:
             enhanced_question = question
@@ -540,7 +563,26 @@ def ask_agent():
             summary = agent_result.get("summary")
             execution_path = agent_result.get("execution_path", [])
             classification_info = agent_result.get("classification_info", {})
-            assistant_response = response_text  # 使用response_text作为助手回复
+            
+            # 确定助手回复内容的优先级
+            if response_type == "DATABASE":
+                # DATABASE类型：按优先级选择内容
+                if response_text:
+                    # 优先级1：错误或解释性回复（如SQL生成失败）
+                    assistant_response = response_text
+                elif summary:
+                    # 优先级2：查询成功的摘要
+                    assistant_response = summary
+                elif query_result:
+                    # 优先级3：构造简单描述
+                    row_count = query_result.get("row_count", 0)
+                    assistant_response = f"查询执行完成，共返回 {row_count} 条记录。"
+                else:
+                    # 异常情况
+                    assistant_response = "数据库查询已处理。"
+            else:
+                # CHAT类型：直接使用response
+                assistant_response = response_text
             
             # 保存助手回复
             redis_conversation_manager.save_message(
@@ -552,14 +594,14 @@ def ask_agent():
                 }
             )
             
-            # 缓存成功的答案（修正：缓存完整的agent_result）
+            # 缓存成功的答案（新逻辑：只缓存无上下文的问答）
             # 直接缓存agent_result，它已经包含所有需要的字段
             redis_conversation_manager.cache_answer(question, agent_result, context)
             
             # 使用agent_success_response的正确方式
             return jsonify(agent_success_response(
                 response_type=response_type,
-                response_text=response_text,
+                response=response_text,  # 修正：使用response而不是response_text
                 sql=sql,
                 query_result=query_result,
                 summary=summary,
@@ -568,7 +610,7 @@ def ask_agent():
                 classification_info=classification_info,
                 conversation_id=conversation_id,
                 user_id=user_id,
-                is_guest_user=user_id.startswith("guest"),
+                is_guest_user=(user_id == DEFAULT_ANONYMOUS_USER),
                 context_used=bool(context),
                 from_cache=False,
                 conversation_status=conversation_status["status"],
@@ -1546,6 +1588,73 @@ def conversation_cleanup():
     except Exception as e:
         return jsonify(internal_error_response(
             response_text="对话清理失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/user/<user_id>/conversations/full', methods=['GET'])
+def get_user_conversations_with_messages(user_id: str):
+    """
+    获取用户的完整对话数据（包含所有消息）
+    一次性返回用户的所有对话和每个对话下的消息历史
+    
+    Args:
+        user_id: 用户ID（路径参数）
+        conversation_limit: 对话数量限制（查询参数，可选，不传则返回所有对话）
+        message_limit: 每个对话的消息数限制（查询参数，可选，不传则返回所有消息）
+    
+    Returns:
+        包含用户所有对话和消息的完整数据
+    """
+    try:
+        # 获取可选参数，不传递时使用None（返回所有记录）
+        conversation_limit = request.args.get('conversation_limit', type=int)
+        message_limit = request.args.get('message_limit', type=int)
+        
+        # 获取用户的对话列表
+        conversations = redis_conversation_manager.get_conversations(user_id, conversation_limit)
+        
+        # 为每个对话获取消息历史
+        full_conversations = []
+        total_messages = 0
+        
+        for conversation in conversations:
+            conversation_id = conversation['conversation_id']
+            
+            # 获取对话消息
+            messages = redis_conversation_manager.get_conversation_messages(
+                conversation_id, message_limit
+            )
+            
+            # 获取对话元数据
+            meta = redis_conversation_manager.get_conversation_meta(conversation_id)
+            
+            # 组合完整数据
+            full_conversation = {
+                **conversation,  # 基础对话信息
+                'meta': meta,    # 对话元数据
+                'messages': messages,  # 消息列表
+                'message_count': len(messages)
+            }
+            
+            full_conversations.append(full_conversation)
+            total_messages += len(messages)
+        
+        return jsonify(success_response(
+            response_text="获取用户完整对话数据成功",
+            data={
+                "user_id": user_id,
+                "conversations": full_conversations,
+                "total_conversations": len(full_conversations),
+                "total_messages": total_messages,
+                "conversation_limit_applied": conversation_limit,
+                "message_limit_applied": message_limit,
+                "query_time": datetime.now().isoformat()
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] 获取用户完整对话数据失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取用户对话数据失败，请稍后重试"
         )), 500
 
 

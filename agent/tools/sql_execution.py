@@ -127,8 +127,7 @@ def execute_sql(sql: str, max_rows: int = None) -> Dict[str, Any]:
                 "columns": columns,
                 "row_count": len(rows),
                 "total_row_count": total_rows,
-                "is_limited": total_rows > max_rows,
-                "sql": sql
+                "is_limited": total_rows > max_rows
             },
             "message": f"查询成功，共 {total_rows} 行数据"
         }
