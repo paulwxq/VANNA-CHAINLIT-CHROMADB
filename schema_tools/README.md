@@ -11,6 +11,7 @@
 - ⚡ 并发处理提高效率
 - 📁 生成标准化的DDL和MD文档
 - 🛡️ 完整的错误处理和日志记录
+- 🎯 **新增**：Question-SQL训练数据生成
 
 ## 安装依赖
 
@@ -20,7 +21,7 @@ pip install asyncpg asyncio
 
 ## 使用方法
 
-### 1. 命令行方式
+### 1. 生成DDL和MD文档
 
 #### 基本使用
 ```bash
@@ -40,15 +41,28 @@ python -m schema_tools \
   --pipeline full
 ```
 
-#### 仅检查数据库权限
+### 2. 生成Question-SQL训练数据（新功能）
+
+在生成DDL和MD文件后，可以使用新的Question-SQL生成功能：
+
 ```bash
-python -m schema_tools \
-  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
-  --check-permissions-only
+python -m schema_tools.qs_generator \
+  --output-dir ./output \
+  --table-list ./tables.txt \
+  --business-context "高速公路服务区管理系统" \
+  --db-name highway_db
 ```
 
-### 2. 编程方式
+这将：
+1. 验证DDL和MD文件数量是否正确
+2. 读取所有MD文件内容
+3. 使用LLM提取业务分析主题
+4. 为每个主题生成10个Question-SQL对
+5. 输出到 `qs_highway_db_时间戳_pair.json` 文件
 
+### 3. 编程方式使用
+
+#### 生成DDL/MD文档
 ```python
 import asyncio
 from schema_tools import SchemaTrainingDataAgent
@@ -68,34 +82,38 @@ async def generate_training_data():
 asyncio.run(generate_training_data())
 ```
 
-### 3. 表清单文件格式
+#### 生成Question-SQL数据
+```python
+import asyncio
+from schema_tools import QuestionSQLGenerationAgent
 
-创建一个文本文件（如 `tables.txt`），每行一个表名：
+async def generate_qs_data():
+    agent = QuestionSQLGenerationAgent(
+        output_dir="./output",
+        table_list_file="tables.txt",
+        business_context="高速公路服务区管理系统",
+        db_name="highway_db"
+    )
+    
+    report = await agent.generate()
+    print(f"生成完成: {report['total_questions']} 个问题")
 
-```text
-# 这是注释行
-public.users
-public.orders
-hr.employees
-sales.products
+asyncio.run(generate_qs_data())
 ```
 
 ## 输出文件结构
 
 ```
 output/
-├── ddl/                          # DDL文件目录
-│   ├── users.ddl
-│   ├── orders.ddl
-│   └── hr__employees.ddl
-├── docs/                         # MD文档目录
-│   ├── users_detail.md
-│   ├── orders_detail.md
-│   └── hr__employees_detail.md
+├── bss_car_day_count.ddl         # DDL文件
+├── bss_car_day_count_detail.md   # MD文档
 ├── logs/                         # 日志目录
 │   └── schema_tools_20240101_120000.log
-└── filename_mapping.txt          # 文件名映射报告
+├── filename_mapping.txt          # 文件名映射报告
+└── qs_highway_db_20240101_143052_pair.json  # Question-SQL训练数据
 ```
+
+注意：配置已更新为不再创建ddl/和docs/子目录，所有文件直接放在output目录下。
 
 ## 配置选项
 
@@ -106,20 +124,19 @@ SCHEMA_TOOLS_CONFIG = {
     # 核心配置
     "output_directory": "training/generated_data",
     "default_pipeline": "full",
+    "create_subdirectories": False,       # 不创建子目录
     
     # 数据处理配置
     "sample_data_limit": 20,              # 采样数据量
     "max_concurrent_tables": 3,           # 最大并发数
     
-    # LLM配置
-    "max_llm_retries": 3,                # LLM重试次数
-    "comment_generation_timeout": 30,     # 超时时间
-    
-    # 系统表过滤
-    "filter_system_tables": True,         # 过滤系统表
-    
-    # 错误处理
-    "continue_on_error": True,            # 错误后继续
+    # Question-SQL生成配置
+    "qs_generation": {
+        "max_tables": 20,                 # 最大表数量限制
+        "theme_count": 5,                 # 生成主题数量
+        "questions_per_theme": 10,        # 每主题问题数
+        "max_concurrent_themes": 3,       # 并行处理主题数
+    }
 }
 ```
 
@@ -134,53 +151,29 @@ SCHEMA_TOOLS_CONFIG = {
 - **analysis_only**: 仅分析不生成文件
   - 数据库检查 → 数据采样 → 注释生成
 
-## 业务上下文
+## Question-SQL生成特性
 
-业务上下文帮助LLM更好地理解表和字段的含义：
+### 功能亮点
+- 🔍 自动验证文件完整性
+- 📊 智能提取5个业务分析主题
+- 🤖 每个主题生成10个高质量Question-SQL对
+- 💾 支持中间结果保存和恢复
+- ⚡ 支持并行处理提高效率
 
-### 方式1：命令行参数
-```bash
---business-context "高速公路服务区管理系统"
+### 限制说明
+- 一次最多处理20个表（可配置）
+- 表数量超限会抛出异常
+- 主题生成失败可跳过继续处理
+
+### 输出格式
+```json
+[
+  {
+    "question": "按服务区统计每日营收趋势（最近30天）？",
+    "sql": "SELECT service_name AS 服务区, oper_date AS 营业日期, SUM(pay_sum) AS 每日营收 FROM bss_business_day_data WHERE oper_date >= CURRENT_DATE - INTERVAL '30 day' AND delete_ts IS NULL GROUP BY service_name, oper_date ORDER BY 营业日期 ASC;"
+  }
+]
 ```
-
-### 方式2：文件方式
-```bash
---business-context-file business_context.txt
-```
-
-### 方式3：业务词典
-编辑 `schema_tools/prompts/business_dictionary.txt`：
-```text
-BSS - Business Support System，业务支撑系统
-SA - Service Area，服务区
-POS - Point of Sale，销售点
-```
-
-## 高级功能
-
-### 1. 自定义系统表过滤
-
-```python
-from schema_tools.utils.system_filter import SystemTableFilter
-
-filter = SystemTableFilter()
-filter.add_custom_prefix("tmp_")      # 添加自定义前缀
-filter.add_custom_schema("temp")      # 添加自定义schema
-```
-
-### 2. 大表智能采样
-
-对于超过100万行的大表，自动使用分层采样策略：
-- 前N行
-- 随机中间行
-- 后N行
-
-### 3. 枚举字段检测
-
-自动检测并验证枚举字段：
-- VARCHAR类型
-- 样例值重复度高
-- 字段名包含类型关键词（状态、类型、级别等）
 
 ## 常见问题
 

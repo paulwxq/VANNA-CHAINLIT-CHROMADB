@@ -15,6 +15,7 @@
 - LLM辅助的智能注释生成和枚举检测
 - 并发处理提高效率
 - 完整的错误处理和日志记录
+- **新增**: Question-SQL训练数据生成功能
 
 ## 2. 系统架构
 
@@ -25,6 +26,8 @@ schema_tools/                    # 独立的schema工具模块
 ├── __init__.py                 # 模块入口
 ├── config.py                   # 配置文件
 ├── training_data_agent.py      # 主AI Agent
+├── qs_agent.py                 # Question-SQL生成Agent (新增)
+├── qs_generator.py             # Question-SQL命令行入口 (新增)
 ├── tools/                      # Agent工具集
 │   ├── __init__.py
 │   ├── base.py                 # 基础工具类和注册机制
@@ -33,6 +36,13 @@ schema_tools/                    # 独立的schema工具模块
 │   ├── comment_generator.py    # LLM注释生成工具
 │   ├── ddl_generator.py        # DDL格式生成工具
 │   └── doc_generator.py        # MD文档生成工具
+├── validators/                 # 验证器模块 (新增)
+│   ├── __init__.py
+│   └── file_count_validator.py # 文件数量验证器
+├── analyzers/                  # 分析器模块 (新增)
+│   ├── __init__.py
+│   ├── md_analyzer.py          # MD文件分析器
+│   └── theme_extractor.py      # 主题提取器
 ├── prompts/                    # 提示词和业务词典
 │   ├── table_comment_template.txt
 │   ├── field_comment_template.txt
@@ -55,7 +65,13 @@ schema_tools/                    # 独立的schema工具模块
 - **职责**: 整体流程控制、工具调度、并发管理
 - **特点**: 单一Agent管理多工具的架构
 
-#### 2.2.2 Agent工具集（基于装饰器注册）
+#### 2.2.2 Question-SQL生成Agent（新增）
+
+- **类名**: `QuestionSQLGenerationAgent`
+- **职责**: 生成Question-SQL训练数据对
+- **特点**: 独立的功能模块，可在DDL/MD生成后单独执行
+
+#### 2.2.3 Agent工具集（基于装饰器注册）
 
 1. **DatabaseInspectorTool**: 获取表元数据
 2. **DataSamplerTool**: 采样表数据
@@ -63,9 +79,15 @@ schema_tools/                    # 独立的schema工具模块
 4. **DDLGeneratorTool**: 生成DDL格式文件
 5. **DocGeneratorTool**: 生成MD文档
 
+#### 2.2.4 验证器和分析器（新增）
+
+1. **FileCountValidator**: 验证DDL和MD文件数量
+2. **MDFileAnalyzer**: 读取和分析MD文件内容
+3. **ThemeExtractor**: 使用LLM提取业务分析主题
+
 ## 3. 详细设计
 
-### 3.1 工具执行流程
+### 3.1 DDL/MD生成流程
 
 ```mermaid
 graph TD
@@ -77,6 +99,21 @@ graph TD
     F --> G[DocGeneratorTool]
     G --> H[写入文件]
     H --> I[记录日志]
+    I --> J[完成]
+```
+
+### 3.2 Question-SQL生成流程（新增）
+
+```mermaid
+graph TD
+    A[开始] --> B[FileCountValidator<br/>验证文件数量]
+    B --> C{验证通过?}
+    C -->|否| D[报错退出]
+    C -->|是| E[MDFileAnalyzer<br/>读取所有MD文件]
+    E --> F[ThemeExtractor<br/>提取分析主题]
+    F --> G[处理每个主题]
+    G --> H[生成Question-SQL对]
+    H --> I[保存JSON文件]
     I --> J[完成]
 ```
 
@@ -317,12 +354,23 @@ SCHEMA_TOOLS_CONFIG = {
     "ddl_file_suffix": ".ddl",
     "doc_file_suffix": "_detail.md",
     "log_file": "schema_tools.log",
-    "create_subdirectories": True,  # 是否创建ddl/docs子目录
+    "create_subdirectories": False,  # 不创建子目录，所有文件放在output目录下
     
     # 输出格式配置
     "include_sample_data_in_comments": True,  # 注释中是否包含示例数据
     "max_comment_length": 500,  # 最大注释长度
     "include_field_statistics": True,  # 是否包含字段统计信息
+    
+    # Question-SQL生成配置（新增）
+    "qs_generation": {
+        "max_tables": 20,                    # 最大表数量限制
+        "theme_count": 5,                    # LLM生成的主题数量
+        "questions_per_theme": 10,           # 每个主题生成的问题数
+        "max_concurrent_themes": 3,          # 并行处理的主题数量
+        "continue_on_theme_error": True,     # 主题生成失败是否继续
+        "save_intermediate": True,           # 是否保存中间结果
+        "output_file_prefix": "qs",          # 输出文件前缀
+    }
 }
 ```
 
@@ -666,9 +714,26 @@ bss_service_area 表记录高速公路服务区的基础属性...
 - service_area_type 为枚举字段，包含两个取值：信息化服务区、智能化服务区。
 ```
 
+### 6.3 Question-SQL文件格式（新增）
+
+```json
+[
+  {
+    "question": "按服务区统计每日营收趋势（最近30天）？",
+    "sql": "SELECT service_name AS 服务区, oper_date AS 营业日期, SUM(pay_sum) AS 每日营收 FROM bss_business_day_data WHERE oper_date >= CURRENT_DATE - INTERVAL '30 day' AND delete_ts IS NULL GROUP BY service_name, oper_date ORDER BY 营业日期 ASC NULLS LAST;"
+  },
+  {
+    "question": "按月统计服务区营收趋势？",
+    "sql": "SELECT service_name AS 服务区, DATE_TRUNC('month', oper_date) AS 月份, SUM(pay_sum) AS 月营收 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name, 月份 ORDER BY 月份 ASC NULLS LAST;"
+  }
+]
+```
+
 ## 7. 使用方式
 
 ### 7.1 命令行方式
+
+#### 7.1.1 生成DDL和MD文档
 
 ```bash
 # 基本使用
@@ -698,6 +763,25 @@ python -m schema_tools \
 python -m schema_tools \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --check-permissions-only
+```
+
+#### 7.1.2 生成Question-SQL训练数据（新增）
+
+```bash
+# 基本使用（在生成DDL/MD文件后执行）
+python -m schema_tools.qs_generator \
+  --output-dir ./output \
+  --table-list ./schema_tools/tables.txt \
+  --business-context "高速公路服务区管理系统" \
+  --db-name highway_db
+
+# 启用详细日志
+python -m schema_tools.qs_generator \
+  --output-dir ./output \
+  --table-list ./tables.txt \
+  --business-context "电商系统" \
+  --db-name ecommerce_db \
+  --verbose
 ```
 
 ### 7.2 编程方式

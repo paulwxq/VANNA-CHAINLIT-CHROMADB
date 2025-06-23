@@ -77,7 +77,7 @@ SCHEMA_TOOLS_CONFIG = {
     "ddl_file_suffix": ".ddl",
     "doc_file_suffix": "_detail.md",
     "log_file": "schema_tools.log",
-    "create_subdirectories": True,            # 是否创建ddl/docs子目录
+    "create_subdirectories": False,            # 是否创建ddl/docs子目录
     
     # 输出格式配置
     "include_sample_data_in_comments": True,  # 注释中是否包含示例数据
@@ -88,6 +88,17 @@ SCHEMA_TOOLS_CONFIG = {
     "debug_mode": False,                      # 调试模式
     "save_llm_prompts": False,               # 是否保存LLM提示词
     "save_llm_responses": False,             # 是否保存LLM响应
+    
+    # Question-SQL生成配置
+    "qs_generation": {
+        "max_tables": 20,                    # 最大表数量限制
+        "theme_count": 5,                    # LLM生成的主题数量
+        "questions_per_theme": 10,           # 每个主题生成的问题数
+        "max_concurrent_themes": 1,          # 并行处理的主题数量
+        "continue_on_theme_error": True,     # 主题生成失败是否继续
+        "save_intermediate": True,           # 是否保存中间结果
+        "output_file_prefix": "qs",          # 输出文件前缀
+    }
 }
 
 # 从app_config获取相关配置（如果可用）

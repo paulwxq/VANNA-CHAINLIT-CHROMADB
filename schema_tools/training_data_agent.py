@@ -95,7 +95,9 @@ class SchemaTrainingDataAgent:
         if self.config["create_subdirectories"]:
             os.makedirs(os.path.join(self.output_dir, "ddl"), exist_ok=True)
             os.makedirs(os.path.join(self.output_dir, "docs"), exist_ok=True)
-            os.makedirs(os.path.join(self.output_dir, "logs"), exist_ok=True)
+        
+        # logs目录始终创建
+        os.makedirs(os.path.join(self.output_dir, "logs"), exist_ok=True)
         
         # 初始化数据库工具
         database_tool = ToolRegistry.get_tool("database_inspector", db_connection=self.db_connection)

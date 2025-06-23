@@ -10,6 +10,8 @@ schema_tools/
 ├── __main__.py                     # 命令行入口
 ├── config.py                       # 配置管理
 ├── training_data_agent.py          # 主AI Agent
+├── qs_agent.py                     # Question-SQL生成Agent (新增)
+├── qs_generator.py                 # Question-SQL命令行入口 (新增)
 ├── tools/                          # Agent工具集
 │   ├── __init__.py                 # 工具模块初始化
 │   ├── base.py                     # 基础工具类和注册机制
@@ -18,6 +20,13 @@ schema_tools/
 │   ├── comment_generator.py        # LLM注释生成工具
 │   ├── ddl_generator.py            # DDL格式生成工具
 │   └── doc_generator.py            # MD文档生成工具
+├── validators/                     # 验证器模块 (新增)
+│   ├── __init__.py
+│   └── file_count_validator.py     # 文件数量验证器
+├── analyzers/                      # 分析器模块 (新增)
+│   ├── __init__.py
+│   ├── md_analyzer.py              # MD文件分析器
+│   └── theme_extractor.py          # 主题提取器
 ├── utils/                          # 工具函数
 │   ├── __init__.py
 │   ├── data_structures.py          # 数据结构定义
@@ -1938,3 +1947,283 @@ except ValueError as e:
 - **可扩展性**: 工具注册机制便于添加新功能
 - **配置灵活**: 多层次配置支持
 - **日志完整**: 详细的执行日志和统计报告
+
+## 8. Question-SQL生成功能详细设计（新增）
+
+### 8.1 功能概述
+
+Question-SQL生成功能是Schema Tools的扩展模块，用于从已生成的DDL和MD文件自动生成高质量的Question-SQL训练数据对。该功能可以独立运行，支持人工检查DDL/MD文件后再执行。
+
+### 8.2 核心组件设计
+
+#### 8.2.1 QuestionSQLGenerationAgent (`qs_agent.py`)
+
+```python
+class QuestionSQLGenerationAgent:
+    """Question-SQL生成Agent"""
+    
+    def __init__(self, 
+                 output_dir: str,
+                 table_list_file: str,
+                 business_context: str,
+                 db_name: str = None):
+        """
+        初始化Agent
+        
+        Args:
+            output_dir: 输出目录（包含DDL和MD文件）
+            table_list_file: 表清单文件路径
+            business_context: 业务上下文
+            db_name: 数据库名称（用于输出文件命名）
+        """
+        self.output_dir = Path(output_dir)
+        self.table_list_file = table_list_file
+        self.business_context = business_context
+        self.db_name = db_name or "db"
+        
+        # 初始化组件
+        self.validator = FileCountValidator()
+        self.md_analyzer = MDFileAnalyzer(output_dir)
+        self.theme_extractor = None  # 延迟初始化
+        
+        # 中间结果存储
+        self.intermediate_results = []
+        self.intermediate_file = None
+```
+
+#### 8.2.2 文件数量验证器 (`validators/file_count_validator.py`)
+
+```python
+@dataclass
+class ValidationResult:
+    """验证结果"""
+    is_valid: bool
+    table_count: int
+    ddl_count: int
+    md_count: int
+    error: str = ""
+    missing_ddl: List[str] = field(default_factory=list)
+    missing_md: List[str] = field(default_factory=list)
+
+class FileCountValidator:
+    """文件数量验证器"""
+    
+    def validate(self, table_list_file: str, output_dir: str) -> ValidationResult:
+        """
+        验证生成的文件数量是否与表数量一致
+        
+        主要验证：
+        1. 表数量是否超过20个限制
+        2. DDL文件数量是否与表数量一致
+        3. MD文件数量是否与表数量一致
+        """
+        # 解析表清单
+        tables = self.table_parser.parse_file(table_list_file)
+        table_count = len(tables)
+        
+        # 检查表数量限制
+        max_tables = self.config['qs_generation']['max_tables']
+        if table_count > max_tables:
+            return ValidationResult(
+                is_valid=False,
+                table_count=table_count,
+                ddl_count=0,
+                md_count=0,
+                error=f"表数量({table_count})超过限制({max_tables})"
+            )
+```
+
+#### 8.2.3 MD文件分析器 (`analyzers/md_analyzer.py`)
+
+```python
+class MDFileAnalyzer:
+    """MD文件分析器"""
+    
+    async def read_all_md_files(self) -> str:
+        """
+        读取所有MD文件的完整内容
+        
+        Returns:
+            所有MD文件内容的组合字符串
+        """
+        md_files = sorted(self.output_dir.glob("*_detail.md"))
+        
+        all_contents = []
+        all_contents.append(f"# 数据库表结构文档汇总\n")
+        all_contents.append(f"共包含 {len(md_files)} 个表\n\n")
+        
+        for md_file in md_files:
+            content = md_file.read_text(encoding='utf-8')
+            
+            # 添加分隔符，便于LLM区分不同表
+            all_contents.append("=" * 80)
+            all_contents.append(f"# 文件: {md_file.name}")
+            all_contents.append("=" * 80)
+            all_contents.append(content)
+            all_contents.append("\n")
+        
+        combined_content = "\n".join(all_contents)
+        
+        # 检查内容大小（预估token数）
+        estimated_tokens = len(combined_content) / 4
+        if estimated_tokens > 100000:
+            self.logger.warning(f"MD内容可能过大，预估tokens: {estimated_tokens:.0f}")
+        
+        return combined_content
+```
+
+#### 8.2.4 主题提取器 (`analyzers/theme_extractor.py`)
+
+```python
+class ThemeExtractor:
+    """主题提取器"""
+    
+    async def extract_themes(self, md_contents: str) -> List[Dict[str, Any]]:
+        """
+        从MD内容中提取分析主题
+        """
+        prompt = f"""你是一位经验丰富的业务数据分析师，正在分析{self.business_context}的数据库。
+
+以下是数据库中所有表的详细结构说明：
+
+{md_contents}
+
+基于对这些表结构的理解，请从业务分析的角度提出 {theme_count} 个数据查询分析主题。
+
+要求：
+1. 每个主题应该有明确的业务价值和分析目标
+2. 主题之间应该有所区别，覆盖不同的业务领域  
+3. 你需要自行决定每个主题应该涉及哪些表
+4. 主题应该体现实际业务场景的数据分析需求
+5. 考虑时间维度、对比分析、排名统计等多种分析角度
+
+请以JSON格式输出：
+```json
+{{
+  "themes": [
+    {{
+      "name": "经营收入分析",
+      "description": "分析服务区的营业收入情况，包括日收入趋势、月度对比、服务区排名等",
+      "focus_areas": ["收入趋势", "服务区对比", "时间维度分析"],
+      "related_tables": ["bss_business_day_data", "其他相关表名"]
+    }}
+  ]
+}}
+```"""
+        
+        response = await self._call_llm(prompt)
+        themes = self._parse_theme_response(response)
+        
+        return themes
+```
+
+### 8.3 执行流程详细设计
+
+#### 8.3.1 主流程
+
+```python
+async def generate(self) -> Dict[str, Any]:
+    """生成Question-SQL对"""
+    
+    # 1. 验证文件数量
+    validation_result = self.validator.validate(self.table_list_file, str(self.output_dir))
+    if not validation_result.is_valid:
+        raise ValueError(f"文件验证失败: {validation_result.error}")
+    
+    # 2. 读取所有MD文件内容
+    md_contents = await self.md_analyzer.read_all_md_files()
+    
+    # 3. 初始化LLM组件
+    self._initialize_llm_components()
+    
+    # 4. 提取分析主题
+    themes = await self.theme_extractor.extract_themes(md_contents)
+    
+    # 5. 初始化中间结果文件
+    self._init_intermediate_file()
+    
+    # 6. 处理每个主题
+    if self.config['qs_generation']['max_concurrent_themes'] > 1:
+        results = await self._process_themes_parallel(themes, md_contents)
+    else:
+        results = await self._process_themes_serial(themes, md_contents)
+    
+    # 7. 保存最终结果
+    output_file = await self._save_final_results(all_qs_pairs)
+    
+    return report
+```
+
+#### 8.3.2 主题处理
+
+```python
+async def _process_single_theme(self, theme: Dict, md_contents: str) -> Dict:
+    """处理单个主题"""
+    
+    prompt = f"""你是一位业务数据分析师，正在为{self.business_context}设计数据查询。
+
+当前分析主题：{theme['name']}
+主题描述：{theme['description']}
+关注领域：{', '.join(theme['focus_areas'])}
+相关表：{', '.join(theme['related_tables'])}
+
+数据库表结构信息：
+{md_contents}
+
+请为这个主题生成 {questions_count} 个业务问题和对应的SQL查询。
+
+要求：
+1. 问题应该从业务角度出发，贴合主题要求，具有实际分析价值
+2. SQL必须使用PostgreSQL语法
+3. 考虑实际业务逻辑（如软删除使用 delete_ts IS NULL 条件）
+4. 使用中文别名提高可读性（使用 AS 指定列别名）
+5. 问题应该多样化，覆盖不同的分析角度
+6. 包含时间筛选、分组统计、排序、限制等不同类型的查询
+7. SQL语句末尾必须以分号结束
+
+输出JSON格式：
+```json
+[
+  {{
+    "question": "具体的业务问题？",
+    "sql": "SELECT column AS 中文名 FROM table WHERE condition;"
+  }}
+]
+```"""
+    
+    response = await self._call_llm(prompt)
+    qs_pairs = self._parse_qs_response(response)
+    validated_pairs = self._validate_qs_pairs(qs_pairs, theme['name'])
+    
+    # 保存中间结果
+    await self._save_theme_results(theme['name'], validated_pairs)
+    
+    return {
+        'success': True,
+        'theme_name': theme['name'],
+        'qs_pairs': validated_pairs
+    }
+```
+
+### 8.4 中间结果保存机制
+
+```python
+def _init_intermediate_file(self):
+    """初始化中间结果文件"""
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    self.intermediate_file = self.output_dir / f"qs_intermediate_{timestamp}.json"
+    self.intermediate_results = []
+
+async def _save_theme_results(self, theme_name: str, qs_pairs: List[Dict]):
+    """保存单个主题的结果"""
+    theme_result = {
+        "theme": theme_name,
+        "timestamp": datetime.now().isoformat(),
+        "questions_count": len(qs_pairs),
+        "questions": qs_pairs
+    }
+    
+    self.intermediate_results.append(theme_result)
+    
+    # 立即保存到中间文件
+    if self.config['qs_generation']['save_intermediate']:
