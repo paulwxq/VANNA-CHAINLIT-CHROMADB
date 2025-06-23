@@ -13,6 +13,7 @@
 - 🛡️ 完整的错误处理和日志记录
 - 🎯 **新增**：Question-SQL训练数据生成
 - ✅ **新增**：SQL语句有效性验证
+- 🎭 **新增**：端到端工作流编排器
 
 ## 安装依赖
 
@@ -22,7 +23,72 @@ pip install asyncpg asyncio
 
 ## 使用方法
 
-### 1. 生成DDL和MD文档
+### 0. 🚀 一键执行完整工作流程（推荐）
+
+使用新的工作流编排器，一个命令完成所有步骤：
+
+#### 命令行方式
+```bash
+python -m schema_tools.schema_workflow_orchestrator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --table-list tables.txt \
+  --business-context "高速公路服务区管理系统" \
+  --db-name highway_db \
+  --output-dir ./output
+```
+
+#### 编程方式
+```python
+import asyncio
+from schema_tools.schema_workflow_orchestrator import SchemaWorkflowOrchestrator
+
+async def run_complete_workflow():
+    orchestrator = SchemaWorkflowOrchestrator(
+        db_connection="postgresql://user:pass@localhost:5432/dbname",
+        table_list_file="tables.txt",
+        business_context="高速公路服务区管理系统",
+        db_name="highway_db",
+        output_dir="./output"
+    )
+    
+    # 一键执行完整流程
+    report = await orchestrator.execute_complete_workflow()
+    
+    if report["success"]:
+        print(f"✅ 编排完成！最终生成 {report['final_outputs']['final_question_count']} 个问答对")
+        print(f"📄 输出文件: {report['final_outputs']['primary_output_file']}")
+    else:
+        print(f"❌ 编排失败: {report['error']['message']}")
+
+asyncio.run(run_complete_workflow())
+```
+
+**工作流编排器特性:**
+- 🔄 自动执行：DDL/MD生成 → Question-SQL生成 → SQL验证修复
+- 📊 详细报告：每个步骤的执行状态和性能指标
+- 🛠️ 灵活配置：可选择跳过验证、禁用修复等
+- 💾 中间结果保护：失败时保留已完成步骤的输出
+- 🎯 智能恢复：支持从中断点继续执行
+
+#### 工作流编排器命令行选项
+```bash
+# 跳过SQL验证
+python -m schema_tools.schema_workflow_orchestrator \
+  --db-connection "postgresql://..." --table-list tables.txt \
+  --business-context "系统" --db-name test_db --skip-validation
+
+# 禁用LLM修复
+python -m schema_tools.schema_workflow_orchestrator \
+  --db-connection "postgresql://..." --table-list tables.txt \
+  --business-context "系统" --db-name test_db --disable-llm-repair
+
+# 详细日志
+python -m schema_tools.schema_workflow_orchestrator \
+  --db-connection "postgresql://..." --table-list tables.txt \
+  --business-context "系统" --db-name test_db --verbose
+```
+
+### 1. 生成DDL和MD文档（分步执行）
 
 #### 基本使用
 ```bash
@@ -42,7 +108,7 @@ python -m schema_tools \
   --pipeline full
 ```
 
-### 2. 生成Question-SQL训练数据
+### 2. 生成Question-SQL训练数据（分步执行）
 
 在生成DDL和MD文件后，可以使用新的Question-SQL生成功能：
 
@@ -61,7 +127,7 @@ python -m schema_tools.qs_generator \
 4. 为每个主题生成10个Question-SQL对
 5. 输出到 `qs_highway_db_时间戳_pair.json` 文件
 
-### 3. 验证SQL语句有效性（新功能）
+### 3. 验证SQL语句有效性（分步执行）
 
 在生成Question-SQL对后，可以验证其中的SQL语句：
 
@@ -80,23 +146,22 @@ python -m schema_tools.sql_validator \
 
 #### SQL验证高级选项
 ```bash
-# 基本验证（仅生成报告）
+# 基本验证（启用修复和文件修改）
 python -m schema_tools.sql_validator \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --input-file ./data.json
 
-# 删除无效SQL（不进行LLM修复）
+# 仅生成报告，不修改文件
 python -m schema_tools.sql_validator \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --input-file ./data.json \
-  --modify-original-file
+  --no-modify-file
 
-# 启用LLM修复功能
+# 启用文件修改，但禁用LLM修复（仅删除无效SQL）
 python -m schema_tools.sql_validator \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --input-file ./data.json \
-  --enable-llm-repair \
-  --modify-original-file
+  --disable-llm-repair
 
 # 性能调优参数
 python -m schema_tools.sql_validator \
@@ -108,7 +173,7 @@ python -m schema_tools.sql_validator \
   --verbose
 ```
 
-### 4. 编程方式使用
+### 4. 编程方式使用（分步执行）
 
 #### 生成DDL/MD文档
 ```python

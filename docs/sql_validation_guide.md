@@ -2,6 +2,11 @@
 
 SQL验证器是Schema Tools的一个独立模块，用于验证Question-SQL对中的SQL语句是否有效。它通过执行`EXPLAIN`语句来检测SQL语法错误和表结构问题。
 
+**⚠️ 重要提示**：
+- **命令行模式默认行为**：启用LLM修复功能和文件修改功能
+- **配置文件默认值**：禁用修复和文件修改功能（保守设置）
+- 如需禁用默认功能，请使用 `--disable-llm-repair` 或 `--no-modify-file` 参数
+
 ## 功能特性
 
 - 🔍 使用PostgreSQL的EXPLAIN语句验证SQL有效性
@@ -57,25 +62,22 @@ python -m schema_tools.sql_validator \
 ### 高级选项
 
 ```bash
-# 调整性能参数
-python -m schema_tools.sql_validator \
-  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
-  --input-file ./data.json \
-  --max-concurrent 10 \
-  --batch-size 20 \
-  --timeout 60 \
-  --verbose
-
-# 基本使用（仅验证，不修改文件）
+# 基本使用（默认启用修复和文件修改）
 python -m schema_tools.sql_validator \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --input-file ./data.json
 
-# 启用LLM修复功能
+# 仅生成报告，不修改文件
 python -m schema_tools.sql_validator \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --input-file ./data.json \
-  --enable-llm-repair
+  --no-modify-file
+
+# 启用文件修改，但禁用LLM修复（仅删除无效SQL）
+python -m schema_tools.sql_validator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --input-file ./data.json \
+  --disable-llm-repair
 
 # 预检查模式（仅验证文件格式）
 python -m schema_tools.sql_validator \
@@ -118,46 +120,45 @@ SQL验证器现在支持自动修改原始JSON文件：
 
 ### 默认行为
 ```bash
-# 默认仅验证，不修改原文件
+# 默认启用修复和文件修改
 python -m schema_tools.sql_validator \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --input-file ./data.json
 ```
 
 执行后：
-- 生成验证报告：`sql_validation_时间戳_summary.txt`
-- 不修改原始文件
-
-### 仅删除无效SQL
-
-```bash
-# 仅删除无效SQL，不进行LLM修复
-python -m schema_tools.sql_validator \
-  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
-  --input-file ./data.json \
-  --modify-original-file
-```
-
-执行后：
 - 创建备份文件：`data.json.backup`
-- 修改原文件：`data.json`（删除验证失败的SQL）
+- 修改原文件：`data.json`（更新修复成功的SQL，删除无法修复的SQL）
 - 生成修改日志：`file_modifications_时间戳.log`
 - 生成验证报告：`sql_validation_时间戳_summary.txt`
 
-### 启用LLM修复功能
+### 仅生成报告
 
 ```bash
-# 启用LLM修复功能（需要同时指定文件修改参数）
+# 仅生成报告，不修改原文件
 python -m schema_tools.sql_validator \
   --db-connection "postgresql://user:pass@localhost:5432/dbname" \
   --input-file ./data.json \
-  --enable-llm-repair \
-  --modify-original-file
+  --no-modify-file
+```
+
+执行后：
+- 生成验证报告：`sql_validation_时间戳_summary.txt`
+- 不修改原始文件
+
+### 禁用LLM修复功能
+
+```bash
+# 启用文件修改，但禁用LLM修复（仅删除无效SQL）
+python -m schema_tools.sql_validator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --input-file ./data.json \
+  --disable-llm-repair
 ```
 
 执行后：
 - 创建备份文件：`data.json.backup`
-- 修改原文件：`data.json`（更新修复成功的SQL，删除无法修复的SQL）
+- 修改原文件：`data.json`（删除验证失败的SQL，不进行LLM修复）
 - 生成修改日志：`file_modifications_时间戳.log`
 - 生成验证报告：`sql_validation_时间戳_summary.txt`
 
@@ -328,25 +329,58 @@ SQL验证器的配置位于 `schema_tools/config.py` 中：
     "batch_size": 10,                    # 批处理大小
     "continue_on_error": True,           # 错误时是否继续
     "save_validation_report": True,      # 保存验证报告
+    "save_detailed_json_report": False,  # 保存详细JSON报告（可选）
     "readonly_mode": True,               # 启用只读模式
     "max_retry_count": 2,                # 验证失败重试次数
     "report_file_prefix": "sql_validation",  # 报告文件前缀
+    
+    # SQL修复配置
+    "enable_sql_repair": False,          # 启用SQL修复功能（配置文件默认禁用）
+    "llm_repair_timeout": 120,           # LLM修复超时时间(秒)
+    "repair_batch_size": 2,              # 修复批处理大小
+    
+    # 文件修改配置
+    "modify_original_file": False,       # 是否修改原始JSON文件（配置文件默认禁用）
 }
 ```
 
+**重要说明**：
+- 配置文件中的默认值为保守设置（禁用修复和文件修改）
+- 命令行模式下会自动启用修复和文件修改功能
+- 可通过命令行参数 `--disable-llm-repair` 和 `--no-modify-file` 禁用
+
 ## 命令行参数说明
 
-| 参数 | 类型 | 必需 | 说明 |
-|------|------|------|------|
-| `--db-connection` | string | 是 | PostgreSQL数据库连接字符串 |
-| `--input-file` | string | 是 | 输入的JSON文件路径 |
-| `--output-dir` | string | 否 | 验证报告输出目录 |
-| `--max-concurrent` | int | 否 | 最大并发验证数 |
-| `--batch-size` | int | 否 | 批处理大小 |
-| `--timeout` | int | 否 | 单个SQL验证超时时间（秒） |
-| `--verbose` | flag | 否 | 启用详细日志输出 |
-| `--log-file` | string | 否 | 日志文件路径 |
-| `--dry-run` | flag | 否 | 仅读取和解析文件，不执行验证 |
+### 必需参数
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `--db-connection` | string | PostgreSQL数据库连接字符串 |
+| `--input-file` | string | 输入的JSON文件路径（包含Question-SQL对） |
+
+### 可选参数
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--output-dir` | string | 输入文件同目录 | 验证报告输出目录 |
+| `--max-concurrent` | int | 5 | 最大并发验证数 |
+| `--batch-size` | int | 10 | 批处理大小 |
+| `--timeout` | int | 30 | 单个SQL验证超时时间（秒） |
+| `--verbose` | flag | False | 启用详细日志输出 |
+| `--log-file` | string | 无 | 日志文件路径 |
+| `--dry-run` | flag | False | 仅读取和解析文件，不执行验证 |
+| `--save-json` | flag | False | 同时保存详细的JSON报告 |
+
+### SQL修复和文件修改参数
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `--disable-llm-repair` | flag | False | 禁用LLM自动修复功能 |
+| `--enable-llm-repair` | flag | - | 启用LLM修复（向后兼容，与--disable-llm-repair相反） |
+| `--no-modify-file` | flag | False | 不修改原始JSON文件（仅生成验证报告） |
+| `--modify-original-file` | flag | - | 修改原始JSON文件（向后兼容，与--no-modify-file相反） |
+
+**注意**：
+- 命令行模式下，默认启用LLM修复和文件修改功能
+- 如需禁用，请明确使用 `--disable-llm-repair` 或 `--no-modify-file` 参数
+- 向后兼容参数仍然有效，但建议使用新的参数格式
 
 ## 错误处理机制
 

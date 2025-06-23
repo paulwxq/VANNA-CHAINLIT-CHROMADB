@@ -28,6 +28,9 @@ schema_tools/                    # 独立的schema工具模块
 ├── training_data_agent.py      # 主AI Agent
 ├── qs_agent.py                 # Question-SQL生成Agent (新增)
 ├── qs_generator.py             # Question-SQL命令行入口 (新增)
+├── sql_validation_agent.py     # SQL验证Agent (新增)
+├── sql_validator.py            # SQL验证命令行入口 (新增)
+├── schema_workflow_orchestrator.py  # 端到端工作流编排器 (新增)
 ├── tools/                      # Agent工具集
 │   ├── __init__.py
 │   ├── base.py                 # 基础工具类和注册机制
@@ -38,7 +41,8 @@ schema_tools/                    # 独立的schema工具模块
 │   └── doc_generator.py        # MD文档生成工具
 ├── validators/                 # 验证器模块 (新增)
 │   ├── __init__.py
-│   └── file_count_validator.py # 文件数量验证器
+│   ├── file_count_validator.py # 文件数量验证器
+│   └── sql_validator.py        # SQL验证器核心模块
 ├── analyzers/                  # 分析器模块 (新增)
 │   ├── __init__.py
 │   ├── md_analyzer.py          # MD文件分析器
@@ -71,7 +75,19 @@ schema_tools/                    # 独立的schema工具模块
 - **职责**: 生成Question-SQL训练数据对
 - **特点**: 独立的功能模块，可在DDL/MD生成后单独执行
 
-#### 2.2.3 Agent工具集（基于装饰器注册）
+#### 2.2.3 SQL验证Agent（新增）
+
+- **类名**: `SQLValidationAgent`
+- **职责**: 验证Question-SQL对中的SQL语句有效性，自动修复错误SQL
+- **特点**: 支持并发验证、LLM自动修复、原文件自动修改
+
+#### 2.2.4 工作流编排器（新增）
+
+- **类名**: `SchemaWorkflowOrchestrator`
+- **职责**: 端到端执行完整的Schema处理流程
+- **特点**: 统一管理DDL/MD生成、Question-SQL生成、SQL验证三个步骤
+
+#### 2.2.5 Agent工具集（基于装饰器注册）
 
 1. **DatabaseInspectorTool**: 获取表元数据
 2. **DataSamplerTool**: 采样表数据
@@ -79,11 +95,12 @@ schema_tools/                    # 独立的schema工具模块
 4. **DDLGeneratorTool**: 生成DDL格式文件
 5. **DocGeneratorTool**: 生成MD文档
 
-#### 2.2.4 验证器和分析器（新增）
+#### 2.2.6 验证器和分析器（新增）
 
 1. **FileCountValidator**: 验证DDL和MD文件数量
-2. **MDFileAnalyzer**: 读取和分析MD文件内容
-3. **ThemeExtractor**: 使用LLM提取业务分析主题
+2. **SQLValidator**: 验证SQL语句有效性，支持LLM自动修复
+3. **MDFileAnalyzer**: 读取和分析MD文件内容
+4. **ThemeExtractor**: 使用LLM提取业务分析主题
 
 ## 3. 详细设计
 
@@ -117,9 +134,52 @@ graph TD
     I --> J[完成]
 ```
 
-### 3.2 模块间接口规范
+### 3.3 SQL验证和修复流程（新增）
 
-#### 3.2.1 统一数据结构定义
+```mermaid
+graph TD
+    A[开始] --> B[读取Question-SQL文件]
+    B --> C[提取SQL语句]
+    C --> D[批量验证SQL]
+    D --> E{有失败的SQL?}
+    E -->|否| F[生成验证报告]
+    E -->|是| G{启用LLM修复?}
+    G -->|否| H[仅生成报告]
+    G -->|是| I[LLM修复失败SQL]
+    I --> J[重新验证修复后SQL]
+    J --> K{启用文件修改?}
+    K -->|否| F
+    K -->|是| L[创建备份文件]
+    L --> M[更新原文件]
+    M --> N[生成修改日志]
+    N --> F
+    F --> O[完成]
+    H --> F
+```
+
+### 3.4 端到端工作流编排流程（新增）
+
+```mermaid
+graph TD
+    A[开始] --> B[步骤1: DDL/MD生成]
+    B --> C{成功?}
+    C -->|否| D[生成错误报告]
+    C -->|是| E[步骤2: Question-SQL生成]
+    E --> F{成功?}
+    F -->|否| D
+    F -->|是| G{启用SQL验证?}
+    G -->|否| H[生成最终报告]
+    G -->|是| I[步骤3: SQL验证和修复]
+    I --> J{成功?}
+    J -->|否| D
+    J -->|是| H
+    H --> K[完成]
+    D --> K
+```
+
+### 3.5 模块间接口规范
+
+#### 3.5.1 统一数据结构定义
 
 ```python
 from dataclasses import dataclass
@@ -158,7 +218,7 @@ class ProcessingResult:
     warnings: List[str] = None
 ```
 
-#### 3.2.2 工具接口规范
+#### 3.5.2 工具接口规范
 
 ```python
 class BaseTool:
@@ -174,9 +234,9 @@ class BaseTool:
         pass
 ```
 
-### 3.3 可插拔处理链设计
+### 3.6 可插拔处理链设计
 
-#### 3.3.1 Pipeline配置
+#### 3.6.1 Pipeline配置
 
 ```python
 # 支持灵活的处理链配置
@@ -232,7 +292,7 @@ class PipelineExecutor:
 
 #### 3.4.1 表级并发
 
-- 最大并发表数: 可配置（默认3个）
+- 最大并发表数: 可配置（默认1个，避免LLM并发问题）
 - 使用asyncio.Semaphore控制并发数
 - 单表内工具串行执行
 
@@ -327,7 +387,7 @@ SCHEMA_TOOLS_CONFIG = {
     "large_table_threshold": 1000000,  # 大表阈值
     
     # 并发配置
-    "max_concurrent_tables": 3,
+    "max_concurrent_tables": 1,  # 建议保持1，避免LLM并发调用问题
     
     # LLM配置
     "use_app_config_llm": True,
@@ -366,10 +426,32 @@ SCHEMA_TOOLS_CONFIG = {
         "max_tables": 20,                    # 最大表数量限制
         "theme_count": 5,                    # LLM生成的主题数量
         "questions_per_theme": 10,           # 每个主题生成的问题数
-        "max_concurrent_themes": 3,          # 并行处理的主题数量
+        "max_concurrent_themes": 1,          # 并行处理的主题数量（建议保持1）
         "continue_on_theme_error": True,     # 主题生成失败是否继续
         "save_intermediate": True,           # 是否保存中间结果
         "output_file_prefix": "qs",          # 输出文件前缀
+    },
+    
+    # SQL验证配置（新增）
+    "sql_validation": {
+        "reuse_connection_pool": True,       # 复用现有连接池
+        "max_concurrent_validations": 5,     # 并发验证数
+        "validation_timeout": 30,            # 单个验证超时(秒)
+        "batch_size": 10,                    # 批处理大小
+        "continue_on_error": True,           # 错误时是否继续
+        "save_validation_report": True,      # 保存验证报告
+        "save_detailed_json_report": False,  # 保存详细JSON报告（可选）
+        "readonly_mode": True,               # 启用只读模式
+        "max_retry_count": 2,                # 验证失败重试次数
+        "report_file_prefix": "sql_validation",  # 报告文件前缀
+        
+        # SQL修复配置
+        "enable_sql_repair": False,          # 启用SQL修复功能（默认禁用）
+        "llm_repair_timeout": 120,           # LLM修复超时时间(秒)
+        "repair_batch_size": 2,              # 修复批处理大小
+        
+        # 文件修改配置
+        "modify_original_file": False,       # 是否修改原始JSON文件（默认禁用）
     }
 }
 ```
@@ -414,17 +496,20 @@ def generate_safe_filename(schema_name: str, table_name: str, suffix: str) -> st
 
 ```
 training/generated_data/
-├── ddl/
-│   ├── users.ddl                    # public.users
-│   ├── hr__employees.ddl            # hr.employees  
-│   └── sales__order_items.ddl       # sales.order-items
-├── docs/
-│   ├── users_detail.md
-│   ├── hr__employees_detail.md
-│   └── sales__order_items_detail.md
+├── users.ddl                        # public.users
+├── hr__employees.ddl                # hr.employees  
+├── sales__order_items.ddl           # sales.order-items
+├── users_detail.md                  # 对应的MD文档
+├── hr__employees_detail.md
+├── sales__order_items_detail.md
+├── qs_highway_db_20240101_pair.json # Question-SQL对文件
+├── metadata.txt                     # 主题元数据
+├── sql_validation_20240101_summary.txt  # SQL验证报告
 └── logs/
     └── schema_tools.log
 ```
+
+**注意**: 配置已更新为不创建ddl/和docs/子目录，所有文件直接放在output目录下。
 
 #### 4.3.3 重名检测与处理
 

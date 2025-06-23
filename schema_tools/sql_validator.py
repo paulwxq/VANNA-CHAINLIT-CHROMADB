@@ -23,11 +23,11 @@ def setup_argument_parser():
   # 基本使用（仅验证，不修改文件）
   python -m schema_tools.sql_validator --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json
   
-  # 仅删除无效SQL，不进行LLM修复
-  python -m schema_tools.sql_validator --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json --modify-original-file
+  # 启用文件修改，但禁用LLM修复（仅删除无效SQL）
+  python -m schema_tools.sql_validator --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json --modify-original-file --disable-llm-repair
   
-  # 启用LLM修复功能（需要同时指定文件修改参数）
-  python -m schema_tools.sql_validator --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json --enable-llm-repair --modify-original-file
+  # 启用文件修改和LLM修复功能
+  python -m schema_tools.sql_validator --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json --modify-original-file
   
   # 指定输出目录
   python -m schema_tools.sql_validator --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json --output-dir ./reports
@@ -98,15 +98,29 @@ def setup_argument_parser():
     )
     
     parser.add_argument(
+        '--disable-llm-repair',
+        action='store_true',
+        help='禁用LLM自动修复功能'
+    )
+    
+    # 向后兼容的别名参数
+    parser.add_argument(
         '--enable-llm-repair',
         action='store_true',
-        help='启用LLM自动修复功能'
+        help='启用LLM自动修复功能（与--disable-llm-repair相反，保持向后兼容性）'
     )
     
     parser.add_argument(
+        '--no-modify-file',
+        action='store_true',
+        help='不修改原始JSON文件（仅生成验证报告）'
+    )
+    
+    # 向后兼容的别名参数
+    parser.add_argument(
         '--modify-original-file',
         action='store_true',
-        help='修改原始JSON文件（删除无效SQL，如果启用LLM修复则同时更新修复后的SQL）'
+        help='修改原始JSON文件（与--no-modify-file相反，保持向后兼容性）'
     )
     
     return parser
@@ -134,19 +148,37 @@ def apply_config_overrides(args):
         sql_config['save_detailed_json_report'] = True
         print(f"启用详细JSON报告保存")
     
-    if args.enable_llm_repair:
-        sql_config['enable_sql_repair'] = True
-        print(f"启用LLM自动修复功能")
-    else:
+    # 注意：现在是disable_llm_repair，逻辑反转，同时支持向后兼容的enable_llm_repair
+    if args.disable_llm_repair and args.enable_llm_repair:
+        print("警告: --disable-llm-repair 和 --enable-llm-repair 不能同时使用，优先使用 --disable-llm-repair")
         sql_config['enable_sql_repair'] = False
         print(f"LLM修复功能已禁用")
-    
-    if args.modify_original_file:
-        sql_config['modify_original_file'] = True
-        print(f"启用原文件修改功能")
+    elif args.disable_llm_repair:
+        sql_config['enable_sql_repair'] = False
+        print(f"LLM修复功能已禁用")
+    elif args.enable_llm_repair:
+        sql_config['enable_sql_repair'] = True
+        print(f"启用LLM自动修复功能（向后兼容参数）")
     else:
+        # 默认启用LLM修复功能
+        sql_config['enable_sql_repair'] = True
+        print(f"启用LLM自动修复功能（默认行为）")
+    
+    # 注意：现在是no_modify_file，逻辑反转，同时支持向后兼容的modify_original_file
+    if args.no_modify_file and args.modify_original_file:
+        print("警告: --no-modify-file 和 --modify-original-file 不能同时使用，优先使用 --no-modify-file")
         sql_config['modify_original_file'] = False
         print(f"不修改原文件")
+    elif args.no_modify_file:
+        sql_config['modify_original_file'] = False
+        print(f"不修改原文件")
+    elif args.modify_original_file:
+        sql_config['modify_original_file'] = True
+        print(f"启用原文件修改功能（向后兼容参数）")
+    else:
+        # 默认启用文件修改功能
+        sql_config['modify_original_file'] = True
+        print(f"启用原文件修改功能（默认行为）")
 
 
 async def main():

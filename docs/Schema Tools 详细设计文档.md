@@ -12,6 +12,9 @@ schema_tools/
 ├── training_data_agent.py          # 主AI Agent
 ├── qs_agent.py                     # Question-SQL生成Agent (新增)
 ├── qs_generator.py                 # Question-SQL命令行入口 (新增)
+├── sql_validation_agent.py         # SQL验证Agent (新增)
+├── sql_validator.py                # SQL验证命令行入口 (新增)
+├── schema_workflow_orchestrator.py # 端到端工作流编排器 (新增)
 ├── tools/                          # Agent工具集
 │   ├── __init__.py                 # 工具模块初始化
 │   ├── base.py                     # 基础工具类和注册机制
@@ -22,7 +25,8 @@ schema_tools/
 │   └── doc_generator.py            # MD文档生成工具
 ├── validators/                     # 验证器模块 (新增)
 │   ├── __init__.py
-│   └── file_count_validator.py     # 文件数量验证器
+│   ├── file_count_validator.py     # 文件数量验证器
+│   └── sql_validator.py            # SQL验证器核心模块
 ├── analyzers/                      # 分析器模块 (新增)
 │   ├── __init__.py
 │   ├── md_analyzer.py              # MD文件分析器
@@ -1839,7 +1843,7 @@ SCHEMA_TOOLS_CONFIG = {
     "large_table_threshold": 1000000,           # 大表阈值（行数）
     
     # 并发配置
-    "max_concurrent_tables": 3,                 # 最大并发处理表数
+    "max_concurrent_tables": 1,  # 建议保持1，避免LLM并发调用问题                 # 最大并发处理表数
     
     # LLM配置
     "use_app_config_llm": True,                # 是否使用app_config中的LLM配置
@@ -2227,3 +2231,349 @@ async def _save_theme_results(self, theme_name: str, qs_pairs: List[Dict]):
     
     # 立即保存到中间文件
     if self.config['qs_generation']['save_intermediate']:
+        with open(self.intermediate_file, 'w', encoding='utf-8') as f:
+            json.dump(self.intermediate_results, f, ensure_ascii=False, indent=2)
+```
+
+## 9. SQL验证器核心模块
+
+### 9.1 SQL验证器设计 (`validators/sql_validator.py`)
+
+```python
+@dataclass
+class SQLValidationResult:
+    """SQL验证结果"""
+    sql: str
+    valid: bool
+    error_message: str = ""
+    execution_time: float = 0.0
+    retry_count: int = 0
+    
+    # SQL修复相关字段
+    repair_attempted: bool = False
+    repair_successful: bool = False
+    repaired_sql: str = ""
+    repair_error: str = ""
+
+@dataclass
+class ValidationStats:
+    """验证统计信息"""
+    total_sqls: int = 0
+    valid_sqls: int = 0
+    invalid_sqls: int = 0
+    total_time: float = 0.0
+    avg_time_per_sql: float = 0.0
+    retry_count: int = 0
+    
+    # SQL修复统计
+    repair_attempted: int = 0
+    repair_successful: int = 0
+    repair_failed: int = 0
+
+class SQLValidator:
+    """SQL验证器核心类"""
+    
+    def __init__(self, db_connection: str = None):
+        self.db_connection = db_connection
+        self.connection_pool = None
+        self.config = SCHEMA_TOOLS_CONFIG['sql_validation']
+        
+    async def validate_sql(self, sql: str, retry_count: int = 0) -> SQLValidationResult:
+        """验证单个SQL语句"""
+        start_time = time.time()
+        
+        try:
+            if not self.connection_pool:
+                await self._get_connection_pool()
+            
+            # 使用EXPLAIN验证SQL语法和表结构
+            explain_sql = f"EXPLAIN {sql}"
+            
+            async with self.connection_pool.acquire() as conn:
+                # 设置只读模式
+                if self.config['readonly_mode']:
+                    await conn.execute("SET default_transaction_read_only = on")
+                
+                # 执行EXPLAIN
+                await asyncio.wait_for(
+                    conn.fetch(explain_sql),
+                    timeout=self.config['validation_timeout']
+                )
+            
+            execution_time = time.time() - start_time
+            
+            return SQLValidationResult(
+                sql=sql,
+                valid=True,
+                execution_time=execution_time,
+                retry_count=retry_count
+            )
+            
+        except asyncio.TimeoutError:
+            execution_time = time.time() - start_time
+            error_msg = f"SQL验证超时（{self.config['validation_timeout']}秒）"
+            
+            return SQLValidationResult(
+                sql=sql,
+                valid=False,
+                error_message=error_msg,
+                execution_time=execution_time,
+                retry_count=retry_count
+            )
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            error_msg = str(e)
+            
+            # 检查是否需要重试
+            if retry_count < self.config['max_retry_count'] and self._should_retry(e):
+                await asyncio.sleep(0.5)  # 短暂延迟
+                return await self.validate_sql(sql, retry_count + 1)
+            
+            return SQLValidationResult(
+                sql=sql,
+                valid=False,
+                error_message=error_msg,
+                execution_time=execution_time,
+                retry_count=retry_count
+            )
+    
+    async def validate_sqls_batch(self, sqls: List[str]) -> List[SQLValidationResult]:
+        """批量验证SQL语句"""
+        max_concurrent = self.config['max_concurrent_validations']
+        semaphore = asyncio.Semaphore(max_concurrent)
+        
+        async def validate_with_semaphore(sql):
+            async with semaphore:
+                return await self.validate_sql(sql)
+        
+        # 并发执行验证
+        tasks = [validate_with_semaphore(sql) for sql in sqls]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # 处理异常结果
+        processed_results = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                processed_results.append(SQLValidationResult(
+                    sql=sqls[i],
+                    valid=False,
+                    error_message=f"验证异常: {str(result)}"
+                ))
+            else:
+                processed_results.append(result)
+        
+        return processed_results
+    
+    def calculate_stats(self, results: List[SQLValidationResult]) -> ValidationStats:
+        """计算验证统计信息"""
+        stats = ValidationStats()
+        
+        stats.total_sqls = len(results)
+        stats.valid_sqls = sum(1 for r in results if r.valid)
+        stats.invalid_sqls = stats.total_sqls - stats.valid_sqls
+        stats.total_time = sum(r.execution_time for r in results)
+        stats.avg_time_per_sql = stats.total_time / stats.total_sqls if stats.total_sqls > 0 else 0.0
+        stats.retry_count = sum(r.retry_count for r in results)
+        
+        # 修复统计
+        stats.repair_attempted = sum(1 for r in results if r.repair_attempted)
+        stats.repair_successful = sum(1 for r in results if r.repair_successful)
+        stats.repair_failed = stats.repair_attempted - stats.repair_successful
+        
+        return stats
+```
+
+### 9.2 SQL验证Agent (`sql_validation_agent.py`)
+
+```python
+class SQLValidationAgent:
+    """SQL验证Agent - 管理SQL验证的完整流程"""
+    
+    async def validate(self) -> Dict[str, Any]:
+        """执行SQL验证流程"""
+        
+        # 1. 读取输入文件
+        questions_sqls = await self._load_questions_sqls()
+        
+        # 2. 提取SQL语句
+        sqls = [item['sql'] for item in questions_sqls]
+        
+        # 3. 执行验证
+        validation_results = await self._validate_sqls_with_batching(sqls)
+        
+        # 4. 计算统计信息
+        stats = self.validator.calculate_stats(validation_results)
+        
+        # 5. 尝试修复失败的SQL（如果启用LLM修复）
+        if self.config.get('enable_sql_repair', False) and self.vn:
+            validation_results = await self._attempt_sql_repair(questions_sqls, validation_results)
+            stats = self.validator.calculate_stats(validation_results)
+        
+        # 6. 修改原始JSON文件（如果启用文件修改）
+        file_modification_stats = {'modified': 0, 'deleted': 0, 'failed_modifications': 0}
+        if self.config.get('modify_original_file', False):
+            file_modification_stats = await self._modify_original_json_file(questions_sqls, validation_results)
+        
+        # 7. 生成详细报告
+        report = await self._generate_report(questions_sqls, validation_results, stats, file_modification_stats)
+        
+        # 8. 保存验证报告
+        if self.config['save_validation_report']:
+            await self._save_validation_report(report)
+        
+        return report
+    
+    async def _attempt_sql_repair(self, questions_sqls: List[Dict], validation_results: List[SQLValidationResult]) -> List[SQLValidationResult]:
+        """尝试修复失败的SQL"""
+        
+        failed_indices = [i for i, result in enumerate(validation_results) if not result.valid]
+        
+        if not failed_indices:
+            return validation_results
+        
+        # 批量修复
+        batch_size = self.config.get('repair_batch_size', 5)
+        updated_results = validation_results.copy()
+        
+        for i in range(0, len(failed_indices), batch_size):
+            batch_indices = failed_indices[i:i + batch_size]
+            
+            # 准备批次数据
+            batch_data = []
+            for idx in batch_indices:
+                batch_data.append({
+                    'index': idx,
+                    'question': questions_sqls[idx]['question'],
+                    'sql': validation_results[idx].sql,
+                    'error': validation_results[idx].error_message
+                })
+            
+            # 调用LLM修复
+            repaired_sqls = await self._repair_sqls_with_llm(batch_data)
+            
+            # 验证修复后的SQL
+            for j, idx in enumerate(batch_indices):
+                original_result = updated_results[idx]
+                original_result.repair_attempted = True
+                
+                if j < len(repaired_sqls) and repaired_sqls[j]:
+                    repaired_sql = repaired_sqls[j]
+                    
+                    # 验证修复后的SQL
+                    repair_result = await self.validator.validate_sql(repaired_sql)
+                    
+                    if repair_result.valid:
+                        # 修复成功
+                        original_result.repair_successful = True
+                        original_result.repaired_sql = repaired_sql
+                        original_result.valid = True  # 更新为有效
+                    else:
+                        # 修复失败
+                        original_result.repair_successful = False
+                        original_result.repair_error = repair_result.error_message
+                else:
+                    # LLM修复失败
+                    original_result.repair_successful = False
+                    original_result.repair_error = "LLM修复失败或返回空结果"
+        
+        return updated_results
+    
+    async def _modify_original_json_file(self, questions_sqls: List[Dict], validation_results: List[SQLValidationResult]) -> Dict[str, int]:
+        """修改原始JSON文件"""
+        stats = {'modified': 0, 'deleted': 0, 'failed_modifications': 0}
+        
+        try:
+            # 读取原始JSON文件
+            with open(self.input_file, 'r', encoding='utf-8') as f:
+                original_data = json.load(f)
+            
+            # 创建备份文件
+            backup_file = Path(str(self.input_file) + '.backup')
+            with open(backup_file, 'w', encoding='utf-8') as f:
+                json.dump(original_data, f, ensure_ascii=False, indent=2)
+            
+            # 构建修改计划
+            modifications = []
+            deletions = []
+            
+            for i, (qs, result) in enumerate(zip(questions_sqls, validation_results)):
+                if result.repair_successful and result.repaired_sql:
+                    # 修复成功的SQL
+                    modifications.append({
+                        'index': i,
+                        'original_sql': result.sql,
+                        'repaired_sql': result.repaired_sql,
+                        'question': qs['question']
+                    })
+                elif not result.valid and not result.repair_successful:
+                    # 无法修复的SQL，标记删除
+                    deletions.append({
+                        'index': i,
+                        'question': qs['question'],
+                        'sql': result.sql,
+                        'error': result.error_message
+                    })
+            
+            # 执行修改（从后往前，避免索引变化）
+            new_data = original_data.copy()
+            
+            # 先删除无效项（从后往前删除）
+            for deletion in sorted(deletions, key=lambda x: x['index'], reverse=True):
+                if deletion['index'] < len(new_data):
+                    new_data.pop(deletion['index'])
+                    stats['deleted'] += 1
+            
+            # 再修改SQL（需要重新计算索引）
+            for modification in sorted(modifications, key=lambda x: x['index']):
+                # 计算删除后的新索引
+                new_index = modification['index']
+                for deletion in deletions:
+                    if deletion['index'] < modification['index']:
+                        new_index -= 1
+                
+                if new_index < len(new_data):
+                    new_data[new_index]['sql'] = modification['repaired_sql']
+                    stats['modified'] += 1
+            
+            # 写入修改后的文件
+            with open(self.input_file, 'w', encoding='utf-8') as f:
+                json.dump(new_data, f, ensure_ascii=False, indent=2)
+            
+            # 记录详细修改信息到日志文件
+            await self._write_modification_log(modifications, deletions)
+            
+        except Exception as e:
+            stats['failed_modifications'] = 1
+        
+        return stats
+```
+
+## 10. 工作流编排器设计
+
+### 10.1 SchemaWorkflowOrchestrator核心功能
+
+```python
+class SchemaWorkflowOrchestrator:
+    """端到端的Schema处理编排器"""
+    
+    async def execute_complete_workflow(self) -> Dict[str, Any]:
+        """执行完整的Schema处理工作流程"""
+        
+        # 步骤1: 生成DDL和MD文件
+        await self._execute_step_1_ddl_md_generation()
+        
+        # 步骤2: 生成Question-SQL对
+        await self._execute_step_2_question_sql_generation()
+        
+        # 步骤3: 验证和修正SQL（可选）
+        if self.enable_sql_validation:
+            await self._execute_step_3_sql_validation()
+        
+        # 生成最终报告
+        final_report = await self._generate_final_report()
+        
+        return final_report
+```
+
+这样，文档就与当前代码完全一致了，包含了所有新增的SQL验证、LLM修复、文件修改等功能的详细设计说明。
