@@ -1758,29 +1758,106 @@ def embedding_cache_cleanup():
             response_text="清空embedding缓存失败，请稍后重试"
         )), 500
 
+
+# ==================== 问答缓存管理接口 ====================
+
+@app.flask_app.route('/api/v0/qa_cache_stats', methods=['GET'])
+def qa_cache_stats():
+    """获取问答缓存统计信息"""
+    try:
+        stats = redis_conversation_manager.get_qa_cache_stats()
+        
+        return jsonify(success_response(
+            response_text="获取问答缓存统计成功",
+            data=stats
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] 获取问答缓存统计失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取问答缓存统计失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/qa_cache_list', methods=['GET'])  
+def qa_cache_list():
+    """获取问答缓存列表（支持分页）"""
+    try:
+        # 获取分页参数，默认限制50条
+        limit = request.args.get('limit', 50, type=int)
+        
+        # 限制最大返回数量，防止一次性返回过多数据
+        if limit > 500:
+            limit = 500
+        elif limit <= 0:
+            limit = 50
+        
+        cache_list = redis_conversation_manager.get_qa_cache_list(limit)
+        
+        return jsonify(success_response(
+            response_text="获取问答缓存列表成功",
+            data={
+                "cache_list": cache_list,
+                "total_returned": len(cache_list),
+                "limit_applied": limit,
+                "note": "按缓存时间倒序排列，最新的在前面"
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] 获取问答缓存列表失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取问答缓存列表失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/qa_cache_cleanup', methods=['POST'])
+def qa_cache_cleanup():
+    """清空所有问答缓存"""
+    try:
+        if not redis_conversation_manager.is_available():
+            return jsonify(internal_error_response(
+                response_text="Redis连接不可用，无法执行清理操作"
+            )), 500
+        
+        deleted_count = redis_conversation_manager.clear_all_qa_cache()
+        
+        return jsonify(success_response(
+            response_text="问答缓存清理完成",
+            data={
+                "deleted_count": deleted_count,
+                "cleared": deleted_count > 0,
+                "cleanup_time": datetime.now().isoformat()
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] 清空问答缓存失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="清空问答缓存失败，请稍后重试"
+        )), 500
+
+
 @app.flask_app.route('/api/v0/cache_overview_full', methods=['GET'])
 def cache_overview_full():
     """获取所有缓存系统的综合概览"""
     try:
         from common.embedding_cache_manager import get_embedding_cache_manager
         from common.vanna_instance import get_vanna_instance
-        from common.session_aware_cache import get_cache
         
         # 获取现有的缓存统计
         vanna_cache = get_vanna_instance()
-        cache = get_cache()
+        # 直接使用应用中的缓存实例
+        cache = app.cache
         
         cache_overview = {
             "conversation_aware_cache": {
                 "enabled": True,
-                "total_items": len(cache.cache),
-                "sessions": list(cache.cache.keys()) if hasattr(cache, 'cache') else []
+                "total_items": len(cache.cache) if hasattr(cache, 'cache') else 0,
+                "sessions": list(cache.cache.keys()) if hasattr(cache, 'cache') else [],
+                "cache_type": type(cache).__name__
             },
-            "question_answer_cache": {
-                "enabled": ENABLE_QUESTION_ANSWER_CACHE,
-                "stats": redis_conversation_manager.get_stats() if redis_conversation_manager.is_available() else None
-            },
-            "embedding_cache": get_embedding_cache_manager().get_cache_stats()
+            "question_answer_cache": redis_conversation_manager.get_qa_cache_stats() if redis_conversation_manager.is_available() else {"available": False},
+            "embedding_cache": get_embedding_cache_manager().get_cache_stats(),
+            "redis_conversation_stats": redis_conversation_manager.get_stats() if redis_conversation_manager.is_available() else None
         }
         
         return jsonify(success_response(

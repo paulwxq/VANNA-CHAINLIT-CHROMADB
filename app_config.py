@@ -168,7 +168,7 @@ QUESTION_ROUTING_MODE = "hybrid"
 
 # 对话上下文配置
 CONVERSATION_CONTEXT_COUNT = 2          # 传递给LLM的上下文消息条数
-CONVERSATION_MAX_LENGTH = 20            # 单个对话最大消息数
+CONVERSATION_MAX_LENGTH = 10            # 单个对话最大消息数
 USER_MAX_CONVERSATIONS = 5              # 用户最大对话数
 
 # 用户管理配置

@@ -446,14 +446,18 @@ class RedisConversationManager:
             return {"available": False}
         
         try:
+            # 获取Redis原始内存信息
+            redis_info = self.redis_client.info()
+            used_memory_bytes = redis_info.get("used_memory", 0)
+            
             stats = {
                 "available": True,
                 "total_users": len(self.redis_client.keys("user:*:conversations")),
                 "total_conversations": len(self.redis_client.keys("conversation:*:meta")),
                 "cached_qa_count": len(self.redis_client.keys("qa_cache:*")),  # 修正缓存统计
                 "redis_info": {
-                    "used_memory": self.redis_client.info().get("used_memory_human"),
-                    "connected_clients": self.redis_client.info().get("connected_clients")
+                    "memory_usage_mb": round(used_memory_bytes / (1024 * 1024), 2),  # 统一使用MB格式
+                    "connected_clients": redis_info.get("connected_clients")
                 }
             }
             
@@ -495,4 +499,111 @@ class RedisConversationManager:
             print(f"[REDIS_CONV] 清理完成，移除了 {cleaned_count} 个无效对话引用")
             
         except Exception as e:
-            print(f"[ERROR] 清理失败: {str(e)}") 
+            print(f"[ERROR] 清理失败: {str(e)}")
+    
+    # ==================== 问答缓存管理方法 ====================
+    
+    def get_qa_cache_stats(self) -> Dict:
+        """获取问答缓存详细统计信息"""
+        if not self.is_available():
+            return {"available": False}
+        
+        try:
+            pattern = "qa_cache:*"
+            keys = self.redis_client.keys(pattern)
+            
+            stats = {
+                "available": True,
+                "enabled": ENABLE_QUESTION_ANSWER_CACHE,
+                "total_count": len(keys),
+                "memory_usage_mb": 0,
+                "ttl_seconds": QUESTION_ANSWER_TTL,
+                "ttl_hours": QUESTION_ANSWER_TTL / 3600
+            }
+            
+            # 估算内存使用量
+            if keys:
+                sample_key = keys[0]
+                sample_data = self.redis_client.get(sample_key)
+                if sample_data:
+                    avg_size_bytes = len(sample_data.encode('utf-8'))
+                    total_size_bytes = avg_size_bytes * len(keys)
+                    stats["memory_usage_mb"] = round(total_size_bytes / (1024 * 1024), 2)
+            
+            return stats
+            
+        except Exception as e:
+            print(f"[ERROR] 获取问答缓存统计失败: {str(e)}")
+            return {"available": False, "error": str(e)}
+    
+    def get_qa_cache_list(self, limit: int = 50) -> List[Dict]:
+        """获取问答缓存列表（支持分页）"""
+        if not self.is_available() or not ENABLE_QUESTION_ANSWER_CACHE:
+            return []
+        
+        try:
+            pattern = "qa_cache:*"
+            keys = self.redis_client.keys(pattern)
+            
+            # 限制返回数量
+            if limit > 0:
+                keys = keys[:limit]
+            
+            cache_list = []
+            for key in keys:
+                try:
+                    cached_data = self.redis_client.get(key)
+                    if cached_data:
+                        data = json.loads(cached_data)
+                        
+                        # 获取TTL信息
+                        ttl = self.redis_client.ttl(key)
+                        
+                        cache_item = {
+                            "cache_key": key,
+                            "question": data.get("original_question", "未知问题"),
+                            "cached_at": data.get("cached_at", "未知时间"),
+                            "ttl_seconds": ttl,
+                            "response_type": data.get("data", {}).get("type", "未知类型"),
+                            "has_sql": bool(data.get("data", {}).get("sql")),
+                            "has_summary": bool(data.get("data", {}).get("summary"))
+                        }
+                        
+                        cache_list.append(cache_item)
+                        
+                except json.JSONDecodeError:
+                    # 跳过无效的JSON数据
+                    continue
+                except Exception as e:
+                    print(f"[WARNING] 处理缓存项 {key} 失败: {e}")
+                    continue
+            
+            # 按缓存时间倒序排列
+            cache_list.sort(key=lambda x: x.get("cached_at", ""), reverse=True)
+            
+            return cache_list
+            
+        except Exception as e:
+            print(f"[ERROR] 获取问答缓存列表失败: {str(e)}")
+            return []
+    
+    def clear_all_qa_cache(self) -> int:
+        """清空所有问答缓存，返回删除的数量"""
+        if not self.is_available():
+            return 0
+        
+        try:
+            pattern = "qa_cache:*"
+            keys = self.redis_client.keys(pattern)
+            
+            if keys:
+                deleted_count = self.redis_client.delete(*keys)
+                print(f"[REDIS_CONV] 清空问答缓存成功，删除了 {deleted_count} 个缓存项")
+                return deleted_count
+            else:
+                print(f"[REDIS_CONV] 没有找到问答缓存项")
+                return 0
+                
+        except Exception as e:
+            print(f"[ERROR] 清空问答缓存失败: {str(e)}")
+            return 0 
