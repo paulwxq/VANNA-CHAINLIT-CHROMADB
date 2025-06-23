@@ -1,0 +1,7 @@
+# 示例表清单文件
+# 每行一个表名，支持 schema.table 格式
+# 以 # 开头的行为注释
+
+# 服务区相关表
+public.bss_car_day_count
+

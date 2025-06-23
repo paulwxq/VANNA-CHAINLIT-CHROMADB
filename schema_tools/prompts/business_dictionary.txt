@@ -1,0 +1,10 @@
+# 业务词典
+# 在此文件中定义业务相关的专有名词和缩写，帮助LLM更好地理解业务上下文
+
+# 示例：
+# BSS - Business Support System，业务支撑系统
+# SA - Service Area，服务区
+# POS - Point of Sale，销售点
+# SKU - Stock Keeping Unit，库存单位
+
+# 请根据实际业务添加词典内容...
