@@ -12,6 +12,7 @@
 - 📁 生成标准化的DDL和MD文档
 - 🛡️ 完整的错误处理和日志记录
 - 🎯 **新增**：Question-SQL训练数据生成
+- ✅ **新增**：SQL语句有效性验证
 
 ## 安装依赖
 
@@ -41,7 +42,7 @@ python -m schema_tools \
   --pipeline full
 ```
 
-### 2. 生成Question-SQL训练数据（新功能）
+### 2. 生成Question-SQL训练数据
 
 在生成DDL和MD文件后，可以使用新的Question-SQL生成功能：
 
@@ -60,7 +61,54 @@ python -m schema_tools.qs_generator \
 4. 为每个主题生成10个Question-SQL对
 5. 输出到 `qs_highway_db_时间戳_pair.json` 文件
 
-### 3. 编程方式使用
+### 3. 验证SQL语句有效性（新功能）
+
+在生成Question-SQL对后，可以验证其中的SQL语句：
+
+```bash
+python -m schema_tools.sql_validator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --input-file ./qs_highway_db_20240101_143052_pair.json \
+  --output-dir ./validation_reports
+```
+
+这将：
+1. 读取Question-SQL对文件
+2. 使用PostgreSQL的EXPLAIN语句验证每个SQL
+3. 生成详细的验证报告
+4. 统计成功率和性能指标
+
+#### SQL验证高级选项
+```bash
+# 基本验证（仅生成报告）
+python -m schema_tools.sql_validator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --input-file ./data.json
+
+# 删除无效SQL（不进行LLM修复）
+python -m schema_tools.sql_validator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --input-file ./data.json \
+  --modify-original-file
+
+# 启用LLM修复功能
+python -m schema_tools.sql_validator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --input-file ./data.json \
+  --enable-llm-repair \
+  --modify-original-file
+
+# 性能调优参数
+python -m schema_tools.sql_validator \
+  --db-connection "postgresql://user:pass@localhost:5432/dbname" \
+  --input-file ./data.json \
+  --max-concurrent 10 \
+  --batch-size 20 \
+  --timeout 60 \
+  --verbose
+```
+
+### 4. 编程方式使用
 
 #### 生成DDL/MD文档
 ```python
@@ -101,6 +149,24 @@ async def generate_qs_data():
 asyncio.run(generate_qs_data())
 ```
 
+#### 验证SQL语句
+```python
+import asyncio
+from schema_tools import SQLValidationAgent
+
+async def validate_sqls():
+    agent = SQLValidationAgent(
+        db_connection="postgresql://user:pass@localhost:5432/dbname",
+        input_file="./qs_highway_db_20240101_143052_pair.json",
+        output_dir="./validation_reports"
+    )
+    
+    report = await agent.validate()
+    print(f"验证完成: {report['summary']['success_rate']:.1%} 成功率")
+
+asyncio.run(validate_sqls())
+```
+
 ## 输出文件结构
 
 ```
@@ -110,7 +176,11 @@ output/
 ├── logs/                         # 日志目录
 │   └── schema_tools_20240101_120000.log
 ├── filename_mapping.txt          # 文件名映射报告
-└── qs_highway_db_20240101_143052_pair.json  # Question-SQL训练数据
+├── qs_highway_db_20240101_143052_pair.json  # Question-SQL训练数据
+├── metadata.txt                  # 主题元数据（INSERT语句）
+└── validation_reports/           # SQL验证报告
+    ├── sql_validation_20240101_150000_report.json
+    └── sql_validation_20240101_150000_summary.txt
 ```
 
 注意：配置已更新为不再创建ddl/和docs/子目录，所有文件直接放在output目录下。
@@ -136,6 +206,17 @@ SCHEMA_TOOLS_CONFIG = {
         "theme_count": 5,                 # 生成主题数量
         "questions_per_theme": 10,        # 每主题问题数
         "max_concurrent_themes": 3,       # 并行处理主题数
+    },
+    
+    # SQL验证配置
+    "sql_validation": {
+        "reuse_connection_pool": True,    # 复用现有连接池
+        "max_concurrent_validations": 5,  # 并发验证数
+        "validation_timeout": 30,         # 单个验证超时(秒)
+        "batch_size": 10,                 # 批处理大小
+        "continue_on_error": True,        # 错误时是否继续
+        "save_validation_report": True,   # 保存验证报告
+        "readonly_mode": True,            # 启用只读模式
     }
 }
 ```
@@ -175,10 +256,32 @@ SCHEMA_TOOLS_CONFIG = {
 ]
 ```
 
+## SQL验证特性
+
+### 功能亮点
+- ✅ 使用EXPLAIN语句验证SQL有效性
+- ⚡ 支持并发验证，提升验证效率
+- 🔒 只读模式运行，安全可靠
+- 📊 详细的验证报告和统计信息
+- 🔄 自动重试机制，处理临时网络问题
+
+### 验证流程
+1. 读取Question-SQL对JSON文件
+2. 提取SQL语句并分批处理
+3. 使用PostgreSQL的EXPLAIN验证语法和表结构
+4. 生成详细验证报告（JSON和文本格式）
+5. 统计成功率和性能指标
+
+### 报告内容
+- 总体统计（成功率、平均耗时等）
+- 错误详情和重试信息
+- 单个SQL的验证结果
+- 配置和元数据信息
+
 ## 常见问题
 
 ### Q: 如何处理只读数据库？
-A: 工具自动检测并适配只读数据库，不会尝试写操作。
+A: 工具自动检测并适配只读数据库，不会尝试写操作。SQL验证器专门设计为只读模式。
 
 ### Q: 如何处理重名表？
 A: 自动生成唯一文件名，如 `hr__users.ddl` 和 `sales__users.ddl`。
@@ -189,12 +292,16 @@ A: 在表清单文件中注释掉（使用 # 开头）或删除相应行。
 ### Q: LLM调用失败怎么办？
 A: 自动重试3次，失败后使用原始注释或默认值。
 
+### Q: SQL验证失败率很高怎么办？
+A: 检查SQL语法、表名是否正确，使用 `--verbose` 查看详细错误信息。
+
 ## 注意事项
 
 1. **数据库权限**：至少需要SELECT权限
 2. **LLM配置**：复用项目的vanna实例配置
 3. **并发控制**：默认最大3个表并发，可调整
 4. **内存使用**：大表采样会限制数据量
+5. **SQL验证**：需要对所有相关表有SELECT权限
 
 ## 开发与扩展
 

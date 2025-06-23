@@ -36,6 +36,10 @@
     "sql": "SELECT branch_name AS 档口名称, SUM(pay_sum) AS 累计收入 FROM bss_business_day_data WHERE delete_ts IS NULL AND service_name = '庐山服务区' GROUP BY branch_name ORDER BY 累计收入 DESC;"
   },
   {
+    "question": "车辆数量与订单量相关性分析（关联车流数据）",
+    "sql": "SELECT a.oper_date, a.order_sum AS 订单数量, b.customer_count AS 车辆数量, ROUND(CORR(a.order_sum, b.customer_count),2) AS 相关系数 FROM (SELECT oper_date, SUM(order_sum) AS order_sum FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY oper_date) a JOIN (SELECT count_date, SUM(customer_count) AS customer_count FROM bss_car_day_count GROUP BY count_date) b ON a.oper_date = b.count_date GROUP BY a.oper_date;"
+  },
+  {
     "question": "分析不同车辆类型（危化品/城际/过境/其他）对应的服务区平均消费金额差异",
     "sql": "SELECT c.car_type AS 车辆类型, AVG(b.pay_sum) AS 平均消费金额 FROM bss_business_day_data b JOIN bss_service_area_mapper m ON b.service_name = m.service_name AND m.delete_ts IS NULL JOIN bss_car_day_count c ON m.service_area_id = c.service_area_id AND b.oper_date = c.count_date WHERE b.delete_ts IS NULL AND c.delete_ts IS NULL GROUP BY c.car_type;"
   },
@@ -64,8 +68,16 @@
     "sql": "SELECT m.service_name AS 服务区名称, b.branch_name AS 档口名称, (b.wx/SUM(b.pay_sum) OVER(PARTITION BY b.service_name, b.oper_date)) * 100 AS 微信占比, CASE WHEN c.customer_count > (SELECT PERCENTILE_CONT(0.75) WITHIN GROUP(ORDER BY customer_count) FROM bss_car_day_count) THEN '高峰时段' ELSE '非高峰' END AS 车流时段 FROM bss_business_day_data b JOIN bss_service_area_mapper m ON b.service_name = m.service_name AND m.delete_ts IS NULL JOIN bss_car_day_count c ON m.service_area_id = c.service_area_id AND b.oper_date = c.count_date WHERE b.delete_ts IS NULL AND c.delete_ts IS NULL;"
   },
   {
+    "question": "预测未来一周各服务区基于历史车流与消费数据的消费趋势（使用线性回归）",
+    "sql": "SELECT service_area_id AS 服务区ID, date, REGR_INTERCEPT(pay_sum, day_num) + REGR_SLOPE(pay_sum, day_num) * EXTRACT(EPOCH FROM date)/86400 AS 预测消费 FROM (SELECT c.service_area_id, b.oper_date AS date, EXTRACT(EPOCH FROM b.oper_date - CURRENT_DATE + 7) AS day_num, b.pay_sum FROM bss_car_day_count c JOIN bss_service_area_mapper m ON c.service_area_id = m.service_area_id AND m.delete_ts IS NULL JOIN bss_business_day_data b ON m.service_name = b.service_name AND c.count_date = b.oper_date WHERE b.oper_date BETWEEN CURRENT_DATE - 30 AND CURRENT_DATE AND c.delete_ts IS NULL AND b.delete_ts IS NULL) sub GROUP BY service_area_id, date;"
+  },
+  {
     "question": "找出最近3天连续出现车流量下降超过15%且消费金额波动异常的服务区",
     "sql": "WITH daily_diff AS (SELECT service_area_id, count_date, customer_count - LAG(customer_count,1) OVER(PARTITION BY service_area_id ORDER BY count_date) AS flow_diff, (customer_count - LAG(customer_count,1) OVER(PARTITION BY service_area_id ORDER BY count_date))/NULLIF(LAG(customer_count,1) OVER(PARTITION BY service_area_id ORDER BY count_date),0) * 100 AS flow_rate FROM bss_car_day_count WHERE delete_ts IS NULL) SELECT DISTINCT service_area_id AS 服务区ID FROM daily_diff WHERE count_date >= CURRENT_DATE -3 AND flow_rate < -15 GROUP BY service_area_id HAVING COUNT(*) =3;"
+  },
+  {
+    "question": "分析不同档口类型（餐饮/零售/其他）的消费转化率与车流密度（车流量/营业面积）的关系",
+    "sql": "SELECT b.branch_type AS 档口类型, c.customer_count / NULLIF(s.area,0) AS 车流密度, SUM(b.order_sum)/SUM(c.customer_count) AS 转化率 FROM bss_business_day_data b JOIN (SELECT branch_name, CASE WHEN branch_name LIKE '%餐饮%' THEN '餐饮' WHEN branch_name LIKE '%零售%' THEN '零售' ELSE '其他' END AS branch_type FROM bss_business_day_data GROUP BY branch_name) t ON b.branch_name = t.branch_name JOIN bss_service_area_mapper m ON b.service_name = m.service_name AND m.delete_ts IS NULL JOIN bss_car_day_count c ON m.service_area_id = c.service_area_id AND b.oper_date = c.count_date JOIN (SELECT id, (RANDOM()*1000+500)::INT AS area FROM bss_service_area) s ON m.service_area_id = s.id WHERE b.delete_ts IS NULL AND c.delete_ts IS NULL GROUP BY ROLLUP(branch_type);"
   },
   {
     "question": "各管理公司最近一个月平均每车次收入及订单转化率排名",
@@ -94,6 +106,10 @@
   {
     "question": "节假日与工作日运营效率差异对比（春节假期 vs 常规周）",
     "sql": "SELECT \n  CASE WHEN b.oper_date BETWEEN '2023-01-21' AND '2023-01-27' THEN '春节假期' ELSE '常规周' END AS 时段类型,\n  ROUND(AVG(b.pay_sum/car.customer_count), 2) AS 平均单车收入,\n  ROUND(AVG(b.order_sum/car.customer_count), 2) AS 平均转化率\nFROM bss_business_day_data b\nJOIN bss_car_day_count car ON b.service_no = car.service_area_id\nWHERE b.oper_date BETWEEN '2023-01-10' AND '2023-02-10'\n  AND car.count_date = b.oper_date\nGROUP BY \n  CASE WHEN b.oper_date BETWEEN '2023-01-21' AND '2023-01-27' THEN '春节假期' ELSE '常规周' END;"
+  },
+  {
+    "question": "各区域管理公司单位能耗产出对比（需结合能耗表）",
+    "sql": "SELECT c.company_name AS 公司名称,\n       ROUND(SUM(b.pay_sum)/SUM(e.energy_consumption), 2) AS 单位能耗产出\nFROM bss_company c\nJOIN bss_service_area sa ON c.id = sa.company_id\nJOIN bss_business_day_data b ON sa.service_area_no = b.service_no\n-- 假设存在能耗表 energy_consumption_table e\n-- JOIN energy_consumption_table e ON sa.id = e.service_area_id\nWHERE b.oper_date BETWEEN '2023-01-01' AND '2023-03-31'\nGROUP BY c.company_name\nORDER BY 单位能耗产出 DESC;"
   },
   {
     "question": "新入驻公司首月运营效率达标情况检查",
@@ -173,7 +189,7 @@
   },
   {
     "question": "各服务区不同数据源支付总额差异分析",
-    "sql": "SELECT sa.service_name AS 服务区名称, bdd.source_type AS 数据源类型, SUM(bdd.pay_sum) AS 支付总额 FROM bss_business_day_data bdd JOIN bss_service_area_mapper sa ON bdd.service_no = sa.service_no WHERE bdd.delete_ts IS NULL GROUP BY sa.service_name, bdd.source_type HAVING SUM(bdd.pay_sum) > 10000 ORDER BY 支付总额 DESC LIMIT 20;"
+    "sql": "SELECT service_name AS 服务区名称, source_type AS 数据源类型, SUM(pay_sum) AS 支付总额 FROM bss_business_day_data bdd JOIN bss_service_area_mapper sa ON bdd.service_no = sa.service_no WHERE bdd.delete_ts IS NULL GROUP BY service_name, source_type HAVING SUM(pay_sum) > 10000 ORDER BY 支付总额 DESC LIMIT 20;"
   },
   {
     "question": "手工录入数据每月占比变化趋势",

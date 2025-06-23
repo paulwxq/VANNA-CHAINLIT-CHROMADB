@@ -98,6 +98,28 @@ SCHEMA_TOOLS_CONFIG = {
         "continue_on_theme_error": True,     # 主题生成失败是否继续
         "save_intermediate": True,           # 是否保存中间结果
         "output_file_prefix": "qs",          # 输出文件前缀
+    },
+    
+    # SQL验证配置
+    "sql_validation": {
+        "reuse_connection_pool": True,       # 复用现有连接池
+        "max_concurrent_validations": 5,     # 并发验证数
+        "validation_timeout": 30,            # 单个验证超时(秒)
+        "batch_size": 10,                    # 批处理大小
+        "continue_on_error": True,           # 错误时是否继续
+        "save_validation_report": True,      # 保存验证报告
+        "save_detailed_json_report": False,  # 保存详细JSON报告（可选）
+        "readonly_mode": True,               # 启用只读模式
+        "max_retry_count": 2,                # 验证失败重试次数
+        "report_file_prefix": "sql_validation",  # 报告文件前缀
+        
+        # SQL修复配置
+        "enable_sql_repair": False,          # 启用SQL修复功能（默认禁用）
+        "llm_repair_timeout": 120,           # LLM修复超时时间(秒)
+        "repair_batch_size": 2,              # 修复批处理大小
+        
+        # 文件修改配置
+        "modify_original_file": False,       # 是否修改原始JSON文件（默认禁用）
     }
 }
 

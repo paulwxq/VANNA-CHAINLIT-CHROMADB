@@ -269,6 +269,7 @@ class QuestionSQLGenerationAgent:
 5. 问题应该多样化，覆盖不同的分析角度
 6. 包含时间筛选、分组统计、排序、限制等不同类型的查询
 7. SQL语句末尾必须以分号结束
+8. **重要：问题和SQL都必须是单行文本，不能包含换行符**
 
 输出JSON格式（注意SQL中的双引号需要转义）：
 ```json
@@ -295,7 +296,7 @@ class QuestionSQLGenerationAgent:
             response = await asyncio.to_thread(
                 self.vn.chat_with_llm,
                 question=prompt,
-                system_prompt="你是一个专业的数据分析师，精通PostgreSQL语法，擅长设计有业务价值的数据查询。请严格按照JSON格式输出。"
+                system_prompt="你是一个专业的数据分析师，精通PostgreSQL语法，擅长设计有业务价值的数据查询。请严格按照JSON格式输出。特别注意：生成的问题和SQL都必须是单行文本，不能包含换行符。"
             )
             
             if not response or not response.strip():
@@ -346,6 +347,12 @@ class QuestionSQLGenerationAgent:
             if not question or not sql:
                 self.logger.warning(f"跳过空问题或SQL的项 {i+1}")
                 continue
+            
+            # 清理question中的换行符，替换为空格
+            question = ' '.join(question.split())
+            
+            # 清理SQL中的换行符和多余空格，压缩为单行
+            sql = ' '.join(sql.split())
             
             # 确保SQL以分号结束
             if not sql.endswith(';'):

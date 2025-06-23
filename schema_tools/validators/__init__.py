@@ -3,7 +3,11 @@
 """
 
 from .file_count_validator import FileCountValidator
+from .sql_validator import SQLValidator, SQLValidationResult, ValidationStats
 
 __all__ = [
-    "FileCountValidator"
+    "FileCountValidator",
+    "SQLValidator",
+    "SQLValidationResult", 
+    "ValidationStats"
 ] 
