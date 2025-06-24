@@ -656,7 +656,7 @@ class CituLangGraphAgent:
                         "response": state["chat_response"],
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "query_result": state.get("query_result"),  # 获取query_result字段
+                        "query_result": state.get("query_result"),  # 保持内部字段名不变
                         "execution_path": state["execution_path"],
                         "classification_info": {
                             "confidence": state["classification_confidence"],
@@ -672,7 +672,7 @@ class CituLangGraphAgent:
                         "type": "DATABASE",
                         "response": state["summary"],  # 新增：将summary的值赋给response
                         "sql": state.get("sql"),
-                        "query_result": state.get("query_result"),  # 获取query_result字段
+                        "query_result": state.get("query_result"),  # 保持内部字段名不变
                         "summary": state["summary"],  # 暂时保留summary字段
                         "execution_path": state["execution_path"],
                         "classification_info": {
@@ -692,7 +692,7 @@ class CituLangGraphAgent:
                         "success": True,
                         "type": "DATABASE",
                         "sql": state.get("sql"),
-                        "query_result": query_result,  # 获取query_result字段
+                        "query_result": query_result,  # 保持内部字段名不变
                         "execution_path": state["execution_path"],
                         "classification_info": {
                             "confidence": state["classification_confidence"],

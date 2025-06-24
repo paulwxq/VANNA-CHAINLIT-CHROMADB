@@ -546,7 +546,7 @@ def ask_agent():
                 response_type=cached_answer.get("type", "UNKNOWN"),
                 response=cached_answer.get("response", ""),  # 修正：使用response而不是response_text
                 sql=cached_answer.get("sql"),
-                query_result=cached_answer.get("query_result"),
+                records=cached_answer.get("query_result"),  # 修改：query_result改为records
                 summary=cached_answer.get("summary"),
                 session_id=browser_session_id,
                 execution_path=cached_answer.get("execution_path", []),
@@ -656,7 +656,7 @@ def ask_agent():
                 response_type=response_type,
                 response=response_text,  # 修正：使用response而不是response_text
                 sql=sql,
-                query_result=query_result,
+                records=query_result,  # 修改：query_result改为records
                 summary=summary,
                 session_id=browser_session_id,
                 execution_path=execution_path,
