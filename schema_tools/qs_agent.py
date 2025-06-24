@@ -217,7 +217,7 @@ class QuestionSQLGenerationAgent:
             qs_pairs = self._parse_qs_response(response)
             
             # 验证和清理
-            validated_pairs = self._validate_qs_pairs(qs_pairs, theme['name'])
+            validated_pairs = self._validate_qs_pairs(qs_pairs, theme_name)
             
             # 保存中间结果
             await self._save_theme_results(theme_name, validated_pairs)

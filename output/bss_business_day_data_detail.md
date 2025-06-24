@@ -1,7 +1,7 @@
-## bss_business_day_data（记录各服务区每日业务统计数据）
-bss_business_day_data 表记录各服务区每日业务统计数据，包含统计日期及基础信息，用于运营分析与管理
+## bss_business_day_data（服务区营业日数据表）
+bss_business_day_data 表服务区营业日数据表，记录各服务区每日业务统计及版本信息
 字段列表：
-- id (varchar(32)) - 主键ID [主键, 非空] [示例: 00827DFF993D415488EA1F07CAE6C440, 00e799048b8cbb8ee758eac9c8b4b820]
+- id (varchar(32)) - 主键标识 [主键, 非空] [示例: 00827DFF993D415488EA1F07CAE6C440, 00e799048b8cbb8ee758eac9c8b4b820]
 - version (integer) - 版本号 [非空] [示例: 1]
 - create_ts (timestamp) - 创建时间 [示例: 2023-04-02 08:31:51, 2023-04-02 02:30:08]
 - created_by (varchar(50)) - 创建人 [示例: xingba]

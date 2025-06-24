@@ -1,7 +1,7 @@
--- 中文名: 记录各服务区每日业务统计数据
--- 描述: 记录各服务区每日业务统计数据，包含统计日期及基础信息，用于运营分析与管理
+-- 中文名: 服务区营业日数据表
+-- 描述: 服务区营业日数据表，记录各服务区每日业务统计及版本信息
 create table public.bss_business_day_data (
-  id varchar(32) not null     -- 主键ID，主键,
+  id varchar(32) not null     -- 主键标识，主键,
   version integer not null    -- 版本号,
   create_ts timestamp         -- 创建时间,
   created_by varchar(50)      -- 创建人,

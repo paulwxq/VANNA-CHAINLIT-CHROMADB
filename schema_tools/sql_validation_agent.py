@@ -229,7 +229,7 @@ class SQLValidationAgent:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         # 只保存文本格式摘要（便于查看）
-        txt_file = self.output_dir / f"{self.config['report_file_prefix']}_{timestamp}_summary.txt"
+        txt_file = self.output_dir / f"{self.config['report_file_prefix']}_{timestamp}_summary.log"
         with open(txt_file, 'w', encoding='utf-8') as f:
             f.write(f"SQL验证报告\n")
             f.write(f"=" * 50 + "\n\n")

@@ -1,5 +1,5 @@
--- 中文名: 存储服务区入驻公司的基本信息及变更记录
--- 描述: 存储服务区入驻公司的基本信息及变更记录，包含公司名称与编码，支持多版本审计。
+-- 中文名: 公司信息管理表
+-- 描述: 公司信息管理表，存储服务区运营公司基础信息及变更记录
 create table public.bss_company (
   id varchar(32) not null     -- 主键ID，主键,
   version integer not null    -- 版本号,

@@ -189,8 +189,7 @@ async def main():
     # 设置日志
     setup_logging(
         verbose=args.verbose,
-        log_file=args.log_file,
-        log_dir=os.path.join(args.output_dir, 'logs') if args.output_dir else None
+        log_file=args.log_file
     )
     
     # 验证参数

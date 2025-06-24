@@ -94,10 +94,12 @@ class SchemaWorkflowOrchestrator:
             else:
                 self.logger.info("⏭️ 跳过SQL验证步骤")
             
+            # 设置结束时间
+            self.workflow_state["end_time"] = time.time()
+            
             # 生成最终报告
             final_report = await self._generate_final_report()
             
-            self.workflow_state["end_time"] = time.time()
             self.logger.info("✅ Schema工作流编排完成")
             
             return final_report
@@ -519,8 +521,7 @@ async def main():
     # 设置日志
     setup_logging(
         verbose=args.verbose,
-        log_file=args.log_file,
-        log_dir=os.path.join(args.output_dir, 'logs') if args.output_dir else None
+        log_file=args.log_file
     )
     
     # 验证输入文件

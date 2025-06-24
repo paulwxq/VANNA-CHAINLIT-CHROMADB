@@ -12,6 +12,11 @@ import chainlit as cl
 import json
 from flask import session  # 添加session导入
 from common.redis_conversation_manager import RedisConversationManager  # 添加Redis对话管理器导入
+
+from common.qa_feedback_manager import QAFeedbackManager
+from common.result import success_response, bad_request_response, not_found_response, internal_error_response
+
+
 from common.result import (  # 统一导入所有需要的响应函数
     bad_request_response, service_unavailable_response, 
     agent_success_response, agent_error_response,
@@ -1756,6 +1761,364 @@ def embedding_cache_cleanup():
         print(f"[ERROR] 清空embedding缓存失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="清空embedding缓存失败，请稍后重试"
+        )), 500
+
+
+# ==================== QA反馈系统接口 ====================
+# 全局反馈管理器实例
+qa_feedback_manager = None
+
+def get_qa_feedback_manager():
+    """获取QA反馈管理器实例（懒加载）- 复用Vanna连接版本"""
+    global qa_feedback_manager
+    if qa_feedback_manager is None:
+        try:
+            # 优先尝试复用vanna连接
+            vanna_instance = None
+            try:
+                # 尝试获取现有的vanna实例
+                if 'get_citu_langraph_agent' in globals():
+                    agent = get_citu_langraph_agent()
+                    if hasattr(agent, 'vn'):
+                        vanna_instance = agent.vn
+                elif 'vn' in globals():
+                    vanna_instance = vn
+                else:
+                    print("[INFO] 未找到可用的vanna实例，将创建新的数据库连接")
+            except Exception as e:
+                print(f"[INFO] 获取vanna实例失败: {e}，将创建新的数据库连接")
+                vanna_instance = None
+            
+            qa_feedback_manager = QAFeedbackManager(vanna_instance=vanna_instance)
+            print("[CITU_APP] QA反馈管理器实例创建成功")
+        except Exception as e:
+            print(f"[CRITICAL] QA反馈管理器创建失败: {str(e)}")
+            raise Exception(f"QA反馈管理器初始化失败: {str(e)}")
+    return qa_feedback_manager
+
+
+@app.flask_app.route('/api/v0/qa_feedback/query', methods=['POST'])
+def qa_feedback_query():
+    """
+    查询反馈记录API
+    支持分页、筛选和排序功能
+    """
+    try:
+        req = request.get_json(force=True)
+        
+        # 解析参数，设置默认值
+        page = req.get('page', 1)
+        page_size = req.get('page_size', 20)
+        is_thumb_up = req.get('is_thumb_up')
+        create_time_start = req.get('create_time_start')
+        create_time_end = req.get('create_time_end')
+        is_in_training_data = req.get('is_in_training_data')
+        sort_by = req.get('sort_by', 'create_time')
+        sort_order = req.get('sort_order', 'desc')
+        
+        # 参数验证
+        if page < 1:
+            return jsonify(bad_request_response(
+                response_text="页码必须大于0",
+                invalid_params=["page"]
+            )), 400
+        
+        if page_size < 1 or page_size > 100:
+            return jsonify(bad_request_response(
+                response_text="每页大小必须在1-100之间",
+                invalid_params=["page_size"]
+            )), 400
+        
+        # 获取反馈管理器并查询
+        manager = get_qa_feedback_manager()
+        records, total = manager.query_feedback(
+            page=page,
+            page_size=page_size,
+            is_thumb_up=is_thumb_up,
+            create_time_start=create_time_start,
+            create_time_end=create_time_end,
+            is_in_training_data=is_in_training_data,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+        
+        # 计算分页信息
+        total_pages = (total + page_size - 1) // page_size
+        
+        return jsonify(success_response(
+            response_text=f"查询成功，共找到 {total} 条记录",
+            data={
+                "records": records,
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total": total,
+                    "total_pages": total_pages,
+                    "has_next": page < total_pages,
+                    "has_prev": page > 1
+                }
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] qa_feedback_query执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="查询反馈记录失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/qa_feedback/delete/<int:feedback_id>', methods=['DELETE'])
+def qa_feedback_delete(feedback_id):
+    """
+    删除反馈记录API
+    """
+    try:
+        manager = get_qa_feedback_manager()
+        success = manager.delete_feedback(feedback_id)
+        
+        if success:
+            return jsonify(success_response(
+                response_text=f"反馈记录删除成功",
+                data={"deleted_id": feedback_id}
+            ))
+        else:
+            return jsonify(not_found_response(
+                response_text=f"反馈记录不存在 (ID: {feedback_id})"
+            )), 404
+            
+    except Exception as e:
+        print(f"[ERROR] qa_feedback_delete执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="删除反馈记录失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/qa_feedback/update/<int:feedback_id>', methods=['PUT'])
+def qa_feedback_update(feedback_id):
+    """
+    更新反馈记录API
+    """
+    try:
+        req = request.get_json(force=True)
+        
+        # 提取允许更新的字段
+        allowed_fields = ['question', 'sql', 'is_thumb_up', 'user_id', 'is_in_training_data']
+        update_data = {}
+        
+        for field in allowed_fields:
+            if field in req:
+                update_data[field] = req[field]
+        
+        if not update_data:
+            return jsonify(bad_request_response(
+                response_text="没有提供有效的更新字段",
+                missing_params=allowed_fields
+            )), 400
+        
+        manager = get_qa_feedback_manager()
+        success = manager.update_feedback(feedback_id, **update_data)
+        
+        if success:
+            return jsonify(success_response(
+                response_text="反馈记录更新成功",
+                data={
+                    "updated_id": feedback_id,
+                    "updated_fields": list(update_data.keys())
+                }
+            ))
+        else:
+            return jsonify(not_found_response(
+                response_text=f"反馈记录不存在或无变化 (ID: {feedback_id})"
+            )), 404
+            
+    except Exception as e:
+        print(f"[ERROR] qa_feedback_update执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="更新反馈记录失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/qa_feedback/add_to_training', methods=['POST'])
+def qa_feedback_add_to_training():
+    """
+    将反馈记录添加到训练数据集API
+    支持混合批量处理：正向反馈加入SQL训练集，负向反馈加入error_sql训练集
+    """
+    try:
+        req = request.get_json(force=True)
+        feedback_ids = req.get('feedback_ids', [])
+        
+        if not feedback_ids or not isinstance(feedback_ids, list):
+            return jsonify(bad_request_response(
+                response_text="缺少有效的反馈ID列表",
+                missing_params=["feedback_ids"]
+            )), 400
+        
+        manager = get_qa_feedback_manager()
+        
+        # 获取反馈记录
+        records = manager.get_feedback_by_ids(feedback_ids)
+        
+        if not records:
+            return jsonify(not_found_response(
+                response_text="未找到任何有效的反馈记录"
+            )), 404
+        
+        # 分别处理正向和负向反馈
+        positive_count = 0  # 正向训练计数
+        negative_count = 0  # 负向训练计数
+        already_trained_count = 0  # 已训练计数
+        error_count = 0  # 错误计数
+        
+        successfully_trained_ids = []  # 成功训练的ID列表
+        
+        for record in records:
+            try:
+                # 检查是否已经在训练数据中
+                if record['is_in_training_data']:
+                    already_trained_count += 1
+                    continue
+                
+                if record['is_thumb_up']:
+                    # 正向反馈 - 加入标准SQL训练集
+                    training_id = vn.train(
+                        question=record['question'], 
+                        sql=record['sql']
+                    )
+                    positive_count += 1
+                    print(f"[TRAINING] 正向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
+                else:
+                    # 负向反馈 - 加入错误SQL训练集
+                    training_id = vn.train_error_sql(
+                        question=record['question'], 
+                        sql=record['sql']
+                    )
+                    negative_count += 1
+                    print(f"[TRAINING] 负向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
+                
+                successfully_trained_ids.append(record['id'])
+                
+            except Exception as e:
+                print(f"[ERROR] 训练失败 - 反馈ID: {record['id']}, 错误: {e}")
+                error_count += 1
+        
+        # 更新训练状态
+        if successfully_trained_ids:
+            updated_count = manager.mark_training_status(successfully_trained_ids, True)
+            print(f"[TRAINING] 批量更新训练状态完成，影响 {updated_count} 条记录")
+        
+        # 构建响应
+        total_processed = positive_count + negative_count + already_trained_count + error_count
+        
+        return jsonify(success_response(
+            response_text=f"训练数据添加完成，成功处理 {positive_count + negative_count} 条记录",
+            data={
+                "summary": {
+                    "total_requested": len(feedback_ids),
+                    "total_processed": total_processed,
+                    "positive_trained": positive_count,
+                    "negative_trained": negative_count,
+                    "already_trained": already_trained_count,
+                    "errors": error_count
+                },
+                "successfully_trained_ids": successfully_trained_ids,
+                "training_details": {
+                    "sql_training_count": positive_count,
+                    "error_sql_training_count": negative_count
+                }
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] qa_feedback_add_to_training执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="添加训练数据失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/qa_feedback/add', methods=['POST'])
+def qa_feedback_add():
+    """
+    添加反馈记录API
+    用于前端直接创建反馈记录
+    """
+    try:
+        req = request.get_json(force=True)
+        question = req.get('question')
+        sql = req.get('sql')
+        is_thumb_up = req.get('is_thumb_up')
+        user_id = req.get('user_id', 'guest')
+        
+        # 参数验证
+        if not question:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：question",
+                missing_params=["question"]
+            )), 400
+        
+        if not sql:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：sql",
+                missing_params=["sql"]
+            )), 400
+        
+        if is_thumb_up is None:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：is_thumb_up",
+                missing_params=["is_thumb_up"]
+            )), 400
+        
+        manager = get_qa_feedback_manager()
+        feedback_id = manager.add_feedback(
+            question=question,
+            sql=sql,
+            is_thumb_up=bool(is_thumb_up),
+            user_id=user_id
+        )
+        
+        return jsonify(success_response(
+            response_text="反馈记录创建成功",
+            data={
+                "feedback_id": feedback_id,
+                "message": "Feedback record created successfully"
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] qa_feedback_add执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="创建反馈记录失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/qa_feedback/stats', methods=['GET'])
+def qa_feedback_stats():
+    """
+    反馈统计API
+    返回反馈数据的统计信息
+    """
+    try:
+        manager = get_qa_feedback_manager()
+        
+        # 查询各种统计数据
+        all_records, total_count = manager.query_feedback(page=1, page_size=1)
+        positive_records, positive_count = manager.query_feedback(page=1, page_size=1, is_thumb_up=True)
+        negative_records, negative_count = manager.query_feedback(page=1, page_size=1, is_thumb_up=False)
+        trained_records, trained_count = manager.query_feedback(page=1, page_size=1, is_in_training_data=True)
+        untrained_records, untrained_count = manager.query_feedback(page=1, page_size=1, is_in_training_data=False)
+        
+        return jsonify(success_response(
+            response_text="统计信息获取成功",
+            data={
+                "total_feedback": total_count,
+                "positive_feedback": positive_count,
+                "negative_feedback": negative_count,
+                "trained_feedback": trained_count,
+                "untrained_feedback": untrained_count,
+                "positive_rate": round(positive_count / max(total_count, 1) * 100, 2),
+                "training_rate": round(trained_count / max(total_count, 1) * 100, 2)
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] qa_feedback_stats执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取统计信息失败，请稍后重试"
         )), 500
 
 

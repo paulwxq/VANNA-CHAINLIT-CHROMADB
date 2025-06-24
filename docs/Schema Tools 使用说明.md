@@ -97,6 +97,9 @@ python -m schema_tools.schema_workflow_orchestrator \
   --no-modify-file
 ```
 
+python -m schema_tools.schema_workflow_orchestrator --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" --table-list ./schema_tools/tables.txt --business-context "高速公路服务区管理系统"  --db-name highway_db --output-dir ./output
+
+
 ### 3.3 编程方式使用
 
 ```python
