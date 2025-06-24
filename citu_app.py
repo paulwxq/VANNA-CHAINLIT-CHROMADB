@@ -11,6 +11,7 @@ import re
 import chainlit as cl
 import json
 from flask import session  # 添加session导入
+import sqlparse  # 用于SQL语法检查
 from common.redis_conversation_manager import RedisConversationManager  # 添加Redis对话管理器导入
 
 from common.qa_feedback_manager import QAFeedbackManager
@@ -2195,6 +2196,437 @@ def qa_cache_cleanup():
         print(f"[ERROR] 清空问答缓存失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="清空问答缓存失败，请稍后重试"
+        )), 500
+
+
+# ==================== 训练数据管理接口 ====================
+
+def validate_sql_syntax(sql: str) -> tuple[bool, str]:
+    """SQL语法检查（仅对sql类型）"""
+    try:
+        parsed = sqlparse.parse(sql.strip())
+        
+        if not parsed or not parsed[0].tokens:
+            return False, "SQL语法错误：空语句"
+        
+        # 基本语法检查
+        sql_upper = sql.strip().upper()
+        if not any(sql_upper.startswith(keyword) for keyword in 
+                  ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP']):
+            return False, "SQL语法错误：不是有效的SQL语句"
+        
+        # 安全检查：禁止危险的SQL操作
+        dangerous_operations = ['UPDATE', 'DELETE', 'ALERT', 'DROP']
+        for operation in dangerous_operations:
+            if sql_upper.startswith(operation):
+                return False, f'在训练集中禁止使用"{",".join(dangerous_operations)}"'
+        
+        return True, ""
+    except Exception as e:
+        return False, f"SQL语法错误：{str(e)}"
+
+def paginate_data(data_list: list, page: int, page_size: int):
+    """分页处理算法"""
+    total = len(data_list)
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    page_data = data_list[start_idx:end_idx]
+    
+    return {
+        "data": page_data,
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": (total + page_size - 1) // page_size,
+            "has_next": end_idx < total,
+            "has_prev": page > 1
+        }
+    }
+
+def filter_by_type(data_list: list, training_data_type: str):
+    """按类型筛选算法"""
+    if not training_data_type:
+        return data_list
+    
+    return [
+        record for record in data_list 
+        if record.get('training_data_type') == training_data_type
+    ]
+
+def search_in_data(data_list: list, search_keyword: str):
+    """在数据中搜索关键词"""
+    if not search_keyword:
+        return data_list
+    
+    keyword_lower = search_keyword.lower()
+    return [
+        record for record in data_list
+        if (record.get('question') and keyword_lower in record['question'].lower()) or
+           (record.get('content') and keyword_lower in record['content'].lower())
+    ]
+
+def process_single_training_item(item: dict, index: int) -> dict:
+    """处理单个训练数据项"""
+    training_type = item.get('training_data_type')
+    
+    if training_type == 'sql':
+        sql = item.get('sql')
+        if not sql:
+            raise ValueError("SQL字段是必需的")
+        
+        # SQL语法检查
+        is_valid, error_msg = validate_sql_syntax(sql)
+        if not is_valid:
+            raise ValueError(error_msg)
+        
+        question = item.get('question')
+        if question:
+            training_id = vn.train(question=question, sql=sql)
+        else:
+            training_id = vn.train(sql=sql)
+            
+    elif training_type == 'error_sql':
+        # error_sql不需要语法检查
+        question = item.get('question')
+        sql = item.get('sql')
+        if not question or not sql:
+            raise ValueError("question和sql字段都是必需的")
+        training_id = vn.train_error_sql(question=question, sql=sql)
+        
+    elif training_type == 'documentation':
+        content = item.get('content')
+        if not content:
+            raise ValueError("content字段是必需的")
+        training_id = vn.train(documentation=content)
+        
+    elif training_type == 'ddl':
+        ddl = item.get('ddl')
+        if not ddl:
+            raise ValueError("ddl字段是必需的")
+        training_id = vn.train(ddl=ddl)
+        
+    else:
+        raise ValueError(f"不支持的训练数据类型: {training_type}")
+    
+    return {
+        "index": index,
+        "success": True,
+        "training_id": training_id,
+        "type": training_type,
+        "message": f"{training_type}训练数据创建成功"
+    }
+
+def get_total_training_count():
+    """获取当前训练数据总数"""
+    try:
+        training_data = vn.get_training_data()
+        if training_data is not None and not training_data.empty:
+            return len(training_data)
+        return 0
+    except Exception as e:
+        print(f"[WARNING] 获取训练数据总数失败: {e}")
+        return 0
+
+@app.flask_app.route('/api/v0/training_data/query', methods=['POST'])
+def training_data_query():
+    """
+    分页查询训练数据API
+    支持类型筛选、搜索和排序功能
+    """
+    try:
+        req = request.get_json(force=True)
+        
+        # 解析参数，设置默认值
+        page = req.get('page', 1)
+        page_size = req.get('page_size', 20)
+        training_data_type = req.get('training_data_type')
+        sort_by = req.get('sort_by', 'id')
+        sort_order = req.get('sort_order', 'desc')
+        search_keyword = req.get('search_keyword')
+        
+        # 参数验证
+        if page < 1:
+            return jsonify(bad_request_response(
+                response_text="页码必须大于0",
+                missing_params=["page"]
+            )), 400
+        
+        if page_size < 1 or page_size > 100:
+            return jsonify(bad_request_response(
+                response_text="每页大小必须在1-100之间",
+                missing_params=["page_size"]
+            )), 400
+        
+        if search_keyword and len(search_keyword) > 100:
+            return jsonify(bad_request_response(
+                response_text="搜索关键词最大长度为100字符",
+                missing_params=["search_keyword"]
+            )), 400
+        
+        # 获取训练数据
+        training_data = vn.get_training_data()
+        
+        if training_data is None or training_data.empty:
+            return jsonify(success_response(
+                response_text="查询成功，暂无训练数据",
+                data={
+                    "records": [],
+                    "pagination": {
+                        "page": page,
+                        "page_size": page_size,
+                        "total": 0,
+                        "total_pages": 0,
+                        "has_next": False,
+                        "has_prev": False
+                    },
+                    "filters_applied": {
+                        "training_data_type": training_data_type,
+                        "search_keyword": search_keyword
+                    }
+                }
+            ))
+        
+        # 转换为列表格式
+        records = training_data.to_dict(orient="records")
+        
+        # 应用筛选条件
+        if training_data_type:
+            records = filter_by_type(records, training_data_type)
+        
+        if search_keyword:
+            records = search_in_data(records, search_keyword)
+        
+        # 排序
+        if sort_by in ['id', 'training_data_type']:
+            reverse = (sort_order.lower() == 'desc')
+            records.sort(key=lambda x: x.get(sort_by, ''), reverse=reverse)
+        
+        # 分页
+        paginated_result = paginate_data(records, page, page_size)
+        
+        return jsonify(success_response(
+            response_text=f"查询成功，共找到 {paginated_result['pagination']['total']} 条记录",
+            data={
+                "records": paginated_result["data"],
+                "pagination": paginated_result["pagination"],
+                "filters_applied": {
+                    "training_data_type": training_data_type,
+                    "search_keyword": search_keyword
+                }
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] training_data_query执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="查询训练数据失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/training_data/create', methods=['POST'])
+def training_data_create():
+    """
+    创建训练数据API
+    支持单条和批量创建，支持四种数据类型
+    """
+    try:
+        req = request.get_json(force=True)
+        data = req.get('data')
+        
+        if not data:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：data",
+                missing_params=["data"]
+            )), 400
+        
+        # 统一处理为列表格式
+        if isinstance(data, dict):
+            data_list = [data]
+        elif isinstance(data, list):
+            data_list = data
+        else:
+            return jsonify(bad_request_response(
+                response_text="data字段格式错误，应为对象或数组"
+            )), 400
+        
+        # 批量操作限制
+        if len(data_list) > 50:
+            return jsonify(bad_request_response(
+                response_text="批量操作最大支持50条记录"
+            )), 400
+        
+        results = []
+        successful_count = 0
+        type_summary = {"sql": 0, "documentation": 0, "ddl": 0, "error_sql": 0}
+        
+        for index, item in enumerate(data_list):
+            try:
+                result = process_single_training_item(item, index)
+                results.append(result)
+                if result['success']:
+                    successful_count += 1
+                    type_summary[result['type']] += 1
+            except Exception as e:
+                results.append({
+                    "index": index,
+                    "success": False,
+                    "type": item.get('training_data_type', 'unknown'),
+                    "error": str(e),
+                    "message": "创建失败"
+                })
+        
+        # 获取创建后的总记录数
+        current_total = get_total_training_count()
+        
+        return jsonify(success_response(
+            response_text="训练数据创建完成",
+            data={
+                "total_requested": len(data_list),
+                "successfully_created": successful_count,
+                "failed_count": len(data_list) - successful_count,
+                "results": results,
+                "summary": type_summary,
+                "current_total_count": current_total
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] training_data_create执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="创建训练数据失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/training_data/delete', methods=['POST'])
+def training_data_delete():
+    """
+    删除训练数据API
+    支持批量删除
+    """
+    try:
+        req = request.get_json(force=True)
+        ids = req.get('ids', [])
+        confirm = req.get('confirm', False)
+        
+        if not ids or not isinstance(ids, list):
+            return jsonify(bad_request_response(
+                response_text="缺少有效的ID列表",
+                missing_params=["ids"]
+            )), 400
+        
+        if not confirm:
+            return jsonify(bad_request_response(
+                response_text="删除操作需要确认，请设置confirm为true"
+            )), 400
+        
+        # 批量操作限制
+        if len(ids) > 50:
+            return jsonify(bad_request_response(
+                response_text="批量删除最大支持50条记录"
+            )), 400
+        
+        deleted_ids = []
+        failed_ids = []
+        failed_details = []
+        
+        for training_id in ids:
+            try:
+                success = vn.remove_training_data(training_id)
+                if success:
+                    deleted_ids.append(training_id)
+                else:
+                    failed_ids.append(training_id)
+                    failed_details.append({
+                        "id": training_id,
+                        "error": "记录不存在或删除失败"
+                    })
+            except Exception as e:
+                failed_ids.append(training_id)
+                failed_details.append({
+                    "id": training_id,
+                    "error": str(e)
+                })
+        
+        # 获取删除后的总记录数
+        current_total = get_total_training_count()
+        
+        return jsonify(success_response(
+            response_text="训练数据删除完成",
+            data={
+                "total_requested": len(ids),
+                "successfully_deleted": len(deleted_ids),
+                "failed_count": len(failed_ids),
+                "deleted_ids": deleted_ids,
+                "failed_ids": failed_ids,
+                "failed_details": failed_details,
+                "current_total_count": current_total
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] training_data_delete执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="删除训练数据失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/training_data/stats', methods=['GET'])
+def training_data_stats():
+    """
+    获取训练数据统计信息API
+    """
+    try:
+        training_data = vn.get_training_data()
+        
+        if training_data is None or training_data.empty:
+            return jsonify(success_response(
+                response_text="统计信息获取成功",
+                data={
+                    "total_count": 0,
+                    "type_breakdown": {
+                        "sql": 0,
+                        "documentation": 0,
+                        "ddl": 0,
+                        "error_sql": 0
+                    },
+                    "type_percentages": {
+                        "sql": 0.0,
+                        "documentation": 0.0,
+                        "ddl": 0.0,
+                        "error_sql": 0.0
+                    },
+                    "last_updated": datetime.now().isoformat()
+                }
+            ))
+        
+        total_count = len(training_data)
+        
+        # 统计各类型数量
+        type_breakdown = {"sql": 0, "documentation": 0, "ddl": 0, "error_sql": 0}
+        
+        if 'training_data_type' in training_data.columns:
+            type_counts = training_data['training_data_type'].value_counts()
+            for data_type, count in type_counts.items():
+                if data_type in type_breakdown:
+                    type_breakdown[data_type] = int(count)
+        
+        # 计算百分比
+        type_percentages = {}
+        for data_type, count in type_breakdown.items():
+            type_percentages[data_type] = round(count / max(total_count, 1) * 100, 2)
+        
+        return jsonify(success_response(
+            response_text="统计信息获取成功",
+            data={
+                "total_count": total_count,
+                "type_breakdown": type_breakdown,
+                "type_percentages": type_percentages,
+                "last_updated": datetime.now().isoformat()
+            }
+        ))
+        
+    except Exception as e:
+        print(f"[ERROR] training_data_stats执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取统计信息失败，请稍后重试"
         )), 500
 
 
