@@ -597,12 +597,14 @@ def ask_agent():
                 can_retry=True
             )), 503
         
-        agent_result = agent.process_question(
+        # 异步调用Agent处理问题
+        import asyncio
+        agent_result = asyncio.run(agent.process_question(
             question=enhanced_question,  # 使用增强后的问题
             session_id=browser_session_id,
             context_type=context_type,  # 传递上下文类型
             routing_mode=effective_routing_mode  # 新增：传递路由模式
-        )
+        ))
         
         # 8. 处理Agent结果
         if agent_result.get("success", False):
@@ -737,15 +739,14 @@ def agent_health():
         try:
             agent = get_citu_langraph_agent()
             health_data["checks"]["agent_creation"] = True
-            health_data["workflow_compiled"] = agent.workflow is not None
+            # 修正：Agent现在是动态创建workflow的，不再有预创建的workflow属性
+            health_data["workflow_compiled"] = True  # 动态创建，始终可用
             health_data["tools_count"] = len(agent.tools) if hasattr(agent, 'tools') else 0
         except Exception as e:
             health_data["message"] = f"Agent创建失败: {str(e)}"
+            health_data["status"] = "unhealthy"  # 设置状态
             from common.result import health_error_response
-            return jsonify(health_error_response(
-                status="unhealthy",
-                **health_data
-            )), 503
+            return jsonify(health_error_response(**health_data)), 503
         
         # 检查2: 工具导入
         try:
@@ -773,7 +774,9 @@ def agent_health():
         # 检查5: 完整流程测试（可选）
         try:
             if all(health_data["checks"].values()):
-                test_result = agent.health_check()
+                import asyncio
+                # 异步调用健康检查
+                test_result = asyncio.run(agent.health_check())
                 health_data["test_result"] = test_result.get("status") == "healthy"
                 health_data["status"] = test_result.get("status", "unknown")
                 health_data["message"] = test_result.get("message", "健康检查完成")
@@ -781,6 +784,9 @@ def agent_health():
                 health_data["status"] = "degraded"
                 health_data["message"] = "部分组件异常"
         except Exception as e:
+            print(f"[ERROR] 健康检查异常: {str(e)}")
+            import traceback
+            print(f"[ERROR] 详细健康检查错误: {traceback.format_exc()}")
             health_data["status"] = "degraded"
             health_data["message"] = f"完整测试失败: {str(e)}"
         
@@ -790,12 +796,16 @@ def agent_health():
         if health_data["status"] == "healthy":
             return jsonify(health_success_response(**health_data))
         elif health_data["status"] == "degraded":
-            return jsonify(health_error_response(status="degraded", **health_data)), 503
+            return jsonify(health_error_response(**health_data)), 503
         else:
-            return jsonify(health_error_response(status="unhealthy", **health_data)), 503
+            # 确保状态设置为unhealthy
+            health_data["status"] = "unhealthy"
+            return jsonify(health_error_response(**health_data)), 503
             
     except Exception as e:
-        print(f"[ERROR] 健康检查异常: {str(e)}")
+        print(f"[ERROR] 顶层健康检查异常: {str(e)}")
+        import traceback
+        print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
         from common.result import internal_error_response
         return jsonify(internal_error_response(
             response_text="健康检查失败，请稍后重试"

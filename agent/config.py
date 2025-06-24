@@ -91,6 +91,33 @@ AGENT_CONFIG = {
         # 生产环境建议启用，内存受限环境可关闭
         "enable_agent_reuse": True,
     },
+    
+    # ==================== SQL验证配置 ====================
+    "sql_validation": {
+        # 是否启用禁止词检查：检查SQL中是否包含危险操作
+        # 禁止词检查优先级高于语法检查，失败时不尝试修复
+        "enable_forbidden_check": True,
+        
+        # 是否启用语法验证：使用EXPLAIN SQL验证语法正确性
+        # 语法验证失败时可以尝试LLM修复
+        "enable_syntax_validation": True,
+        
+        # 是否启用自动修复：当语法验证失败时，调用LLM尝试修复
+        # 仅对语法错误有效，禁止词错误不会尝试修复
+        "enable_auto_repair": True,
+        
+        # 禁止的SQL操作：这些操作会被直接拒绝，不允许执行
+        # 系统只支持查询操作，不允许修改数据
+        "forbidden_operations": ['UPDATE', 'DELETE', 'DROP', 'ALTER', 'INSERT'],
+        
+        # LLM修复超时时间：单次修复调用的最大等待时间（秒）
+        # 超时后将放弃修复，直接返回失败
+        "repair_timeout": 60,
+        
+        # 修复重试次数：目前固定为1次，不进行多次重试
+        # 这是设计约束，避免无限修复循环
+        "max_repair_attempts": 1,
+    },
 }
 
 def get_nested_config(config: dict, key_path: str, default=None):

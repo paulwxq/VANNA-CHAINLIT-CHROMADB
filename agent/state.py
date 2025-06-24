@@ -24,6 +24,14 @@ class AgentState(TypedDict):
     query_result: Optional[Dict[str, Any]]
     summary: Optional[str]
     
+    # SQL验证和修复相关状态
+    sql_generation_success: bool
+    sql_validation_success: bool
+    sql_repair_attempted: bool
+    sql_repair_success: bool
+    validation_error_type: Optional[str]  # "forbidden_keywords" | "syntax_error" | None
+    user_prompt: Optional[str]
+    
     # 聊天响应
     chat_response: Optional[str]
     
