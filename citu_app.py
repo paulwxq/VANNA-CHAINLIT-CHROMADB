@@ -2075,8 +2075,7 @@ def qa_feedback_add():
         return jsonify(success_response(
             response_text="反馈记录创建成功",
             data={
-                "feedback_id": feedback_id,
-                "message": "Feedback record created successfully"
+                "feedback_id": feedback_id
             }
         ))
         

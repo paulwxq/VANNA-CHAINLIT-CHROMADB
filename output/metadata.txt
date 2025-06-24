@@ -1,0 +1,62 @@
+-- Schema Tools生成的主题元数据
+-- 业务背景: 高速公路服务区管理系统
+-- 生成时间: 2025-06-24 10:55:00
+-- 数据库: highway_db
+
+-- 创建表（如果不存在）
+CREATE TABLE IF NOT EXISTS metadata (
+    id SERIAL PRIMARY KEY,
+    topic_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    related_tables TEXT[],
+    keywords TEXT[],
+    focus_areas TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 插入主题数据
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '日营收分析',
+  '分析各服务区每日营收构成及支付方式占比，评估经营效能',
+  '{bss_business_day_data,bss_service_area}',
+  '{营收趋势,支付占比,服务对比}',
+  '{收入趋势,服务区对比,支付方式分布}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '车流统计',
+  '统计各服务区车辆通行量及类型分布，优化资源调度',
+  '{bss_car_day_count,bss_service_area}',
+  '{车流量,车型分布,时段分析}',
+  '{日车流量,车型占比,高峰时段}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '公司绩效',
+  '对比不同运营公司下属服务区的营收及车流指标，评估经营质量',
+  '{bss_company,bss_service_area,bss_business_day_data}',
+  '{公司对比,营收排名,运营效率}',
+  '{营收排名,车流对比,单位产值}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '路段关联',
+  '分析路段与服务区的关联数据，评估路段车流对营收的影响',
+  '{bss_section_route,bss_section_route_area_link,bss_car_day_count}',
+  '{路段分析,车流转化,路网关联}',
+  '{路段车流,服务区转化率,高峰时段关联}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '数据质量',
+  '校验不同来源系统的服务区数据一致性，确保数据准确性',
+  '{bss_service_area,bss_service_area_mapper}',
+  '{数据校验,系统比对,编码一致性}',
+  '{编码一致性,系统差异,数据完整性}'
+);
+

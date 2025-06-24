@@ -289,4 +289,13 @@ def service_unavailable_response(response_text, can_retry=True):
         message=MessageTemplate.SERVICE_UNAVAILABLE,
         code=503,
         can_retry=can_retry
+    )
+
+def not_found_response(response_text):
+    """资源未找到响应"""
+    return error_response(
+        response_text=response_text,
+        error_type=ErrorType.RESOURCE_NOT_FOUND,
+        message=MessageTemplate.NOT_FOUND,
+        code=404
     ) 

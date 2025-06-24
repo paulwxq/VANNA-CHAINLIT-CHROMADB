@@ -7,6 +7,7 @@ class MessageTemplate:
     # 客户端错误场景 (4xx)
     BAD_REQUEST = "请求参数错误"
     VALIDATION_FAILED = "参数验证失败"
+    NOT_FOUND = "资源未找到"
     
     # 服务端错误场景 (5xx)
     INTERNAL_ERROR = "系统内部错误"
@@ -31,6 +32,9 @@ class ErrorType:
     # 参数相关错误
     MISSING_REQUIRED_PARAMS = "missing_required_params"
     INVALID_PARAMS = "invalid_params"
+    
+    # 资源相关错误
+    RESOURCE_NOT_FOUND = "resource_not_found"
     
     # 系统错误
     DATABASE_ERROR = "database_error"
