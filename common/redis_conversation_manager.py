@@ -268,6 +268,52 @@ class RedisConversationManager:
         except Exception as e:
             print(f"[ERROR] 获取上下文失败: {str(e)}")
             return ""
+        
+    def get_context_for_display(self, conversation_id: str, count: Optional[int] = None) -> str:
+        """获取对话上下文用于UI显示（不受ENABLE_CONVERSATION_CONTEXT配置影响),
+        仅供UI显示使用，不用于提交上下文给LLM       
+        """
+        if not self.is_available():
+            return ""
+        
+        try:
+            if count is None:
+                count = CONVERSATION_CONTEXT_COUNT
+            
+            # 获取最近的消息（count*2 因为包含用户和助手消息）
+            message_count = count * 2
+            messages = self.redis_client.lrange(
+                f"conversation:{conversation_id}:messages",
+                0, message_count - 1
+            )
+            
+            if not messages:
+                return ""
+            
+            # 解析消息并构建上下文（按时间正序）
+            context_parts = []
+            for msg_json in reversed(messages):  # Redis返回倒序，需要反转
+                try:
+                    msg_data = json.loads(msg_json)
+                    role = msg_data.get("role", "")
+                    content = msg_data.get("content", "")
+                    
+                    if role == "user":
+                        context_parts.append(f"User: {content}")
+                    elif role == "assistant":
+                        context_parts.append(f"Assistant: {content}")
+                        
+                except json.JSONDecodeError:
+                    continue
+            
+            context = "\n".join(context_parts)
+            print(f"[REDIS_CONV] 获取显示上下文成功: {len(context_parts)}条消息")
+            return context
+            
+        except Exception as e:
+            print(f"[ERROR] 获取显示上下文失败: {str(e)}")
+            return ""
+    
     
     def get_conversation_messages(self, conversation_id: str, limit: Optional[int] = None) -> List[Dict]:
         """获取对话的消息列表"""
