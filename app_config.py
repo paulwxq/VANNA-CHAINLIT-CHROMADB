@@ -117,19 +117,6 @@ TRAINING_BATCH_PROCESSING_ENABLED = False   # 是否启用训练数据批处理�
 TRAINING_BATCH_SIZE = 10                    # 每批处理的训练项目数量
 TRAINING_MAX_WORKERS = 1                    # 训练批处理的最大工作线程数（设置为1确保单线程）
 
-# 训练数据路径配置
-# 支持以下格式：
-# 1. 相对路径（以 . 开头）：
-#    "./training/data"     - 项目根目录下的training/data
-#    "../data"             - 项目根目录上级的data目录
-# 2. 绝对路径：
-#    "/home/user/data"     - Linux绝对路径
-#    "C:/data"             - Windows绝对路径
-#    "D:\\training\\data"  - Windows绝对路径（转义反斜杠）
-# 3. 相对路径（不以.开头）：
-#    "training/data"       - 相对于项目根目录
-#    "my_data"             - 项目根目录下的my_data文件夹
-TRAINING_DATA_PATH = "./training/data"
 
 # 是否启用问题重写功能，也就是上下文问题合并。
 REWRITE_QUESTION_ENABLED = False

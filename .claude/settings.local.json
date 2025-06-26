@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(source:*)",
+      "Bash(ls:*)",
+      "Bash(.venv/Scripts/activate)",
+      "Bash(.venv/Scripts/python.exe -m data_pipeline:*)",
+      "Bash(.venv/Scripts/python.exe data_pipeline/training_data/run_training.py:*)",
+      "Bash(.venv/Scripts/python.exe:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(.venv/bin/python:*)"
+    ],
+    "deny": []
+  }
+}

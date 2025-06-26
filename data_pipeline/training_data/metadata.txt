@@ -1,0 +1,62 @@
+-- Schema Tools生成的主题元数据
+-- 业务背景: 高速公路服务区管理系统
+-- 生成时间: 2025-06-26 12:32:02
+-- 数据库: highway_db
+
+-- 创建表（如果不存在）
+CREATE TABLE IF NOT EXISTS metadata (
+    id SERIAL PRIMARY KEY,
+    topic_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    related_tables TEXT[],
+    keywords TEXT[],
+    focus_areas TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 插入主题数据
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '日营收分析',
+  '基于bss_business_day_data表分析各服务区每日营收结构及支付方式占比，优化资金管理策略',
+  '{bss_business_day_data,bss_service_area}',
+  '{营收,支付方式,日统计,服务区}',
+  '{收入趋势,服务区对比,支付方式分布}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '车流特征分析',
+  '通过bss_car_day_count表研究不同车型通行规律，为服务区设施配置和营销策略提供数据支持',
+  '{bss_car_day_count,bss_service_area}',
+  '{车流量,车型分类,通行规律,运营规划}',
+  '{高峰时段分析,车型分布,车流与营收关联}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '公司效能对比',
+  '结合bss_company和bss_service_area表，评估各管理公司下属服务区运营效能及资源利用率',
+  '{bss_company,bss_service_area,bss_business_day_data}',
+  '{分公司,效能评估,资源利用,横向对比}',
+  '{营收能力对比,服务区密度分析,运营成本关联}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '路线关联分析',
+  '通过bss_section_route_area_link表分析路段-服务区关联关系，优化路网导航与资源调度',
+  '{bss_section_route_area_link,bss_section_route,bss_car_day_count}',
+  '{路段关联,资源调度,导航优化,车流分布}',
+  '{路段车流分布,服务区覆盖分析,路线-营收关联}'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, keywords, focus_areas) VALUES
+(
+  '运营状态监测',
+  '基于bss_service_area表监控服务区运营状态变化，分析服务关闭对周边路网的影响',
+  '{bss_service_area,bss_car_day_count,bss_business_day_data}',
+  '{运营状态,服务关闭,影响评估,地理位置}',
+  '{状态变更趋势,地理分布影响,替代服务区效应}'
+);
+
