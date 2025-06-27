@@ -8,7 +8,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from agent.state import AgentState
 from agent.classifier import QuestionClassifier
 from agent.tools import TOOLS, generate_sql, execute_sql, generate_summary, general_chat
-from agent.utils import get_compatible_llm
+from agent.tools.utils import get_compatible_llm
 from app_config import ENABLE_RESULT_SUMMARY
 
 class CituLangGraphAgent:
@@ -271,7 +271,7 @@ class CituLangGraphAgent:
                 return state
             
             # 额外验证：检查SQL格式（防止工具误判）
-            from agent.utils import _is_valid_sql_format
+            from agent.tools.utils import _is_valid_sql_format
             if not _is_valid_sql_format(sql):
                 # 内容看起来不是SQL，当作解释性响应处理
                 state["chat_response"] = sql + " 请尝试提问其它问题。"
@@ -487,7 +487,7 @@ class CituLangGraphAgent:
                 return state
             
             # 额外验证：检查SQL格式（防止工具误判）
-            from agent.utils import _is_valid_sql_format
+            from agent.tools.utils import _is_valid_sql_format
             if not _is_valid_sql_format(sql):
                 # 内容看起来不是SQL，当作解释性响应处理
                 state["chat_response"] = sql + " 请尝试提问其它问题。"

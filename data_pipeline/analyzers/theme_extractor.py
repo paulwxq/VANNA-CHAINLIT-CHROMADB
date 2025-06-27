@@ -64,10 +64,17 @@ class ThemeExtractor:
 要求：
 1. 每个主题应该有明确的业务价值和分析目标
 2. 主题之间应该有所区别，覆盖不同的业务领域  
-3. 你需要自行决定每个主题应该涉及哪些表
+3. 你需要自行决定每个主题应该涉及哪些表（使用实际存在的表名）
 4. 主题应该体现实际业务场景的数据分析需求
 5. 考虑时间维度、对比分析、排名统计等多种分析角度
-6. 为每个主题提供3-5个关键词，用于快速了解主题内容
+6. 在选择业务实体时，请忽略以下技术性字段：
+   - id、主键ID等标识字段
+   - create_time、created_at、create_ts等创建时间字段
+   - update_time、updated_at、update_ts等更新时间字段
+   - delete_time、deleted_at、delete_ts等删除时间字段
+   - version、版本号等版本控制字段
+   - created_by、updated_by、deleted_by等操作人字段
+7. 重点关注具有业务含义的实体字段和指标
 
 请以JSON格式输出：
 ```json
@@ -77,8 +84,8 @@ class ThemeExtractor:
       "topic_name": "日营业数据分析",
       "description": "基于 bss_business_day_data 表，分析每个服务区和档口每天的营业收入、订单数量、支付方式等",
       "related_tables": ["bss_business_day_data", "bss_branch", "bss_service_area"],
-      "keywords": ["收入", "订单", "支付方式", "日报表"],
-      "focus_areas": ["收入趋势", "服务区对比", "支付方式分布"]
+      "biz_entities": ["服务区", "档口", "支付方式", "营收"],
+      "biz_metrics": ["收入趋势", "服务区对比", "支付方式分布"]
     }}
   ]
 }}
@@ -88,8 +95,8 @@ class ThemeExtractor:
 - topic_name 简洁明了（10字以内）
 - description 详细说明分析目标和价值（50字左右）
 - related_tables 列出该主题需要用到的表名（数组格式）
-- keywords 提供3-5个核心关键词（数组格式）
-- focus_areas 列出3-5个具体的分析角度（保留用于生成问题）"""
+- biz_entities 列出3-5个主要业务实体（表的维度字段或非数值型字段，如服务区、公司、车辆等）
+- biz_metrics 列出3-5个主要业务指标名称（统计指标，如收入趋势、对比分析等）"""
         
         return prompt
     
@@ -142,16 +149,19 @@ class ThemeExtractor:
                     if isinstance(theme['related_tables'], str):
                         theme['related_tables'] = [theme['related_tables']]
                     
-                    # 确保keywords存在且是数组
-                    if 'keywords' not in theme:
-                        # 从description中提取关键词
-                        theme['keywords'] = self._extract_keywords_from_description(theme['description'])
-                    elif isinstance(theme['keywords'], str):
-                        theme['keywords'] = [theme['keywords']]
+                    # 确保biz_entities存在且是数组
+                    if 'biz_entities' not in theme:
+                        # 从description中提取业务实体
+                        theme['biz_entities'] = self._extract_biz_entities_from_description(theme['description'])
+                    elif isinstance(theme['biz_entities'], str):
+                        theme['biz_entities'] = [theme['biz_entities']]
                     
-                    # 保留focus_areas用于问题生成（如果没有则使用keywords）
-                    if 'focus_areas' not in theme:
-                        theme['focus_areas'] = theme['keywords'][:3]
+                    # 确保biz_metrics存在且是数组
+                    if 'biz_metrics' not in theme:
+                        # 从description中提取业务指标
+                        theme['biz_metrics'] = self._extract_biz_metrics_from_description(theme['description'])
+                    elif isinstance(theme['biz_metrics'], str):
+                        theme['biz_metrics'] = [theme['biz_metrics']]
                     
                     validated_themes.append(theme)
                 else:
@@ -167,23 +177,42 @@ class ThemeExtractor:
             self.logger.error(f"解析主题响应失败: {e}")
             raise
     
-    def _extract_keywords_from_description(self, description: str) -> List[str]:
-        """从描述中提取关键词（简单实现）"""
-        # 定义常见的业务关键词
-        business_keywords = [
-            "收入", "营业额", "订单", "支付", "统计", "分析", "趋势", "对比",
-            "排名", "汇总", "明细", "报表", "月度", "日度", "年度", "服务区",
-            "档口", "商品", "客流", "车流", "效率", "占比", "增长"
+    def _extract_biz_entities_from_description(self, description: str) -> List[str]:
+        """从描述中提取业务实体（简单实现）"""
+        # 定义常见的业务实体关键词
+        entity_keywords = [
+            "服务区", "档口", "商品", "公司", "分公司", "车辆", "支付方式",
+            "订单", "客户", "营收", "路段", "区域", "品牌", "品类"
         ]
         
-        # 从描述中查找出现的关键词
-        found_keywords = []
-        for keyword in business_keywords:
-            if keyword in description:
-                found_keywords.append(keyword)
+        # 从描述中查找出现的实体关键词
+        found_entities = []
+        for entity in entity_keywords:
+            if entity in description:
+                found_entities.append(entity)
         
         # 如果找到的太少，返回默认值
-        if len(found_keywords) < 3:
-            found_keywords = ["数据分析", "统计报表", "业务查询"]
+        if len(found_entities) < 3:
+            found_entities = ["业务实体", "数据对象", "分析主体"]
         
-        return found_keywords[:5]  # 最多返回5个 
+        return found_entities[:5]  # 最多返回5个
+    
+    def _extract_biz_metrics_from_description(self, description: str) -> List[str]:
+        """从描述中提取业务指标（简单实现）"""
+        # 定义常见的业务指标关键词
+        metrics_keywords = [
+            "收入趋势", "营业额对比", "支付方式分布", "服务区对比", "增长率",
+            "占比分析", "排名统计", "效率评估", "流量分析", "转化率"
+        ]
+        
+        # 从描述中查找出现的指标关键词
+        found_metrics = []
+        for metric in metrics_keywords:
+            if any(word in description for word in metric.split()):
+                found_metrics.append(metric)
+        
+        # 如果找到的太少，返回默认值
+        if len(found_metrics) < 3:
+            found_metrics = ["数据统计", "趋势分析", "对比分析"]
+        
+        return found_metrics[:5]  # 最多返回5个 

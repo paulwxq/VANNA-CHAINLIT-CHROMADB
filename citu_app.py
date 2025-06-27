@@ -757,7 +757,7 @@ def agent_health():
         
         # 检查3: LLM连接（简单测试）
         try:
-            from agent.utils import get_compatible_llm
+            from agent.tools.utils import get_compatible_llm
             llm = get_compatible_llm()
             health_data["checks"]["llm_connection"] = llm is not None
         except Exception as e:

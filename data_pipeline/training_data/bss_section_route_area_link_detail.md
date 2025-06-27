@@ -1,5 +1,5 @@
-## bss_section_route_area_link（记录路段路线与服务区的绑定关系）
-bss_section_route_area_link 表记录路段路线与服务区的绑定关系，用于路径导航及服务区资源管理。
+## bss_section_route_area_link（路段路线与服务区关联关系表）
+bss_section_route_area_link 表路段路线与服务区关联关系表
 字段列表：
 - section_route_id (varchar(32)) - 路段路线ID [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
 - service_area_id (varchar(32)) - 服务区ID [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
