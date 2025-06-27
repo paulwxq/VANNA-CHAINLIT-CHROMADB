@@ -409,44 +409,52 @@ class QuestionClassifier:
                 method="rule_based_uncertain"
             )
     
+    def _load_business_context(self) -> str:
+        """从文件中加载数据库业务范围描述"""
+        try:
+            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            prompt_file = os.path.join(current_dir, "tools", "db_query_decision_prompt.txt")
+            
+            with open(prompt_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                
+            if not content:
+                raise ValueError("业务上下文文件为空")
+                
+            return content
+            
+        except FileNotFoundError:
+            error_msg = f"无法找到业务上下文文件: {prompt_file}"
+            print(f"[ERROR] {error_msg}")
+            raise FileNotFoundError(error_msg)
+        except Exception as e:
+            error_msg = f"读取业务上下文文件失败: {str(e)}"
+            print(f"[ERROR] {error_msg}")
+            raise RuntimeError(error_msg)
+
     def _enhanced_llm_classify(self, question: str) -> ClassificationResult:
         """增强的LLM分类：包含详细的业务上下文"""
         try:
             from common.vanna_instance import get_vanna_instance
             vn = get_vanna_instance()
             
+            # 动态加载业务上下文（如果失败会抛出异常）
+            business_context = self._load_business_context()
+            
             # 构建包含业务上下文的分类提示词
             classification_prompt = f"""
-请判断以下用户问题是否需要查询我们的高速公路服务区管理数据库。
+请判断以下用户问题是否需要查询我们的数据库。
 
 用户问题：{question}
 
-=== 数据库业务范围 ===
-本系统是高速公路服务区商业管理系统，包含以下业务数据：
-
-核心业务实体：
-- 服务区(bss_service_area)：服务区基础信息、位置、状态，如"鄱阳湖服务区"、"信丰西服务区"
-- 档口/商铺(bss_branch)：档口信息、品类(餐饮/小吃/便利店)、品牌，如"驿美餐饮"、"加水机"
-- 营业数据(bss_business_day_data)：每日支付金额、订单数量，包含微信、支付宝、现金等支付方式
-- 车流量(bss_car_day_count)：按车型统计的日流量数据，包含客车、货车、过境、危化品等
-- 公司信息(bss_company)：服务区管理公司，如"驿美运营公司"
-
-关键业务指标：
-- 支付方式：微信支付(wx)、支付宝支付(zfb)、现金支付(rmb)、行吧支付(xs)、金豆支付(jd)
-- 营业数据：支付金额、订单数量、营业额、收入统计
-- 车流统计：按车型(客车/货车/过境/危化品/城际)的流量分析
-- 经营分析：餐饮、小吃、便利店、整体租赁等品类收入
-- 地理分区：北区、南区、西区、东区、两区
-
-高速线路：
-- 线路信息：大广、昌金、昌栗等高速线路
-- 路段管理：按线路统计服务区分布
+{business_context}
 
 === 判断标准 ===
 1. **DATABASE类型** - 需要查询数据库：
    - 涉及上述业务实体和指标的查询、统计、分析、报表
-   - 包含业务相关的时间查询，如"本月服务区营业额"、"上月档口收入"
-   - 例如："本月营业额统计"、"档口收入排行"、"车流量分析"、"支付方式占比"
+   - 包含业务相关的时间查询
+   - 例如：业务数据统计、收入排行、流量分析、占比分析等
 
 2. **CHAT类型** - 不需要查询数据库：
    - 生活常识：水果蔬菜上市时间、动植物知识、天气等
@@ -458,14 +466,13 @@ class QuestionClassifier:
    - 商业：股票、基金、理财、投资、经济、通货膨胀、上市
    - 哲学：人生意义、价值观、道德、信仰、宗教、爱情
    - 政策：政策、法规、法律、条例、指南、手册、规章制度、实施细则
-   - 地理：全球、全国、亚洲、发展中、欧洲、美洲、东亚、东南亚、南美、非洲、大洋
+   - 地理：全球、中国、亚洲、发展中、欧洲、美洲、东亚、东南亚、南美、非洲、大洋
    - 体育：足球、NBA、篮球、乒乓球、冠军、夺冠
    - 文学：小说、新闻、政治、战争、足球、NBA、篮球、乒乓球、冠军、夺冠
    - 娱乐：游戏、小说、新闻、政治、战争、足球、NBA、篮球、乒乓球、冠军、夺冠、电影、电视剧、音乐、舞蹈、绘画、书法、摄影、雕塑、建筑、设计、
    - 健康：健康、医疗、病症、健康、饮食、睡眠、心理、养生、减肥、美容、护肤
    - 其他：高考、人生意义、价值观、道德、信仰、宗教、爱情、全球、全国、亚洲、发展中、欧洲、美洲、东亚、东南亚、南美、非洲、大洋
    - 例如："荔枝几月份上市"、"今天天气如何"、"你是什么AI"、"怎么使用平台"
-
 
 **重要提示：**
 - 只有涉及高速公路服务区业务数据的问题才分类为DATABASE
@@ -480,8 +487,8 @@ class QuestionClassifier:
 """
             
             # 专业的系统提示词
-            system_prompt = """你是一个专业的业务问题分类助手，专门负责高速公路服务区管理系统的问题分类。你具有以下特长：
-1. 深度理解高速公路服务区业务领域和数据范围
+            system_prompt = """你是一个专业的业务问题分类助手。你具有以下特长：
+1. 深度理解业务领域和数据范围
 2. 准确区分业务数据查询需求和一般性问题  
 3. 基于具体业务上下文进行精准分类，而不仅仅依赖关键词匹配
 4. 对边界情况能够给出合理的置信度评估
@@ -497,6 +504,15 @@ class QuestionClassifier:
             # 解析响应
             return self._parse_llm_response(response)
             
+        except (FileNotFoundError, RuntimeError) as e:
+            # 业务上下文加载失败，返回错误状态
+            print(f"[ERROR] LLM分类失败，业务上下文不可用: {str(e)}")
+            return ClassificationResult(
+                question_type="CHAT",  # 失败时默认为CHAT，更安全
+                confidence=0.1,  # 很低的置信度表示分类不可靠
+                reason=f"业务上下文加载失败，无法进行准确分类: {str(e)}",
+                method="llm_context_error"
+            )
         except Exception as e:
             print(f"[WARNING] 增强LLM分类失败: {str(e)}")
             return ClassificationResult(

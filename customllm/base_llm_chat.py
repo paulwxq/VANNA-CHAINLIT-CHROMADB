@@ -311,9 +311,10 @@ class BaseLLMChat(VannaBase, ABC):
             
             # 检查是否包含错误提示信息
             error_indicators = [
-                "insufficient context", "无法生成", "sorry", "cannot", "不能",
+                "insufficient context", "无法生成", "sorry", "cannot generate", "cannot", "不能",
                 "no relevant", "no suitable", "unable to", "无法", "抱歉",
-                "i don't have", "i cannot", "没有相关", "找不到", "不存在"
+                "i don't have", "i cannot", "没有相关", "找不到", "不存在", "上下文不足",
+                "没有直接存储", "无法直接查询", "没有存储", "not enough information", "unclear"
             ]
             
             for indicator in error_indicators:

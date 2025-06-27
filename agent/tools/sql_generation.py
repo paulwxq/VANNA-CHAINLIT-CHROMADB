@@ -58,22 +58,6 @@ def generate_sql(question: str, allow_llm_to_see_data: bool = True) -> Dict[str,
                 "can_retry": True
             }
         
-        # 检查是否返回了错误信息而非SQL
-        error_indicators = [
-            "insufficient context", "无法生成", "sorry", "cannot generate",
-            "not enough information", "unclear", "unable to"
-        ]
-        
-        if any(indicator in sql_clean.lower() for indicator in error_indicators):
-            # 这是解释性文本（已在base_llm_chat.py中处理thinking内容）
-            return {
-                "success": False,
-                "sql": None,
-                "error": sql_clean,
-                "error_type": "llm_explanation",
-                "can_retry": False
-            }
-        
         print(f"[TOOL:generate_sql] 成功生成SQL: {sql}")
         return {
             "success": True,

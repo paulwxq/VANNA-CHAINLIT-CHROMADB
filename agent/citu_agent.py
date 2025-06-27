@@ -227,7 +227,8 @@ class CituLangGraphAgent:
                 error_message = sql_result.get("error", "")
                 error_type = sql_result.get("error_type", "")
                 
-                print(f"[SQL_GENERATION] SQL生成失败: {error_message}")
+                #print(f"[SQL_GENERATION] SQL生成失败: {error_message}")
+                print(f"[DEBUG] error_type = '{error_type}'")
                 
                 # 根据错误类型生成用户提示
                 if "no relevant tables" in error_message.lower() or "table not found" in error_message.lower():
@@ -236,9 +237,15 @@ class CituLangGraphAgent:
                 elif "ambiguous" in error_message.lower() or "more information" in error_message.lower():
                     user_prompt = "您的问题需要更多信息才能准确查询，请提供更详细的描述。"
                     failure_reason = "ambiguous_question"
-                elif error_type == "llm_explanation":
-                    user_prompt = error_message + " 请尝试重新描述您的问题或询问其他内容。"
-                    failure_reason = "llm_explanation"
+                elif error_type == "llm_explanation" or error_type == "generation_failed_with_explanation":
+                    # 对于解释性文本，直接设置为聊天响应
+                    state["chat_response"] = error_message + " 请尝试提问其它问题。"
+                    state["sql_generation_success"] = False
+                    state["validation_error_type"] = "llm_explanation"
+                    state["current_step"] = "sql_generation_completed"
+                    state["execution_path"].append("agent_sql_generation")
+                    print(f"[SQL_GENERATION] 返回LLM解释性答案: {error_message}")
+                    return state
                 else:
                     user_prompt = "无法生成有效的SQL查询，请尝试重新描述您的问题。"
                     failure_reason = "unknown_generation_failure"
@@ -255,11 +262,10 @@ class CituLangGraphAgent:
             
             sql = sql_result.get("sql")
             state["sql"] = sql
-            print(f"[SQL_GENERATION] SQL生成成功: {sql}")
             
             # 步骤1.5：检查是否为解释性响应而非SQL
             error_type = sql_result.get("error_type")
-            if error_type == "llm_explanation":
+            if error_type == "llm_explanation" or error_type == "generation_failed_with_explanation":
                 # LLM返回了解释性文本，直接作为最终答案
                 explanation = sql_result.get("error", "")
                 state["chat_response"] = explanation + " 请尝试提问其它问题。"
@@ -268,6 +274,13 @@ class CituLangGraphAgent:
                 state["current_step"] = "sql_generation_completed"
                 state["execution_path"].append("agent_sql_generation")
                 print(f"[SQL_GENERATION] 返回LLM解释性答案: {explanation}")
+                return state
+            
+            if sql:
+                print(f"[SQL_GENERATION] SQL生成成功: {sql}")
+            else:
+                print(f"[SQL_GENERATION] SQL为空，但不是解释性响应")
+                # 这种情况应该很少见，但为了安全起见保留原有的错误处理
                 return state
             
             # 额外验证：检查SQL格式（防止工具误判）
