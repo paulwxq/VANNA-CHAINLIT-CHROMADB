@@ -2,6 +2,7 @@
 import re
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from core.logging import get_agent_logger
 
 @dataclass
 class ClassificationResult:
@@ -16,6 +17,9 @@ class QuestionClassifier:
     """
     
     def __init__(self):
+        # 初始化日志
+        self.logger = get_agent_logger("Classifier")
+        
         # 从配置文件加载阈值参数
         try:
             from agent.config import get_current_config, get_nested_config
@@ -27,7 +31,8 @@ class QuestionClassifier:
             self.confidence_increment = get_nested_config(config, "classification.confidence_increment", 0.08)
             self.llm_fallback_confidence = get_nested_config(config, "classification.llm_fallback_confidence", 0.5)
             self.uncertain_confidence = get_nested_config(config, "classification.uncertain_confidence", 0.2)
-            print("[CLASSIFIER] 从配置文件加载分类器参数完成")
+            self.medium_confidence_threshold = get_nested_config(config, "classification.medium_confidence_threshold", 0.6)
+            self.logger.info("从配置文件加载分类器参数完成")
         except ImportError:
             self.high_confidence_threshold = 0.7
             self.low_confidence_threshold = 0.4
@@ -36,7 +41,8 @@ class QuestionClassifier:
             self.confidence_increment = 0.08
             self.llm_fallback_confidence = 0.5
             self.uncertain_confidence = 0.2
-            print("[CLASSIFIER] 配置文件不可用，使用默认分类器参数")
+            self.medium_confidence_threshold = 0.6
+            self.logger.warning("配置文件不可用，使用默认分类器参数")
         
         # 基于高速公路服务区业务的精准关键词
         self.strong_business_keywords = {
@@ -159,14 +165,14 @@ class QuestionClassifier:
         # 确定使用的路由模式
         if routing_mode:
             QUESTION_ROUTING_MODE = routing_mode
-            print(f"[CLASSIFIER] 使用传入的路由模式: {QUESTION_ROUTING_MODE}")
+            self.logger.info(f"使用传入的路由模式: {QUESTION_ROUTING_MODE}")
         else:
             try:
                 from app_config import QUESTION_ROUTING_MODE
-                print(f"[CLASSIFIER] 使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
+                self.logger.info(f"使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
             except ImportError:
                 QUESTION_ROUTING_MODE = "hybrid"
-                print(f"[CLASSIFIER] 配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
+                self.logger.info(f"配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
         
         # 根据路由模式选择分类策略
         if QUESTION_ROUTING_MODE == "database_direct":
@@ -196,36 +202,36 @@ class QuestionClassifier:
         2. 如果置信度不够且有上下文，考虑上下文辅助
         3. 检测话题切换，避免错误继承
         """
-        print(f"[CLASSIFIER] 渐进式分类 - 问题: {question}")
+        self.logger.info(f"渐进式分类 - 问题: {question}")
         if context_type:
-            print(f"[CLASSIFIER] 上下文类型: {context_type}")
+            self.logger.info(f"上下文类型: {context_type}")
         
         # 第一步：只基于问题本身分类
         primary_result = self._hybrid_classify(question)
-        print(f"[CLASSIFIER] 主分类结果: {primary_result.question_type}, 置信度: {primary_result.confidence}")
+        self.logger.info(f"主分类结果: {primary_result.question_type}, 置信度: {primary_result.confidence}")
         
         # 如果没有上下文，直接返回主分类结果
         if not context_type:
-            print(f"[CLASSIFIER] 无上下文，使用主分类结果")
+            self.logger.debug("无上下文，使用主分类结果")
             return primary_result
         
         # 如果置信度足够高，直接使用主分类结果
         if primary_result.confidence >= self.high_confidence_threshold:
-            print(f"[CLASSIFIER] 高置信度({primary_result.confidence}≥{self.high_confidence_threshold})，使用主分类结果")
+            self.logger.info(f"高置信度({primary_result.confidence}≥{self.high_confidence_threshold})，使用主分类结果")
             return primary_result
         
         # 检测明显的话题切换
         if self._is_topic_switch(question):
-            print(f"[CLASSIFIER] 检测到话题切换，忽略上下文")
+            self.logger.info("检测到话题切换，忽略上下文")
             return primary_result
         
         # 如果置信度较低，考虑上下文辅助
         if primary_result.confidence < self.medium_confidence_threshold:
-            print(f"[CLASSIFIER] 低置信度({primary_result.confidence}<{self.medium_confidence_threshold})，考虑上下文辅助")
+            self.logger.info(f"低置信度({primary_result.confidence}<{self.medium_confidence_threshold})，考虑上下文辅助")
             
             # 检测是否为追问型问题
             if self._is_follow_up_question(question):
-                print(f"[CLASSIFIER] 检测到追问型问题，继承上下文类型: {context_type}")
+                self.logger.info(f"检测到追问型问题，继承上下文类型: {context_type}")
                 return ClassificationResult(
                     question_type=context_type,
                     confidence=0.75,  # 给予中等置信度
@@ -234,7 +240,7 @@ class QuestionClassifier:
                 )
         
         # 中等置信度或其他情况，保持主分类结果
-        print(f"[CLASSIFIER] 保持主分类结果")
+        self.logger.debug("保持主分类结果")
         return primary_result
 
     def _is_follow_up_question(self, question: str) -> bool:
@@ -426,11 +432,11 @@ class QuestionClassifier:
             
         except FileNotFoundError:
             error_msg = f"无法找到业务上下文文件: {prompt_file}"
-            print(f"[ERROR] {error_msg}")
+            self.logger.error(error_msg)
             raise FileNotFoundError(error_msg)
         except Exception as e:
             error_msg = f"读取业务上下文文件失败: {str(e)}"
-            print(f"[ERROR] {error_msg}")
+            self.logger.error(error_msg)
             raise RuntimeError(error_msg)
 
     def _enhanced_llm_classify(self, question: str) -> ClassificationResult:
@@ -506,7 +512,7 @@ class QuestionClassifier:
             
         except (FileNotFoundError, RuntimeError) as e:
             # 业务上下文加载失败，返回错误状态
-            print(f"[ERROR] LLM分类失败，业务上下文不可用: {str(e)}")
+            self.logger.error(f"LLM分类失败，业务上下文不可用: {str(e)}")
             return ClassificationResult(
                 question_type="CHAT",  # 失败时默认为CHAT，更安全
                 confidence=0.1,  # 很低的置信度表示分类不可靠
@@ -514,7 +520,7 @@ class QuestionClassifier:
                 method="llm_context_error"
             )
         except Exception as e:
-            print(f"[WARNING] 增强LLM分类失败: {str(e)}")
+            self.logger.warning(f"增强LLM分类失败: {str(e)}")
             return ClassificationResult(
                 question_type="CHAT",  # 失败时默认为CHAT，更安全
                 confidence=self.llm_fallback_confidence,

@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
 from data_pipeline.validators import FileCountValidator
 from data_pipeline.analyzers import MDFileAnalyzer, ThemeExtractor
-from data_pipeline.utils.logger import setup_logging
+from core.logging import get_data_pipeline_logger
 from core.vanna_llm_factory import create_vanna_instance
 
 
@@ -36,7 +36,7 @@ class QuestionSQLGenerationAgent:
         self.db_name = db_name or "db"
         
         self.config = SCHEMA_TOOLS_CONFIG
-        self.logger = logging.getLogger("schema_tools.QSAgent")
+        self.logger = get_data_pipeline_logger("QSAgent")
         
         # 初始化组件
         self.validator = FileCountValidator()

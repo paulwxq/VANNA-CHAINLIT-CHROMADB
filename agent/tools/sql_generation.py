@@ -2,6 +2,10 @@
 from langchain.tools import tool
 from typing import Dict, Any
 from common.vanna_instance import get_vanna_instance
+from core.logging import get_agent_logger
+
+# Initialize logger
+logger = get_agent_logger("SQLGeneration")
 
 @tool
 def generate_sql(question: str, allow_llm_to_see_data: bool = True) -> Dict[str, Any]:
@@ -22,7 +26,7 @@ def generate_sql(question: str, allow_llm_to_see_data: bool = True) -> Dict[str,
         }
     """
     try:
-        print(f"[TOOL:generate_sql] 开始生成SQL: {question}")
+        logger.info(f"开始生成SQL: {question}")
         
         vn = get_vanna_instance()
         sql = vn.generate_sql(question=question, allow_llm_to_see_data=allow_llm_to_see_data)
@@ -58,7 +62,7 @@ def generate_sql(question: str, allow_llm_to_see_data: bool = True) -> Dict[str,
                 "can_retry": True
             }
         
-        print(f"[TOOL:generate_sql] 成功生成SQL: {sql}")
+        logger.info(f"成功生成SQL: {sql}")
         return {
             "success": True,
             "sql": sql,
@@ -67,7 +71,7 @@ def generate_sql(question: str, allow_llm_to_see_data: bool = True) -> Dict[str,
         }
         
     except Exception as e:
-        print(f"[ERROR] SQL生成异常: {str(e)}")
+        logger.error(f"SQL生成异常: {str(e)}")
         return {
             "success": False,
             "sql": None,

@@ -3,6 +3,10 @@ from langchain.tools import tool
 from typing import Dict, Any
 import pandas as pd
 from common.vanna_instance import get_vanna_instance
+from core.logging import get_agent_logger
+
+# Initialize logger
+logger = get_agent_logger("SummaryGeneration")
 
 @tool
 def generate_summary(question: str, query_result: Dict[str, Any], sql: str) -> Dict[str, Any]:
@@ -23,7 +27,7 @@ def generate_summary(question: str, query_result: Dict[str, Any], sql: str) -> D
         }
     """
     try:
-        print(f"[TOOL:generate_summary] 开始生成摘要，问题: {question}")
+        logger.info(f"开始生成摘要，问题: {question}")
         
         if not query_result or not query_result.get("rows"):
             return {
@@ -50,7 +54,7 @@ def generate_summary(question: str, query_result: Dict[str, Any], sql: str) -> D
             # 生成默认摘要
             summary = _generate_default_summary(question, query_result, sql)
         
-        print(f"[TOOL:generate_summary] 摘要生成成功: {summary[:100]}...")
+        logger.info(f"摘要生成成功: {summary[:100]}...")
         
         return {
             "success": True,
@@ -59,7 +63,7 @@ def generate_summary(question: str, query_result: Dict[str, Any], sql: str) -> D
         }
         
     except Exception as e:
-        print(f"[ERROR] 摘要生成异常: {str(e)}")
+        logger.error(f"摘要生成异常: {str(e)}")
         
         # 生成备用摘要
         fallback_summary = _generate_fallback_summary(question, query_result, sql)
@@ -82,7 +86,7 @@ def _reconstruct_dataframe(query_result: Dict[str, Any]) -> pd.DataFrame:
         return pd.DataFrame(rows, columns=columns)
         
     except Exception as e:
-        print(f"[WARNING] DataFrame重构失败: {str(e)}")
+        logger.warning(f"DataFrame重构失败: {str(e)}")
         return pd.DataFrame()
 
 def _generate_default_summary(question: str, query_result: Dict[str, Any], sql: str) -> str:

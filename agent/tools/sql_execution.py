@@ -6,6 +6,10 @@ import time
 import functools
 from common.vanna_instance import get_vanna_instance
 from app_config import API_MAX_RETURN_ROWS
+from core.logging import get_agent_logger
+
+# Initialize logger
+logger = get_agent_logger("SQLExecution")
 
 def retry_on_failure(max_retries: int = 2, delay: float = 1.0, backoff_factor: float = 2.0):
     """
@@ -29,7 +33,7 @@ def retry_on_failure(max_retries: int = 2, delay: float = 1.0, backoff_factor: f
                         if retries < max_retries:
                             retries += 1
                             wait_time = delay * (backoff_factor ** (retries - 1))
-                            print(f"[RETRY] {func.__name__} 执行失败，等待 {wait_time:.1f} 秒后重试 ({retries}/{max_retries})")
+                            logger.warning(f"{func.__name__} 执行失败，等待 {wait_time:.1f} 秒后重试 ({retries}/{max_retries})")
                             time.sleep(wait_time)
                             continue
                     
@@ -39,10 +43,10 @@ def retry_on_failure(max_retries: int = 2, delay: float = 1.0, backoff_factor: f
                     retries += 1
                     if retries <= max_retries:
                         wait_time = delay * (backoff_factor ** (retries - 1))
-                        print(f"[RETRY] {func.__name__} 异常: {str(e)}, 等待 {wait_time:.1f} 秒后重试 ({retries}/{max_retries})")
+                        logger.warning(f"{func.__name__} 异常: {str(e)}, 等待 {wait_time:.1f} 秒后重试 ({retries}/{max_retries})")
                         time.sleep(wait_time)
                     else:
-                        print(f"[RETRY] {func.__name__} 达到最大重试次数 ({max_retries})，抛出异常")
+                        logger.error(f"{func.__name__} 达到最大重试次数 ({max_retries})，抛出异常")
                         raise
             
             # 不应该到达这里，但为了安全性
@@ -75,7 +79,7 @@ def execute_sql(sql: str, max_rows: int = None) -> Dict[str, Any]:
     if max_rows is None:
         max_rows = API_MAX_RETURN_ROWS if API_MAX_RETURN_ROWS is not None else DEFAULT_MAX_RETURN_ROWS
     try:
-        print(f"[TOOL:execute_sql] 开始执行SQL: {sql[:100]}...")
+        logger.info(f"开始执行SQL: {sql[:100]}...")
         
         vn = get_vanna_instance()
         df = vn.run_sql(sql)
@@ -118,7 +122,7 @@ def execute_sql(sql: str, max_rows: int = None) -> Dict[str, Any]:
         rows = _process_dataframe_rows(limited_df.to_dict(orient="records"))
         columns = list(df.columns)
         
-        print(f"[TOOL:execute_sql] 查询成功，返回 {len(rows)} 行数据")
+        logger.info(f"查询成功，返回 {len(rows)} 行数据")
         
         result = {
             "success": True,
@@ -139,7 +143,7 @@ def execute_sql(sql: str, max_rows: int = None) -> Dict[str, Any]:
         
     except Exception as e:
         error_msg = str(e)
-        print(f"[ERROR] SQL执行异常: {error_msg}")
+        logger.error(f"SQL执行异常: {error_msg}")
         
         return {
             "success": False,

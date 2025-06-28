@@ -1,10 +1,10 @@
 import asyncio
-import logging
 import time
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+from core.logging import get_data_pipeline_logger
 
 
 @dataclass
@@ -52,7 +52,7 @@ class SQLValidator:
         self.db_connection = db_connection
         self.connection_pool = None
         self.config = SCHEMA_TOOLS_CONFIG['sql_validation']
-        self.logger = logging.getLogger("schema_tools.SQLValidator")
+        self.logger = get_data_pipeline_logger("SQLValidator")
         
     async def _get_connection_pool(self):
         """获取或复用现有连接池"""

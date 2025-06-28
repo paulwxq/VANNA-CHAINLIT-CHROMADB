@@ -8,6 +8,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 import logging
+from core.logging import get_app_logger
 
 class QAFeedbackManager:
     """QA反馈数据管理器 - 复用Vanna连接版本"""
@@ -18,6 +19,9 @@ class QAFeedbackManager:
         Args:
             vanna_instance: 可选的vanna实例，用于复用其数据库连接
         """
+        # 初始化日志
+        self.logger = get_app_logger("QAFeedbackManager")
+        
         self.engine = None
         self.vanna_instance = vanna_instance
         self._init_database_connection()
@@ -29,7 +33,7 @@ class QAFeedbackManager:
             # 方案1: 优先尝试复用vanna连接
             if self.vanna_instance and hasattr(self.vanna_instance, 'engine'):
                 self.engine = self.vanna_instance.engine
-                print(f"[QAFeedbackManager] 复用Vanna数据库连接")
+                self.logger.info("复用Vanna数据库连接")
                 return
             
             # 方案2: 创建新的连接（原有方式）
@@ -52,10 +56,10 @@ class QAFeedbackManager:
             with self.engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             
-            print(f"[QAFeedbackManager] 数据库连接成功: {db_config['host']}:{db_config['port']}/{db_config['dbname']}")
+            self.logger.info(f"数据库连接成功: {db_config['host']}:{db_config['port']}/{db_config['dbname']}")
             
         except Exception as e:
-            print(f"[ERROR] QAFeedbackManager数据库连接失败: {e}")
+            self.logger.error(f"QAFeedbackManager数据库连接失败: {e}")
             raise
     
     def _ensure_table_exists(self):
@@ -91,10 +95,10 @@ class QAFeedbackManager:
                     for index_sql in create_indexes_sql:
                         conn.execute(text(index_sql))
                     
-            print("[QAFeedbackManager] qa_feedback表检查/创建成功")
+            self.logger.info("qa_feedback表检查/创建成功")
             
         except Exception as e:
-            print(f"[ERROR] qa_feedback表创建失败: {e}")
+            self.logger.error(f"qa_feedback表创建失败: {e}")
             raise
     
     def add_feedback(self, question: str, sql: str, is_thumb_up: bool, user_id: str = "guest") -> int:
@@ -127,11 +131,11 @@ class QAFeedbackManager:
                     })
                     feedback_id = result.fetchone()[0]
                 
-            print(f"[QAFeedbackManager] 反馈记录创建成功, ID: {feedback_id}")
+            self.logger.info(f"反馈记录创建成功, ID: {feedback_id}")
             return feedback_id
             
         except Exception as e:
-            print(f"[ERROR] 添加反馈记录失败: {e}")
+            self.logger.error(f"添加反馈记录失败: {e}")
             raise
     
     def query_feedback(self, page: int = 1, page_size: int = 20, 
@@ -232,7 +236,7 @@ class QAFeedbackManager:
             return records, total
             
         except Exception as e:
-            print(f"[ERROR] 查询反馈记录失败: {e}")
+            self.logger.error(f"查询反馈记录失败: {e}")
             raise
     
     def delete_feedback(self, feedback_id: int) -> bool:
@@ -252,14 +256,14 @@ class QAFeedbackManager:
                     result = conn.execute(text(delete_sql), {'id': feedback_id})
                 
                 if result.rowcount > 0:
-                    print(f"[QAFeedbackManager] 反馈记录删除成功, ID: {feedback_id}")
+                    self.logger.info(f"反馈记录删除成功, ID: {feedback_id}")
                     return True
                 else:
-                    print(f"[WARNING] 反馈记录不存在, ID: {feedback_id}")
+                    self.logger.warning(f"反馈记录不存在, ID: {feedback_id}")
                     return False
                     
         except Exception as e:
-            print(f"[ERROR] 删除反馈记录失败: {e}")
+            self.logger.error(f"删除反馈记录失败: {e}")
             raise
     
     def update_feedback(self, feedback_id: int, **kwargs) -> bool:
@@ -284,7 +288,7 @@ class QAFeedbackManager:
                 params[field] = value
         
         if not update_fields:
-            print("[WARNING] 没有有效的更新字段")
+            self.logger.warning("没有有效的更新字段")
             return False
         
         update_fields.append("update_time = :update_time")
@@ -301,14 +305,14 @@ class QAFeedbackManager:
                     result = conn.execute(text(update_sql), params)
                 
                 if result.rowcount > 0:
-                    print(f"[QAFeedbackManager] 反馈记录更新成功, ID: {feedback_id}")
+                    self.logger.info(f"反馈记录更新成功, ID: {feedback_id}")
                     return True
                 else:
-                    print(f"[WARNING] 反馈记录不存在或无变化, ID: {feedback_id}")
+                    self.logger.warning(f"反馈记录不存在或无变化, ID: {feedback_id}")
                     return False
                     
         except Exception as e:
-            print(f"[ERROR] 更新反馈记录失败: {e}")
+            self.logger.error(f"更新反馈记录失败: {e}")
             raise
     
     def get_feedback_by_ids(self, feedback_ids: List[int]) -> List[Dict]:
@@ -354,7 +358,7 @@ class QAFeedbackManager:
                 return records
                 
         except Exception as e:
-            print(f"[ERROR] 根据ID查询反馈记录失败: {e}")
+            self.logger.error(f"根据ID查询反馈记录失败: {e}")
             raise
     
     def mark_training_status(self, feedback_ids: List[int], status: bool = True) -> int:
@@ -386,9 +390,9 @@ class QAFeedbackManager:
                 with conn.begin():
                     result = conn.execute(text(update_sql), params)
                 
-                print(f"[QAFeedbackManager] 批量更新训练状态成功, 影响行数: {result.rowcount}")
+                self.logger.info(f"批量更新训练状态成功, 影响行数: {result.rowcount}")
                 return result.rowcount
                 
         except Exception as e:
-            print(f"[ERROR] 批量更新训练状态失败: {e}")
+            self.logger.error(f"批量更新训练状态失败: {e}")
             raise

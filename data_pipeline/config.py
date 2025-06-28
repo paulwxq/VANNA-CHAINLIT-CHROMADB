@@ -169,4 +169,6 @@ def validate_config():
 try:
     validate_config()
 except ValueError as e:
-    print(f"警告: {e}")
+    # 在配置文件中使用stderr输出警告，避免依赖logging
+    import sys
+    print(f"警告: {e}", file=sys.stderr)

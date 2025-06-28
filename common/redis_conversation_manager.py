@@ -12,12 +12,14 @@ from app_config import (
     ENABLE_CONVERSATION_CONTEXT, ENABLE_QUESTION_ANSWER_CACHE,
     DEFAULT_ANONYMOUS_USER
 )
+from core.logging import get_app_logger
 
 class RedisConversationManager:
     """Redis对话管理器 - 修正版"""
     
     def __init__(self):
         """初始化Redis连接"""
+        self.logger = get_app_logger("RedisConversationManager")
         try:
             self.redis_client = redis.Redis(
                 host=REDIS_HOST,
@@ -30,9 +32,9 @@ class RedisConversationManager:
             )
             # 测试连接
             self.redis_client.ping()
-            print(f"[REDIS_CONV] Redis连接成功: {REDIS_HOST}:{REDIS_PORT}")
+            self.logger.info(f"Redis连接成功: {REDIS_HOST}:{REDIS_PORT}")
         except Exception as e:
-            print(f"[ERROR] Redis连接失败: {str(e)}")
+            self.logger.error(f"Redis连接失败: {str(e)}")
             self.redis_client = None
     
     def is_available(self) -> bool:
@@ -59,16 +61,16 @@ class RedisConversationManager:
         
         # 1. 优先使用登录用户ID
         if login_user_id:
-            print(f"[REDIS_CONV] 使用登录用户ID: {login_user_id}")
+            self.logger.debug(f"使用登录用户ID: {login_user_id}")
             return login_user_id
         
         # 2. 如果没有登录，尝试从请求参数获取user_id
         if user_id_from_request:
-            print(f"[REDIS_CONV] 使用请求参数user_id: {user_id_from_request}")
+            self.logger.debug(f"使用请求参数user_id: {user_id_from_request}")
             return user_id_from_request
         
         # 3. 都没有则为匿名用户（统一为guest）
-        print(f"[REDIS_CONV] 使用匿名用户: {DEFAULT_ANONYMOUS_USER}")
+        self.logger.debug(f"使用匿名用户: {DEFAULT_ANONYMOUS_USER}")
         return DEFAULT_ANONYMOUS_USER
     
     def resolve_conversation_id(self, user_id: str, conversation_id_input: Optional[str], 
@@ -87,13 +89,13 @@ class RedisConversationManager:
         # 1. 如果指定了conversation_id，验证后使用
         if conversation_id_input:
             if self._is_valid_conversation(conversation_id_input, user_id):
-                print(f"[REDIS_CONV] 使用指定对话: {conversation_id_input}")
+                self.logger.debug(f"使用指定对话: {conversation_id_input}")
                 return conversation_id_input, {
                     "status": "existing",
                     "message": "继续已有对话"
                 }
             else:
-                print(f"[WARN] 无效的conversation_id: {conversation_id_input}，创建新对话")
+                self.logger.warning(f"无效的conversation_id: {conversation_id_input}，创建新对话")
                 new_conversation_id = self.create_conversation(user_id)
                 return new_conversation_id, {
                     "status": "invalid_id_new",
@@ -105,7 +107,7 @@ class RedisConversationManager:
         if continue_conversation:
             recent_conversation = self._get_recent_conversation(user_id)
             if recent_conversation:
-                print(f"[REDIS_CONV] 继续最近对话: {recent_conversation}")
+                self.logger.debug(f"继续最近对话: {recent_conversation}")
                 return recent_conversation, {
                     "status": "existing",
                     "message": "继续最近对话"
@@ -113,7 +115,7 @@ class RedisConversationManager:
         
         # 3. 创建新对话
         new_conversation_id = self.create_conversation(user_id)
-        print(f"[REDIS_CONV] 创建新对话: {new_conversation_id}")
+        self.logger.debug(f"创建新对话: {new_conversation_id}")
         return new_conversation_id, {
             "status": "new",
             "message": "创建新对话"
@@ -180,11 +182,11 @@ class RedisConversationManager:
             # 添加到用户的对话列表
             self._add_conversation_to_user(user_id, conversation_id)
             
-            print(f"[REDIS_CONV] 创建对话成功: {conversation_id}")
+            self.logger.info(f"创建对话成功: {conversation_id}")
             return conversation_id
             
         except Exception as e:
-            print(f"[ERROR] 创建对话失败: {str(e)}")
+            self.logger.error(f"创建对话失败: {str(e)}")
             return conversation_id  # 返回ID但可能未存储
     
     def save_message(self, conversation_id: str, role: str, content: str, 
@@ -223,7 +225,7 @@ class RedisConversationManager:
             return True
             
         except Exception as e:
-            print(f"[ERROR] 保存消息失败: {str(e)}")
+            self.logger.error(f"保存消息失败: {str(e)}")
             return False
     
     def get_context(self, conversation_id: str, count: Optional[int] = None) -> str:
@@ -262,11 +264,11 @@ class RedisConversationManager:
                     continue
             
             context = "\n".join(context_parts)
-            print(f"[REDIS_CONV] 获取上下文成功: {len(context_parts)}条消息")
+            self.logger.debug(f"获取上下文成功: {len(context_parts)}条消息")
             return context
             
         except Exception as e:
-            print(f"[ERROR] 获取上下文失败: {str(e)}")
+            self.logger.error(f"获取上下文失败: {str(e)}")
             return ""
         
     def get_context_for_display(self, conversation_id: str, count: Optional[int] = None) -> str:
@@ -307,11 +309,11 @@ class RedisConversationManager:
                     continue
             
             context = "\n".join(context_parts)
-            print(f"[REDIS_CONV] 获取显示上下文成功: {len(context_parts)}条消息")
+            self.logger.debug(f"获取显示上下文成功: {len(context_parts)}条消息")
             return context
             
         except Exception as e:
-            print(f"[ERROR] 获取显示上下文失败: {str(e)}")
+            self.logger.error(f"获取显示上下文失败: {str(e)}")
             return ""
     
     
@@ -341,7 +343,7 @@ class RedisConversationManager:
             return parsed_messages
             
         except Exception as e:
-            print(f"[ERROR] 获取对话消息失败: {str(e)}")
+            self.logger.error(f"获取对话消息失败: {str(e)}")
             return []
     
     def get_conversation_meta(self, conversation_id: str) -> Dict:
@@ -353,7 +355,7 @@ class RedisConversationManager:
             meta_data = self.redis_client.hgetall(f"conversation:{conversation_id}:meta")
             return meta_data if meta_data else {}
         except Exception as e:
-            print(f"[ERROR] 获取对话元信息失败: {str(e)}")
+            self.logger.error(f"获取对话元信息失败: {str(e)}")
             return {}
     
     def get_conversations(self, user_id: str, limit: int = None) -> List[Dict]:
@@ -379,7 +381,7 @@ class RedisConversationManager:
             return conversations
             
         except Exception as e:
-            print(f"[ERROR] 获取用户对话列表失败: {str(e)}")
+            self.logger.error(f"获取用户对话列表失败: {str(e)}")
             return []
     
     # ==================== 智能缓存（修正版）====================
@@ -396,13 +398,13 @@ class RedisConversationManager:
             
             if cached_answer:
                 context_info = "有上下文" if context else "无上下文"
-                print(f"[REDIS_CONV] 缓存命中: {cache_key} ({context_info})")
+                self.logger.debug(f"缓存命中: {cache_key} ({context_info})")
                 return json.loads(cached_answer)
             
             return None
             
         except Exception as e:
-            print(f"[ERROR] 获取缓存答案失败: {str(e)}")
+            self.logger.error(f"获取缓存答案失败: {str(e)}")
             return None
     
     def cache_answer(self, question: str, answer: Dict, context: str = ""):
@@ -412,7 +414,7 @@ class RedisConversationManager:
         
         # 新增：如果有上下文，不缓存
         if context:
-            print(f"[REDIS_CONV] 跳过缓存存储：存在上下文")
+            self.logger.debug("跳过缓存存储：存在上下文")
             return
         
         try:
@@ -432,10 +434,10 @@ class RedisConversationManager:
                 json.dumps(answer_with_meta)
             )
             
-            print(f"[REDIS_CONV] 缓存答案成功: {cache_key}")
+            self.logger.debug(f"缓存答案成功: {cache_key}")
             
         except Exception as e:
-            print(f"[ERROR] 缓存答案失败: {str(e)}")
+            self.logger.error(f"缓存答案失败: {str(e)}")
     
     def _get_cache_key(self, question: str) -> str:
         """生成缓存键 - 简化版，只基于问题本身"""
@@ -464,7 +466,7 @@ class RedisConversationManager:
             )
             
         except Exception as e:
-            print(f"[ERROR] 添加对话到用户列表失败: {str(e)}")
+            self.logger.error(f"添加对话到用户列表失败: {str(e)}")
     
     def _update_conversation_meta(self, conversation_id: str):
         """更新对话元信息"""
@@ -482,7 +484,7 @@ class RedisConversationManager:
             )
             
         except Exception as e:
-            print(f"[ERROR] 更新对话元信息失败: {str(e)}")
+            self.logger.error(f"更新对话元信息失败: {str(e)}")
     
     # ==================== 管理方法 ====================
     
@@ -510,7 +512,7 @@ class RedisConversationManager:
             return stats
             
         except Exception as e:
-            print(f"[ERROR] 获取统计信息失败: {str(e)}")
+            self.logger.error(f"获取统计信息失败: {str(e)}")
             return {"available": False, "error": str(e)}
     
     def cleanup_expired_conversations(self):
@@ -542,10 +544,10 @@ class RedisConversationManager:
                         # 重新设置TTL
                         self.redis_client.expire(user_key, USER_CONVERSATIONS_TTL)
             
-            print(f"[REDIS_CONV] 清理完成，移除了 {cleaned_count} 个无效对话引用")
+            self.logger.info(f"清理完成，移除了 {cleaned_count} 个无效对话引用")
             
         except Exception as e:
-            print(f"[ERROR] 清理失败: {str(e)}")
+            self.logger.error(f"清理失败: {str(e)}")
     
     # ==================== 问答缓存管理方法 ====================
     
@@ -579,7 +581,7 @@ class RedisConversationManager:
             return stats
             
         except Exception as e:
-            print(f"[ERROR] 获取问答缓存统计失败: {str(e)}")
+            self.logger.error(f"获取问答缓存统计失败: {str(e)}")
             return {"available": False, "error": str(e)}
     
     def get_qa_cache_list(self, limit: int = 50) -> List[Dict]:
@@ -621,7 +623,7 @@ class RedisConversationManager:
                     # 跳过无效的JSON数据
                     continue
                 except Exception as e:
-                    print(f"[WARNING] 处理缓存项 {key} 失败: {e}")
+                    self.logger.warning(f"处理缓存项 {key} 失败: {e}")
                     continue
             
             # 按缓存时间倒序排列
@@ -630,7 +632,7 @@ class RedisConversationManager:
             return cache_list
             
         except Exception as e:
-            print(f"[ERROR] 获取问答缓存列表失败: {str(e)}")
+            self.logger.error(f"获取问答缓存列表失败: {str(e)}")
             return []
     
     def clear_all_qa_cache(self) -> int:
@@ -644,12 +646,12 @@ class RedisConversationManager:
             
             if keys:
                 deleted_count = self.redis_client.delete(*keys)
-                print(f"[REDIS_CONV] 清空问答缓存成功，删除了 {deleted_count} 个缓存项")
+                self.logger.info(f"清空问答缓存成功，删除了 {deleted_count} 个缓存项")
                 return deleted_count
             else:
-                print(f"[REDIS_CONV] 没有找到问答缓存项")
+                self.logger.info("没有找到问答缓存项")
                 return 0
                 
         except Exception as e:
-            print(f"[ERROR] 清空问答缓存失败: {str(e)}")
+            self.logger.error(f"清空问答缓存失败: {str(e)}")
             return 0 

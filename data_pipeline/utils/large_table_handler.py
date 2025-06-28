@@ -1,13 +1,13 @@
-import logging
 import random
 from typing import List, Dict, Any, Optional
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+from core.logging import get_data_pipeline_logger
 
 class LargeTableHandler:
     """大表处理策略"""
     
     def __init__(self):
-        self.logger = logging.getLogger("schema_tools.LargeTableHandler")
+        self.logger = get_data_pipeline_logger("LargeTableHandler")
         self.large_table_threshold = SCHEMA_TOOLS_CONFIG.get("large_table_threshold", 1000000)
         self.skip_large_tables = SCHEMA_TOOLS_CONFIG.get("skip_large_tables", False)
         self.max_table_size = SCHEMA_TOOLS_CONFIG.get("max_table_size", 10000000)

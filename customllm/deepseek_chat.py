@@ -7,8 +7,8 @@ class DeepSeekChat(BaseLLMChat):
     """DeepSeek AI聊天实现"""
     
     def __init__(self, config=None):
-        print("...DeepSeekChat init...")
         super().__init__(config=config)
+        self.logger.info("DeepSeekChat init")
 
         if config is None:
             self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -43,7 +43,7 @@ class DeepSeekChat(BaseLLMChat):
         # DeepSeek API约束：enable_thinking=True时建议使用stream=True
         # 如果stream=False但enable_thinking=True，则忽略enable_thinking
         if enable_thinking and not stream_mode:
-            print("WARNING: enable_thinking=True 不生效，因为它需要 stream=True")
+            self.logger.warning("enable_thinking=True 不生效，因为它需要 stream=True")
             enable_thinking = False
 
         # 确定使用的模型
@@ -68,18 +68,18 @@ class DeepSeekChat(BaseLLMChat):
 
         # 模型兼容性提示（但不强制切换）
         if enable_thinking and model not in ["deepseek-reasoner"]:
-            print(f"提示：模型 {model} 可能不支持推理功能，推理相关参数将被忽略")
+            self.logger.warning(f"提示：模型 {model} 可能不支持推理功能，推理相关参数将被忽略")
 
-        print(f"\nUsing model {model} for {num_tokens} tokens (approx)")
-        print(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
+        self.logger.info(f"\nUsing model {model} for {num_tokens} tokens (approx)")
+        self.logger.info(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
 
         # 方案1：通过 system prompt 控制中文输出（DeepSeek 不支持 language 参数）
         # 检查配置中的语言设置，并在 system prompt 中添加中文指令
         # language_setting = self.config.get("language", "").lower() if self.config else ""
-        # print(f"DEBUG: language_setting='{language_setting}', model='{model}', enable_thinking={enable_thinking}")
+        # self.logger.debug(f"language_setting='{language_setting}', model='{model}', enable_thinking={enable_thinking}")
         
         # if language_setting == "chinese" and enable_thinking:
-        #     print("DEBUG: ✅ 触发中文指令添加")
+        #     self.logger.debug("触发中文指令添加")
         #     # 为推理模型添加中文思考指令
         #     chinese_instruction = {"role": "system", "content": "请用中文进行思考和回答。在推理过程中，请使用中文进行分析和思考。<think></think>之间也请使用中文"}
         #     # 如果第一条消息不是 system 消息，则添加中文指令
@@ -90,7 +90,7 @@ class DeepSeekChat(BaseLLMChat):
         #         existing_content = prompt[0]["content"]
         #         prompt[0]["content"] = f"{existing_content}\n\n请用中文进行思考和回答。在推理过程中，请使用中文进行分析和思考。<think></think>之间也请使用中文"
         # else:
-        #     print(f"DEBUG: ❌ 未触发中文指令 - language_setting==chinese: {language_setting == 'chinese'}, model==deepseek-reasoner: {model == 'deepseek-reasoner'}, enable_thinking: {enable_thinking}")
+        #     self.logger.debug(f"未触发中文指令 - language_setting==chinese: {language_setting == 'chinese'}, model==deepseek-reasoner: {model == 'deepseek-reasoner'}, enable_thinking: {enable_thinking}")
 
         # 构建 API 调用参数
         api_params = {
@@ -112,7 +112,7 @@ class DeepSeekChat(BaseLLMChat):
             unsupported_params = ['top_p', 'presence_penalty', 'frequency_penalty', 'logprobs', 'top_logprobs']
             for param in unsupported_params:
                 if param in filtered_kwargs:
-                    print(f"警告：deepseek-reasoner 不支持参数 {param}，已忽略")
+                    self.logger.warning(f"deepseek-reasoner 不支持参数 {param}，已忽略")
                     filtered_kwargs.pop(param, None)
         else:
             # deepseek-chat 等其他模型，只过滤明确会导致错误的参数
@@ -125,9 +125,9 @@ class DeepSeekChat(BaseLLMChat):
         if stream_mode:
             # 流式处理模式
             if model == "deepseek-reasoner" and enable_thinking:
-                print("使用流式处理模式，启用推理功能")
+                self.logger.info("使用流式处理模式，启用推理功能")
             else:
-                print("使用流式处理模式，常规聊天")
+                self.logger.info("使用流式处理模式，常规聊天")
             
             response_stream = self.client.chat.completions.create(**api_params)
             
@@ -151,7 +151,7 @@ class DeepSeekChat(BaseLLMChat):
                 # 可选：打印推理过程
                 if collected_reasoning:
                     reasoning_text = "".join(collected_reasoning)
-                    print("Model reasoning process:\n", reasoning_text)
+                    self.logger.debug("Model reasoning process:\n" + reasoning_text)
                 
                 # 方案2：返回包含 <think></think> 标签的完整内容，与 QianWen 保持一致
                 final_content = "".join(collected_content)
@@ -173,9 +173,9 @@ class DeepSeekChat(BaseLLMChat):
         else:
             # 非流式处理模式
             if model == "deepseek-reasoner" and enable_thinking:
-                print("使用非流式处理模式，启用推理功能")
+                self.logger.info("使用非流式处理模式，启用推理功能")
             else:
-                print("使用非流式处理模式，常规聊天")
+                self.logger.info("使用非流式处理模式，常规聊天")
             
             response = self.client.chat.completions.create(**api_params)
             
@@ -187,7 +187,7 @@ class DeepSeekChat(BaseLLMChat):
                 reasoning_content = ""
                 if hasattr(message, 'reasoning_content') and message.reasoning_content:
                     reasoning_content = message.reasoning_content
-                    print("Model reasoning process:\n", reasoning_content)
+                    self.logger.debug("Model reasoning process:\n" + reasoning_content)
                 
                 # 方案2：返回包含 <think></think> 标签的完整内容，与 QianWen 保持一致
                 final_content = message.content

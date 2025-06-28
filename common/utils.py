@@ -2,6 +2,10 @@
 配置相关的工具函数
 用于处理不同模型类型的配置选择逻辑
 """
+from core.logging import get_app_logger
+
+# 初始化logger
+_logger = get_app_logger("ConfigUtils")
 
 def get_current_embedding_config():
     """
@@ -180,12 +184,12 @@ def print_current_config():
     """
     try:
         model_info = get_current_model_info()
-        print("=== 当前模型配置 ===")
-        print(f"LLM提供商: {model_info['llm_type']}")
-        print(f"LLM模型: {model_info['llm_model']}")
-        print(f"Embedding提供商: {model_info['embedding_type']}")
-        print(f"Embedding模型: {model_info['embedding_model']}")
-        print(f"向量数据库: {model_info['vector_db']}")
-        print("==================")
+        _logger.info("=== 当前模型配置 ===")
+        _logger.info(f"LLM提供商: {model_info['llm_type']}")
+        _logger.info(f"LLM模型: {model_info['llm_model']}")
+        _logger.info(f"Embedding提供商: {model_info['embedding_type']}")
+        _logger.info(f"Embedding模型: {model_info['embedding_model']}")
+        _logger.info(f"向量数据库: {model_info['vector_db']}")
+        _logger.info("==================")
     except Exception as e:
-        print(f"无法获取配置信息: {e}") 
+        _logger.error(f"无法获取配置信息: {e}") 

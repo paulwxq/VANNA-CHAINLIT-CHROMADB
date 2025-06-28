@@ -1,12 +1,12 @@
 import os
-import logging
 from typing import List, Tuple
+from core.logging import get_data_pipeline_logger
 
 class TableListParser:
     """表清单解析器"""
     
     def __init__(self):
-        self.logger = logging.getLogger("schema_tools.TableListParser")
+        self.logger = get_data_pipeline_logger("TableListParser")
     
     def parse_file(self, file_path: str) -> List[str]:
         """

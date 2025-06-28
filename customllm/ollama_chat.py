@@ -9,8 +9,8 @@ class OllamaChat(BaseLLMChat):
     """Ollama AI聊天实现"""
     
     def __init__(self, config=None):
-        print("...OllamaChat init...")
         super().__init__(config=config)
+        self.logger.info("OllamaChat init")
 
         # Ollama特定的配置参数
         self.base_url = config.get("base_url", "http://localhost:11434") if config else "http://localhost:11434"
@@ -31,13 +31,13 @@ class OllamaChat(BaseLLMChat):
         try:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             if response.status_code == 200:
-                print(f"✅ Ollama 服务连接正常: {self.base_url}")
+                self.logger.info(f"Ollama 服务连接正常: {self.base_url}")
                 return True
             else:
-                print(f"⚠️ Ollama 服务响应异常: {response.status_code}")
+                self.logger.warning(f"Ollama 服务响应异常: {response.status_code}")
                 return False
         except requests.exceptions.RequestException as e:
-            print(f"❌ Ollama 服务连接失败: {e}")
+            self.logger.error(f"Ollama 服务连接失败: {e}")
             return False
 
     def submit_prompt(self, prompt, **kwargs) -> str:
@@ -61,7 +61,7 @@ class OllamaChat(BaseLLMChat):
         # Ollama 约束：enable_thinking=True时建议使用stream=True
         # 如果stream=False但enable_thinking=True，则忽略enable_thinking
         if enable_thinking and not stream_mode:
-            print("WARNING: enable_thinking=True 不生效，因为它需要 stream=True")
+            self.logger.warning("enable_thinking=True 不生效，因为它需要 stream=True")
             enable_thinking = False
 
         # 智能模型选择
@@ -72,10 +72,10 @@ class OllamaChat(BaseLLMChat):
         
         # 模型兼容性提示（但不强制切换）
         if enable_thinking and not is_reasoning_model:
-            print(f"提示：模型 {model} 不是专门的推理模型，但仍会尝试启用推理功能")
+            self.logger.warning(f"提示：模型 {model} 不是专门的推理模型，但仍会尝试启用推理功能")
 
-        print(f"\nUsing Ollama model {model} for {num_tokens} tokens (approx)")
-        print(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
+        self.logger.info(f"\nUsing Ollama model {model} for {num_tokens} tokens (approx)")
+        self.logger.info(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
 
         # 准备Ollama API请求
         url = f"{self.base_url}/api/chat"
@@ -91,22 +91,22 @@ class OllamaChat(BaseLLMChat):
             if stream_mode:
                 # 流式处理模式
                 if enable_thinking:
-                    print("使用流式处理模式，启用推理功能")
+                    self.logger.info("使用流式处理模式，启用推理功能")
                 else:
-                    print("使用流式处理模式，常规聊天")
+                    self.logger.info("使用流式处理模式，常规聊天")
                 
                 return self._handle_stream_response(url, payload, enable_thinking)
             else:
                 # 非流式处理模式
                 if enable_thinking:
-                    print("使用非流式处理模式，启用推理功能")
+                    self.logger.info("使用非流式处理模式，启用推理功能")
                 else:
-                    print("使用非流式处理模式，常规聊天")
+                    self.logger.info("使用非流式处理模式，常规聊天")
                 
                 return self._handle_non_stream_response(url, payload, enable_thinking)
                 
         except requests.exceptions.RequestException as e:
-            print(f"Ollama API请求失败: {e}")
+            self.logger.error(f"Ollama API请求失败: {e}")
             raise Exception(f"Ollama API调用失败: {str(e)}")
 
     def _handle_stream_response(self, url: str, payload: dict, enable_reasoning: bool) -> str:
@@ -146,7 +146,7 @@ class OllamaChat(BaseLLMChat):
             reasoning_content, final_content = self._extract_reasoning(full_content)
             
             if reasoning_content:
-                print("Model reasoning process:\n", reasoning_content)
+                self.logger.debug("Model reasoning process:\n" + reasoning_content)
                 return final_content
         
         return full_content
@@ -169,7 +169,7 @@ class OllamaChat(BaseLLMChat):
             reasoning_content, final_content = self._extract_reasoning(content)
             
             if reasoning_content:
-                print("Model reasoning process:\n", reasoning_content)
+                self.logger.debug("Model reasoning process:\n" + reasoning_content)
                 return final_content
         
         return content
@@ -197,17 +197,17 @@ class OllamaChat(BaseLLMChat):
                 
                 # 检查目标模型是否存在
                 if self.model not in result["available_models"]:
-                    print(f"警告：模型 {self.model} 不存在，尝试拉取...")
+                    self.logger.warning(f"模型 {self.model} 不存在，尝试拉取...")
                     if not self.pull_model(self.model):
                         result["message"] = f"模型 {self.model} 不存在且拉取失败"
                         return result
             except Exception as e:
-                print(f"获取模型列表失败: {e}")
+                self.logger.error(f"获取模型列表失败: {e}")
                 result["available_models"] = [self.model]
             
-            print(f"测试Ollama连接 - 模型: {self.model}")
-            print(f"Ollama服务地址: {self.base_url}")
-            print(f"可用模型: {', '.join(result['available_models'])}")
+            self.logger.info(f"测试Ollama连接 - 模型: {self.model}")
+            self.logger.info(f"Ollama服务地址: {self.base_url}")
+            self.logger.info(f"可用模型: {', '.join(result['available_models'])}")
             
             # 测试简单对话
             prompt = [self.user_message(test_prompt)]
@@ -243,10 +243,10 @@ class OllamaChat(BaseLLMChat):
                     if reasoning_models:
                         return reasoning_models[0]  # 选择第一个推理模型
                     else:
-                        print("警告：未找到推理模型，使用默认模型")
+                        self.logger.warning("未找到推理模型，使用默认模型")
                         return self.model
                 except Exception as e:
-                    print(f"获取模型列表时出错: {e}，使用默认模型")
+                    self.logger.error(f"获取模型列表时出错: {e}，使用默认模型")
                     return self.model
             else:
                 # 根据 token 数量选择模型
@@ -258,7 +258,7 @@ class OllamaChat(BaseLLMChat):
                         if long_context_models:
                             return long_context_models[0]
                     except Exception as e:
-                        print(f"获取模型列表时出错: {e}，使用默认模型")
+                        self.logger.error(f"获取模型列表时出错: {e}，使用默认模型")
                 
                 return self.model
 
@@ -357,26 +357,26 @@ class OllamaChat(BaseLLMChat):
             models = [model["name"] for model in data.get("models", [])]
             return models if models else [self.model]  # 如果没有模型，返回默认模型
         except requests.exceptions.RequestException as e:
-            print(f"获取模型列表失败: {e}")
+            self.logger.error(f"获取模型列表失败: {e}")
             return [self.model]  # 返回默认模型
         except Exception as e:
-            print(f"解析模型列表失败: {e}")
+            self.logger.error(f"解析模型列表失败: {e}")
             return [self.model]  # 返回默认模型
 
     def pull_model(self, model_name: str) -> bool:
         """拉取模型"""
         try:
-            print(f"正在拉取模型: {model_name}")
+            self.logger.info(f"正在拉取模型: {model_name}")
             response = requests.post(
                 f"{self.base_url}/api/pull",
                 json={"name": model_name},
                 timeout=300  # 拉取模型可能需要较长时间
             )
             response.raise_for_status()
-            print(f"✅ 模型 {model_name} 拉取成功")
+            self.logger.info(f"模型 {model_name} 拉取成功")
             return True
         except requests.exceptions.RequestException as e:
-            print(f"❌ 模型 {model_name} 拉取失败: {e}")
+            self.logger.error(f"模型 {model_name} 拉取失败: {e}")
             return False
 
     def delete_model(self, model_name: str) -> bool:
@@ -388,10 +388,10 @@ class OllamaChat(BaseLLMChat):
                 timeout=self.timeout
             )
             response.raise_for_status()
-            print(f"✅ 模型 {model_name} 删除成功")
+            self.logger.info(f"模型 {model_name} 删除成功")
             return True
         except requests.exceptions.RequestException as e:
-            print(f"❌ 模型 {model_name} 删除失败: {e}")
+            self.logger.error(f"模型 {model_name} 删除失败: {e}")
             return False
 
     def get_model_info(self, model_name: str) -> Optional[Dict]:
@@ -405,7 +405,7 @@ class OllamaChat(BaseLLMChat):
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"获取模型信息失败: {e}")
+            self.logger.error(f"获取模型信息失败: {e}")
             return None
 
     def get_system_info(self) -> Dict:

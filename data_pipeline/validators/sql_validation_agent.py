@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
 from data_pipeline.validators import SQLValidator, SQLValidationResult, ValidationStats
-from data_pipeline.utils.logger import setup_logging
+from core.logging import get_data_pipeline_logger
 
 
 class SQLValidationAgent:
@@ -40,7 +40,7 @@ class SQLValidationAgent:
             self.config['enable_sql_repair'] = enable_sql_repair
         if modify_original_file is not None:
             self.config['modify_original_file'] = modify_original_file
-        self.logger = logging.getLogger("schema_tools.SQLValidationAgent")
+        self.logger = get_data_pipeline_logger("SQLValidationAgent")
         
         # 初始化验证器
         self.validator = SQLValidator(db_connection)

@@ -2,6 +2,10 @@
 from langchain.tools import tool
 from typing import Dict, Any, Optional
 from common.vanna_instance import get_vanna_instance
+from core.logging import get_agent_logger
+
+# Initialize logger
+logger = get_agent_logger("GeneralChat")
 
 @tool
 def general_chat(question: str, context: Optional[str] = None) -> Dict[str, Any]:
@@ -21,7 +25,7 @@ def general_chat(question: str, context: Optional[str] = None) -> Dict[str, Any]
         }
     """
     try:
-        print(f"[TOOL:general_chat] 处理聊天问题: {question}")
+        logger.info(f"处理聊天问题: {question}")
         
         system_prompt = """
 你是Citu智能数据问答平台的AI助手，为用户提供全面的帮助和支持。
@@ -58,7 +62,7 @@ def general_chat(question: str, context: Optional[str] = None) -> Dict[str, Any]
         )
         
         if response:
-            print(f"[TOOL:general_chat] 聊天响应生成成功: {response[:100]}...")
+            logger.info(f"聊天响应生成成功: {response[:100]}...")
             return {
                 "success": True,
                 "response": response.strip(),
@@ -72,7 +76,7 @@ def general_chat(question: str, context: Optional[str] = None) -> Dict[str, Any]
             }
             
     except Exception as e:
-        print(f"[ERROR] 通用聊天异常: {str(e)}")
+        logger.error(f"通用聊天异常: {str(e)}")
         return {
             "success": False,
             "response": _get_fallback_response(question),

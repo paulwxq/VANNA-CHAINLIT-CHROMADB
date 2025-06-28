@@ -1,6 +1,5 @@
 import asyncio
 import time
-import logging
 import os
 from typing import List, Dict, Any, Optional
 from pathlib import Path
@@ -11,8 +10,8 @@ from data_pipeline.utils.file_manager import FileNameManager
 from data_pipeline.utils.system_filter import SystemTableFilter
 from data_pipeline.utils.permission_checker import DatabasePermissionChecker
 from data_pipeline.utils.table_parser import TableListParser
-from data_pipeline.utils.logger import setup_logging
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+from core.logging import get_data_pipeline_logger
 
 class SchemaTrainingDataAgent:
     """Schema训练数据生成AI Agent"""
@@ -50,7 +49,7 @@ class SchemaTrainingDataAgent:
         }
         
         self.failed_tables = []
-        self.logger = logging.getLogger("schema_tools.Agent")
+        self.logger = get_data_pipeline_logger("SchemaTrainingDataAgent")
     
     async def generate_training_data(self) -> Dict[str, Any]:
         """主入口：生成训练数据"""

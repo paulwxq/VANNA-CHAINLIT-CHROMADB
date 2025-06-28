@@ -15,6 +15,7 @@ from data_pipeline.analyzers import MDFileAnalyzer, ThemeExtractor
 from data_pipeline.validators import FileCountValidator
 from data_pipeline.utils.logger import setup_logging
 from core.vanna_llm_factory import create_vanna_instance
+from core.logging import get_data_pipeline_logger
 
 
 class MetadataOnlyGenerator:
@@ -45,10 +46,13 @@ class MetadataOnlyGenerator:
         self.vn = None
         self.theme_extractor = None
         
-        print(f"🎯 元数据生成器初始化完成")
-        print(f"📁 输出目录: {output_dir}")
-        print(f"🏢 业务背景: {business_context}")
-        print(f"💾 数据库: {self.db_name}")
+        # 初始化logger
+        self.logger = get_data_pipeline_logger("MetadataOnlyGenerator")
+        
+        self.logger.info(f"🎯 元数据生成器初始化完成")
+        self.logger.info(f"📁 输出目录: {output_dir}")
+        self.logger.info(f"🏢 业务背景: {business_context}")
+        self.logger.info(f"💾 数据库: {self.db_name}")
     
     async def generate_metadata_only(self) -> Dict[str, Any]:
         """
@@ -58,50 +62,50 @@ class MetadataOnlyGenerator:
             生成结果报告
         """
         try:
-            print("🚀 开始生成元数据文件...")
+            self.logger.info("🚀 开始生成元数据文件...")
             
             # 1. 验证文件数量
-            print("📋 验证文件数量...")
+            self.logger.info("📋 验证文件数量...")
             validation_result = self.validator.validate(self.table_list_file, str(self.output_dir))
             
             if not validation_result.is_valid:
-                print(f"❌ 文件验证失败: {validation_result.error}")
+                self.logger.error(f"❌ 文件验证失败: {validation_result.error}")
                 if validation_result.missing_ddl:
-                    print(f"缺失DDL文件: {validation_result.missing_ddl}")
+                    self.logger.error(f"缺失DDL文件: {validation_result.missing_ddl}")
                 if validation_result.missing_md:
-                    print(f"缺失MD文件: {validation_result.missing_md}")
+                    self.logger.error(f"缺失MD文件: {validation_result.missing_md}")
                 raise ValueError(f"文件验证失败: {validation_result.error}")
             
-            print(f"✅ 文件验证通过: {validation_result.table_count}个表")
+            self.logger.info(f"✅ 文件验证通过: {validation_result.table_count}个表")
             
             # 2. 读取所有MD文件内容
-            print("📖 读取MD文件...")
+            self.logger.info("📖 读取MD文件...")
             md_contents = await self.md_analyzer.read_all_md_files()
             
             # 3. 初始化LLM相关组件
             self._initialize_llm_components()
             
             # 4. 提取分析主题
-            print("🎯 提取分析主题...")
+            self.logger.info("🎯 提取分析主题...")
             themes = await self.theme_extractor.extract_themes(md_contents)
-            print(f"✅ 成功提取 {len(themes)} 个分析主题")
+            self.logger.info(f"✅ 成功提取 {len(themes)} 个分析主题")
             
 
             for i, theme in enumerate(themes):
                 topic_name = theme.get('topic_name', theme.get('name', ''))
                 description = theme.get('description', '')
-                print(f"  {i+1}. {topic_name}: {description}")
+                self.logger.info(f"  {i+1}. {topic_name}: {description}")
             
             # 5. 生成metadata.txt文件
-            print("📝 生成metadata.txt...")
+            self.logger.info("📝 生成metadata.txt...")
             metadata_file = await self._generate_metadata_file(themes)
             
             # 6. 生成metadata_detail.md文件
-            print("📝 生成metadata_detail.md...")
+            self.logger.info("📝 生成metadata_detail.md...")
             metadata_md_file = await self._generate_metadata_md_file(themes)
             
             # 7. 生成db_query_decision_prompt.txt文件
-            print("📝 生成db_query_decision_prompt.txt...")
+            self.logger.info("📝 生成db_query_decision_prompt.txt...")
             decision_prompt_file = await self._generate_decision_prompt_file(themes, md_contents)
             
             # 8. 生成报告
@@ -119,13 +123,13 @@ class MetadataOnlyGenerator:
             return report
             
         except Exception as e:
-            print(f"❌ 元数据生成失败: {e}")
+            self.logger.error(f"❌ 元数据生成失败: {e}")
             raise
     
     def _initialize_llm_components(self):
         """初始化LLM相关组件"""
         if not self.vn:
-            print("🤖 初始化LLM组件...")
+            self.logger.info("🤖 初始化LLM组件...")
             self.vn = create_vanna_instance()
             self.theme_extractor = ThemeExtractor(self.vn, self.business_context)
     
@@ -188,11 +192,11 @@ class MetadataOnlyGenerator:
                     f.write(f"  '{metrics_str}'\n")
                     f.write(");\n\n")
             
-            print(f"✅ metadata.txt文件已生成: {metadata_file}")
+            self.logger.info(f"✅ metadata.txt文件已生成: {metadata_file}")
             return metadata_file
             
         except Exception as e:
-            print(f"❌ 生成metadata.txt文件失败: {e}")
+            self.logger.error(f"❌ 生成metadata.txt文件失败: {e}")
             return None
     
     async def _generate_metadata_md_file(self, themes: List[Dict]):
@@ -240,11 +244,11 @@ class MetadataOnlyGenerator:
                 f.write("- `biz_entities` 表示主题关注的核心对象，例如服务区、车辆、公司；\n")
                 f.write("- `biz_metrics` 表示该主题关注的业务分析指标，例如营收对比、趋势变化、占比结构等。\n")
             
-            print(f"✅ metadata_detail.md文件已生成: {metadata_md_file}")
+            self.logger.info(f"✅ metadata_detail.md文件已生成: {metadata_md_file}")
             return metadata_md_file
             
         except Exception as e:
-            print(f"❌ 生成metadata_detail.md文件失败: {e}")
+            self.logger.error(f"❌ 生成metadata_detail.md文件失败: {e}")
             return None
     
     async def _generate_decision_prompt_file(self, themes: List[Dict], md_contents: str):
@@ -259,20 +263,20 @@ class MetadataOnlyGenerator:
             with open(decision_prompt_file, 'w', encoding='utf-8') as f:
                 f.write(decision_content)
             
-            print(f"✅ db_query_decision_prompt.txt文件已生成: {decision_prompt_file}")
+            self.logger.info(f"✅ db_query_decision_prompt.txt文件已生成: {decision_prompt_file}")
             return decision_prompt_file
             
         except Exception as e:
-            print(f"❌ 生成db_query_decision_prompt.txt文件失败: {e}")
+            self.logger.error(f"❌ 生成db_query_decision_prompt.txt文件失败: {e}")
             # 如果LLM调用失败，使用回退方案
             try:
                 fallback_content = await self._generate_fallback_decision_content(themes)
                 with open(decision_prompt_file, 'w', encoding='utf-8') as f:
                     f.write(fallback_content)
-                print(f"⚠️ 使用回退方案生成了 {decision_prompt_file}")
+                self.logger.warning(f"⚠️ 使用回退方案生成了 {decision_prompt_file}")
                 return decision_prompt_file
             except Exception as fallback_error:
-                print(f"❌ 回退方案也失败: {fallback_error}")
+                self.logger.error(f"❌ 回退方案也失败: {fallback_error}")
                 return None
     
     async def _generate_decision_prompt_with_llm(self, themes: List[Dict], md_contents: str) -> str:
@@ -326,7 +330,7 @@ class MetadataOnlyGenerator:
             return response.strip()
             
         except Exception as e:
-            print(f"❌ LLM生成决策提示内容失败: {e}")
+            self.logger.error(f"❌ LLM生成决策提示内容失败: {e}")
             # 回退方案：生成基础内容
             return await self._generate_fallback_decision_content(themes)
     
@@ -370,7 +374,7 @@ class MetadataOnlyGenerator:
                 raise Exception("LLM返回内容不合理")
                 
         except Exception as e:
-            print(f"⚠️ 简化LLM调用也失败，使用完全兜底方案: {e}")
+            self.logger.warning(f"⚠️ 简化LLM调用也失败，使用完全兜底方案: {e}")
             # 真正的最后兜底
             content += f"当前数据库存储的是{self.business_context}的相关数据，主要涉及相关业务数据，包含以下业务数据：\n"
         
@@ -409,13 +413,13 @@ class MetadataOnlyGenerator:
     
     def _print_summary(self, report: Dict):
         """打印总结信息"""
-        print("=" * 60)
-        print("📊 元数据生成总结")
-        print(f"  ✅ 分析主题数: {report['total_themes']}")
-        print(f"  📄 metadata.txt: {'✅ 已生成' if report['metadata_file'] else '❌ 生成失败'}")
-        print(f"  📄 metadata_detail.md: {'✅ 已生成' if report['metadata_md_file'] else '❌ 生成失败'}")
-        print(f"  📄 db_query_decision_prompt.txt: {'✅ 已生成' if report['decision_prompt_file'] else '❌ 生成失败'}")
-        print("=" * 60)
+        self.logger.info("=" * 60)
+        self.logger.info("📊 元数据生成总结")
+        self.logger.info(f"  ✅ 分析主题数: {report['total_themes']}")
+        self.logger.info(f"  📄 metadata.txt: {'✅ 已生成' if report['metadata_file'] else '❌ 生成失败'}")
+        self.logger.info(f"  📄 metadata_detail.md: {'✅ 已生成' if report['metadata_md_file'] else '❌ 生成失败'}")
+        self.logger.info(f"  📄 db_query_decision_prompt.txt: {'✅ 已生成' if report['decision_prompt_file'] else '❌ 生成失败'}")
+        self.logger.info("=" * 60)
 
 
 def setup_argument_parser():
@@ -488,12 +492,15 @@ async def main():
     
     # 验证参数
     output_path = Path(args.output_dir)
+    # 初始化logger用于参数验证
+    logger = get_data_pipeline_logger("MetadataGeneratorMain")
+    
     if not output_path.exists():
-        print(f"错误: 输出目录不存在: {args.output_dir}")
+        logger.error(f"错误: 输出目录不存在: {args.output_dir}")
         sys.exit(1)
     
     if not os.path.exists(args.table_list):
-        print(f"错误: 表清单文件不存在: {args.table_list}")
+        logger.error(f"错误: 表清单文件不存在: {args.table_list}")
         sys.exit(1)
     
     try:
@@ -510,19 +517,19 @@ async def main():
         
         # 输出结果
         if report['success']:
-            print("\n🎉 元数据文件生成成功!")
+            logger.info("\n🎉 元数据文件生成成功!")
             exit_code = 0
         else:
-            print("\n❌ 元数据文件生成失败")
+            logger.error("\n❌ 元数据文件生成失败")
             exit_code = 1
         
         sys.exit(exit_code)
         
     except KeyboardInterrupt:
-        print("\n\n⏹️  用户中断，程序退出")
+        logger.info("\n\n⏹️  用户中断，程序退出")
         sys.exit(130)
     except Exception as e:
-        print(f"\n❌ 程序执行失败: {e}")
+        logger.error(f"\n❌ 程序执行失败: {e}")
         if args.verbose:
             import traceback
             traceback.print_exc()

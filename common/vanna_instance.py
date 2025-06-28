@@ -4,6 +4,10 @@ Vanna实例单例管理器
 """
 import threading
 from typing import Optional
+from core.logging import get_app_logger
+
+# 初始化logger
+_logger = get_app_logger("VannaSingleton")
 
 # 全局变量
 _vanna_instance: Optional[object] = None
@@ -22,14 +26,14 @@ def get_vanna_instance():
     if _vanna_instance is None:
         with _instance_lock:
             if _vanna_instance is None:
-                print("[VANNA_SINGLETON] 创建 Vanna 实例...")
+                _logger.info("创建 Vanna 实例...")
                 try:
                     # 延迟导入，避免循环导入
                     from core.vanna_llm_factory import create_vanna_instance
                     _vanna_instance = create_vanna_instance()
-                    print("[VANNA_SINGLETON] Vanna 实例创建成功")
+                    _logger.info("Vanna 实例创建成功")
                 except Exception as e:
-                    print(f"[ERROR] Vanna 实例创建失败: {str(e)}")
+                    _logger.error(f"Vanna 实例创建失败: {str(e)}")
                     raise
     
     return _vanna_instance
@@ -41,7 +45,7 @@ def reset_vanna_instance():
     global _vanna_instance
     with _instance_lock:
         if _vanna_instance is not None:
-            print("[VANNA_SINGLETON] 重置 Vanna 实例")
+            _logger.info("重置 Vanna 实例")
             _vanna_instance = None
 
 def get_instance_status() -> dict:

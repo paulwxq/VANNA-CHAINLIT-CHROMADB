@@ -7,8 +7,8 @@ class QianWenChat(BaseLLMChat):
     """千问AI聊天实现"""
     
     def __init__(self, client=None, config=None):
-        print("...QianWenChat init...")
         super().__init__(config=config)
+        self.logger.info("QianWenChat init")
 
         if "api_type" in config:
             raise Exception(
@@ -65,7 +65,7 @@ class QianWenChat(BaseLLMChat):
         # 千问API约束：enable_thinking=True时必须stream=True
         # 如果stream=False但enable_thinking=True，则忽略enable_thinking
         if enable_thinking and not stream_mode:
-            print("WARNING: enable_thinking=True 不生效，因为它需要 stream=True")
+            self.logger.warning("enable_thinking=True 不生效，因为它需要 stream=True")
             enable_thinking = False
         
         # 创建一个干净的kwargs副本，移除可能导致API错误的自定义参数
@@ -112,15 +112,15 @@ class QianWenChat(BaseLLMChat):
                 model = "qwen-plus"
             common_params["model"] = model
         
-        print(f"\nUsing model {model} for {num_tokens} tokens (approx)")
-        print(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
+        self.logger.info(f"\nUsing model {model} for {num_tokens} tokens (approx)")
+        self.logger.info(f"Enable thinking: {enable_thinking}, Stream mode: {stream_mode}")
         
         if stream_mode:
             # 流式处理模式
             if enable_thinking:
-                print("使用流式处理模式，启用thinking功能")
+                self.logger.info("使用流式处理模式，启用thinking功能")
             else:
-                print("使用流式处理模式，不启用thinking功能")
+                self.logger.info("使用流式处理模式，不启用thinking功能")
             
             response_stream = self.client.chat.completions.create(**common_params)
             
@@ -144,7 +144,7 @@ class QianWenChat(BaseLLMChat):
             # 可以在这里处理thinking的展示逻辑，如保存到日志等
             if enable_thinking and collected_thinking:
                 thinking_text = "".join(collected_thinking)
-                print("Model thinking process:\n", thinking_text)
+                self.logger.debug("Model thinking process:\n" + thinking_text)
             
             # 返回包含 <think></think> 标签的完整内容，与界面显示需求保持一致
             final_content = "".join(collected_content)
@@ -155,7 +155,7 @@ class QianWenChat(BaseLLMChat):
                 return final_content
         else:
             # 非流式处理模式
-            print("使用非流式处理模式")
+            self.logger.info("使用非流式处理模式")
             response = self.client.chat.completions.create(**common_params)
             
             # Find the first response from the chatbot that has text in it (some responses may not have text)

@@ -7,6 +7,7 @@ import pandas as pd
 from langchain_core.documents import Document
 from langchain_postgres.vectorstores import PGVector
 from sqlalchemy import create_engine, text
+from core.logging import get_vanna_logger
 
 from vanna.exceptions import ValidationError
 from vanna.base import VannaBase
@@ -23,6 +24,9 @@ class PG_VectorStore(VannaBase):
                 "A valid 'config' dictionary with a 'connection_string' is required.")
 
         VannaBase.__init__(self, config=config)
+        
+        # 初始化日志
+        self.logger = get_vanna_logger("PGVector")
 
         if config and "connection_string" in config:
             self.connection_string = config.get("connection_string")
@@ -135,7 +139,7 @@ class PG_VectorStore(VannaBase):
                 if generated_embedding:
                     embedding_cache.cache_embedding(question, generated_embedding)
             except Exception as e:
-                print(f"[WARNING] 缓存embedding失败: {e}")
+                self.logger.warning(f"缓存embedding失败: {e}")
 
         results = []
         for doc, score in docs_with_scores:
@@ -146,11 +150,15 @@ class PG_VectorStore(VannaBase):
             similarity = round(1 - score, 4)
 
             # 每条记录单独打印
-            print(f"[DEBUG] SQL Match: {base.get('question', '')} | similarity: {similarity}")
+            self.logger.debug(f"SQL Match: {base.get('question', '')} | similarity: {similarity}")
 
             # 添加 similarity 字段
             base["similarity"] = similarity
             results.append(base)
+
+        # 检查原始查询结果是否为空
+        if not results:
+            self.logger.warning(f"向量查询未找到任何相似的SQL问答对，问题: {question}")
 
         # 应用阈值过滤
         filtered_results = self._apply_score_threshold_filter(
@@ -158,6 +166,10 @@ class PG_VectorStore(VannaBase):
             "RESULT_VECTOR_SQL_SCORE_THRESHOLD",
             "SQL"
         )
+
+        # 检查过滤后结果是否为空
+        if results and not filtered_results:
+            self.logger.warning(f"向量查询找到了 {len(results)} 条SQL问答对，但全部被阈值过滤掉，问题: {question}")
 
         return filtered_results
 
@@ -186,7 +198,7 @@ class PG_VectorStore(VannaBase):
                 if generated_embedding:
                     embedding_cache.cache_embedding(question, generated_embedding)
             except Exception as e:
-                print(f"[WARNING] 缓存embedding失败: {e}")
+                self.logger.warning(f"缓存embedding失败: {e}")
 
         results = []
         for doc, score in docs_with_scores:
@@ -194,7 +206,7 @@ class PG_VectorStore(VannaBase):
             similarity = round(1 - score, 4)
 
             # 每条记录单独打印
-            print(f"[DEBUG] DDL Match: {doc.page_content[:50]}... | similarity: {similarity}")
+            self.logger.debug(f"DDL Match: {doc.page_content[:50]}... | similarity: {similarity}")
 
             # 添加 similarity 字段
             result = {
@@ -203,12 +215,20 @@ class PG_VectorStore(VannaBase):
             }
             results.append(result)
 
+        # 检查原始查询结果是否为空
+        if not results:
+            self.logger.warning(f"向量查询未找到任何相关的DDL表结构，问题: {question}")
+
         # 应用阈值过滤
         filtered_results = self._apply_score_threshold_filter(
             results, 
             "RESULT_VECTOR_DDL_SCORE_THRESHOLD",
             "DDL"
         )
+
+        # 检查过滤后结果是否为空
+        if results and not filtered_results:
+            self.logger.warning(f"向量查询找到了 {len(results)} 条DDL表结构，但全部被阈值过滤掉，问题: {question}")
 
         return filtered_results
 
@@ -237,7 +257,7 @@ class PG_VectorStore(VannaBase):
                 if generated_embedding:
                     embedding_cache.cache_embedding(question, generated_embedding)
             except Exception as e:
-                print(f"[WARNING] 缓存embedding失败: {e}")
+                self.logger.warning(f"缓存embedding失败: {e}")
 
         results = []
         for doc, score in docs_with_scores:
@@ -245,7 +265,7 @@ class PG_VectorStore(VannaBase):
             similarity = round(1 - score, 4)
 
             # 每条记录单独打印
-            print(f"[DEBUG] Doc Match: {doc.page_content[:50]}... | similarity: {similarity}")
+            self.logger.debug(f"Doc Match: {doc.page_content[:50]}... | similarity: {similarity}")
 
             # 添加 similarity 字段
             result = {
@@ -254,12 +274,20 @@ class PG_VectorStore(VannaBase):
             }
             results.append(result)
 
+        # 检查原始查询结果是否为空
+        if not results:
+            self.logger.warning(f"向量查询未找到任何相关的文档，问题: {question}")
+
         # 应用阈值过滤
         filtered_results = self._apply_score_threshold_filter(
             results, 
             "RESULT_VECTOR_DOC_SCORE_THRESHOLD",
             "DOC"
         )
+
+        # 检查过滤后结果是否为空
+        if results and not filtered_results:
+            self.logger.warning(f"向量查询找到了 {len(results)} 条文档，但全部被阈值过滤掉，问题: {question}")
 
         return filtered_results
 
@@ -284,19 +312,19 @@ class PG_VectorStore(VannaBase):
             enable_threshold = getattr(app_config, 'ENABLE_RESULT_VECTOR_SCORE_THRESHOLD', False)
             threshold = getattr(app_config, threshold_config_key, 0.65)
         except (ImportError, AttributeError) as e:
-            print(f"[WARNING] 无法加载阈值配置: {e}，使用默认值")
+            self.logger.warning(f"无法加载阈值配置: {e}，使用默认值")
             enable_threshold = False
             threshold = 0.65
         
         # 如果未启用阈值过滤，直接返回原结果
         if not enable_threshold:
-            print(f"[DEBUG] {result_type} 阈值过滤未启用，返回全部 {len(results)} 条结果")
+            self.logger.debug(f"{result_type} 阈值过滤未启用，返回全部 {len(results)} 条结果")
             return results
         
         total_count = len(results)
         min_required = max((total_count + 1) // 2, 1)
         
-        print(f"[DEBUG] {result_type} 阈值过滤: 总数={total_count}, 阈值={threshold}, 最少保留={min_required}")
+        self.logger.debug(f"{result_type} 阈值过滤: 总数={total_count}, 阈值={threshold}, 最少保留={min_required}")
         
         # 按相似度降序排序（确保最相似的在前面）
         sorted_results = sorted(results, key=lambda x: x.get('similarity', 0), reverse=True)
@@ -309,20 +337,20 @@ class PG_VectorStore(VannaBase):
             # 情况1: 满足阈值的结果数量 >= 最少保留数量，返回满足阈值的结果
             filtered_results = above_threshold
             filtered_count = len(above_threshold)
-            print(f"[DEBUG] {result_type} 过滤结果: 保留 {filtered_count} 条, 过滤掉 {total_count - filtered_count} 条 (全部满足阈值)")
+            self.logger.debug(f"{result_type} 过滤结果: 保留 {filtered_count} 条, 过滤掉 {total_count - filtered_count} 条 (全部满足阈值)")
         else:
             # 情况2: 满足阈值的结果数量 < 最少保留数量，强制保留前 min_required 条
             filtered_results = sorted_results[:min_required]
             above_count = len(above_threshold)
             below_count = min_required - above_count
             filtered_count = min_required
-            print(f"[DEBUG] {result_type} 过滤结果: 保留 {filtered_count} 条, 过滤掉 {total_count - filtered_count} 条 (满足阈值: {above_count}, 强制保留: {below_count})")
+            self.logger.debug(f"{result_type} 过滤结果: 保留 {filtered_count} 条, 过滤掉 {total_count - filtered_count} 条 (满足阈值: {above_count}, 强制保留: {below_count})")
         
         # 打印过滤详情
         for i, result in enumerate(filtered_results):
             similarity = result.get('similarity', 0)
             status = "✓" if similarity >= threshold else "✗"
-            print(f"[DEBUG] {result_type} 保留 {i+1}: similarity={similarity} {status}")
+            self.logger.debug(f"{result_type} 保留 {i+1}: similarity={similarity} {status}")
         
         return filtered_results
 
@@ -350,17 +378,17 @@ class PG_VectorStore(VannaBase):
             enable_threshold = getattr(app_config, 'ENABLE_RESULT_VECTOR_SCORE_THRESHOLD', False)
             threshold = getattr(app_config, 'RESULT_VECTOR_ERROR_SQL_SCORE_THRESHOLD', 0.5)
         except (ImportError, AttributeError) as e:
-            print(f"[WARNING] 无法加载错误SQL阈值配置: {e}，使用默认值")
+            self.logger.warning(f"无法加载错误SQL阈值配置: {e}，使用默认值")
             enable_threshold = False
             threshold = 0.5
         
         # 如果未启用阈值过滤，直接返回原结果
         if not enable_threshold:
-            print(f"[DEBUG] Error SQL 阈值过滤未启用，返回全部 {len(results)} 条结果")
+            self.logger.debug(f"Error SQL 阈值过滤未启用，返回全部 {len(results)} 条结果")
             return results
         
         total_count = len(results)
-        print(f"[DEBUG] Error SQL 阈值过滤: 总数={total_count}, 阈值={threshold}")
+        self.logger.debug(f"Error SQL 阈值过滤: 总数={total_count}, 阈值={threshold}")
         
         # 按相似度降序排序（确保最相似的在前面）
         sorted_results = sorted(results, key=lambda x: x.get('similarity', 0), reverse=True)
@@ -372,13 +400,13 @@ class PG_VectorStore(VannaBase):
         filtered_out_count = total_count - filtered_count
         
         if filtered_count > 0:
-            print(f"[DEBUG] Error SQL 过滤结果: 保留 {filtered_count} 条, 过滤掉 {filtered_out_count} 条")
+            self.logger.debug(f"Error SQL 过滤结果: 保留 {filtered_count} 条, 过滤掉 {filtered_out_count} 条")
             # 打印保留的结果详情
             for i, result in enumerate(filtered_results):
                 similarity = result.get('similarity', 0)
-                print(f"[DEBUG] Error SQL 保留 {i+1}: similarity={similarity} ✓")
+                self.logger.debug(f"Error SQL 保留 {i+1}: similarity={similarity} ✓")
         else:
-            print(f"[DEBUG] Error SQL 过滤结果: 所有 {total_count} 条结果都低于阈值 {threshold}，返回空列表")
+            self.logger.debug(f"Error SQL 过滤结果: 所有 {total_count} 条结果都低于阈值 {threshold}，返回空列表")
         
         return filtered_results
 
@@ -610,7 +638,7 @@ class PG_VectorStore(VannaBase):
                     if generated_embedding:
                         embedding_cache.cache_embedding(question, generated_embedding)
                 except Exception as e:
-                    print(f"[WARNING] 缓存embedding失败: {e}")
+                    self.logger.warning(f"缓存embedding失败: {e}")
             
             results = []
             for doc, score in docs_with_scores:
@@ -622,21 +650,29 @@ class PG_VectorStore(VannaBase):
                     similarity = round(1 - score, 4)
                     
                     # 每条记录单独打印
-                    print(f"[DEBUG] Error SQL Match: {base.get('question', '')} | similarity: {similarity}")
+                    self.logger.debug(f"Error SQL Match: {base.get('question', '')} | similarity: {similarity}")
                     
                     # 添加 similarity 字段
                     base["similarity"] = similarity
                     results.append(base)
                     
                 except (ValueError, SyntaxError) as e:
-                    print(f"Error parsing error SQL document: {e}")
+                    self.logger.error(f"Error parsing error SQL document: {e}")
                     continue
             
+            # 检查原始查询结果是否为空
+            if not results:
+                self.logger.warning(f"向量查询未找到任何相关的错误SQL示例，问题: {question}")
+
             # 应用错误SQL特有的阈值过滤逻辑
             filtered_results = self._apply_error_sql_threshold_filter(results)
             
+            # 检查过滤后结果是否为空
+            if results and not filtered_results:
+                self.logger.warning(f"向量查询找到了 {len(results)} 条错误SQL示例，但全部被阈值过滤掉，问题: {question}")
+
             return filtered_results
             
         except Exception as e:
-            print(f"Error retrieving error SQL examples: {e}")
+            self.logger.error(f"Error retrieving error SQL examples: {e}")
             return []

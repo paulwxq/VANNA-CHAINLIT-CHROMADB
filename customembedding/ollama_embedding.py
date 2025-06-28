@@ -2,6 +2,7 @@ import requests
 import time
 import numpy as np
 from typing import List, Callable
+from core.logging import get_vanna_logger
 
 class OllamaEmbeddingFunction:
     def __init__(self, model_name: str, base_url: str, embedding_dimension: int):
@@ -10,6 +11,9 @@ class OllamaEmbeddingFunction:
         self.embedding_dimension = embedding_dimension
         self.max_retries = 3
         self.retry_interval = 2
+        
+        # 初始化日志
+        self.logger = get_vanna_logger("OllamaEmbedding")
 
     def __call__(self, input) -> List[List[float]]:
         """为文本列表生成嵌入向量"""
@@ -22,7 +26,7 @@ class OllamaEmbeddingFunction:
                 embedding = self.generate_embedding(text)
                 embeddings.append(embedding)
             except Exception as e:
-                print(f"获取embedding时出错: {e}")
+                self.logger.error(f"获取embedding时出错: {e}")
                 embeddings.append([0.0] * self.embedding_dimension)
                 
         return embeddings
@@ -37,10 +41,10 @@ class OllamaEmbeddingFunction:
     
     def generate_embedding(self, text: str) -> List[float]:
         """为单个文本生成嵌入向量"""
-        print(f"生成Ollama嵌入向量，文本长度: {len(text)} 字符")
+        self.logger.debug(f"生成Ollama嵌入向量，文本长度: {len(text)} 字符")
         
         if not text or len(text.strip()) == 0:
-            print("输入文本为空，返回零向量")
+            self.logger.debug("输入文本为空，返回零向量")
             return [0.0] * self.embedding_dimension
 
         url = f"{self.base_url}/api/embeddings"
@@ -60,13 +64,13 @@ class OllamaEmbeddingFunction:
                 
                 if response.status_code != 200:
                     error_msg = f"Ollama API请求错误: {response.status_code}, {response.text}"
-                    print(error_msg)
+                    self.logger.error(error_msg)
                     
                     if response.status_code in (429, 500, 502, 503, 504):
                         retries += 1
                         if retries <= self.max_retries:
                             wait_time = self.retry_interval * (2 ** (retries - 1))
-                            print(f"等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
+                            self.logger.info(f"等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
                             time.sleep(wait_time)
                             continue
                     
@@ -80,7 +84,7 @@ class OllamaEmbeddingFunction:
                     # 验证向量维度
                     actual_dim = len(vector)
                     if actual_dim != self.embedding_dimension:
-                        print(f"向量维度不匹配: 期望 {self.embedding_dimension}, 实际 {actual_dim}")
+                        self.logger.debug(f"向量维度不匹配: 期望 {self.embedding_dimension}, 实际 {actual_dim}")
                         # 如果维度不匹配，可以选择截断或填充
                         if actual_dim > self.embedding_dimension:
                             vector = vector[:self.embedding_dimension]
@@ -88,23 +92,23 @@ class OllamaEmbeddingFunction:
                             vector.extend([0.0] * (self.embedding_dimension - actual_dim))
                     
                     # 添加成功生成embedding的debug日志
-                    print(f"[DEBUG] ✓ 成功生成Ollama embedding向量，维度: {len(vector)}")
+                    self.logger.debug(f"✓ 成功生成Ollama embedding向量，维度: {len(vector)}")
                     return vector
                 else:
                     error_msg = f"Ollama API返回格式异常: {result}"
-                    print(error_msg)
+                    self.logger.error(error_msg)
                     raise ValueError(error_msg)
                 
             except Exception as e:
-                print(f"生成Ollama embedding时出错: {str(e)}")
+                self.logger.error(f"生成Ollama embedding时出错: {str(e)}")
                 retries += 1
                 
                 if retries <= self.max_retries:
                     wait_time = self.retry_interval * (2 ** (retries - 1))
-                    print(f"等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
+                    self.logger.info(f"等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
                     time.sleep(wait_time)
                 else:
-                    print(f"已达到最大重试次数 ({self.max_retries})，生成embedding失败")
+                    self.logger.error(f"已达到最大重试次数 ({self.max_retries})，生成embedding失败")
                     return [0.0] * self.embedding_dimension
         
         raise RuntimeError("生成Ollama embedding失败")
@@ -121,8 +125,8 @@ class OllamaEmbeddingFunction:
         }
         
         try:
-            print(f"测试Ollama嵌入模型连接 - 模型: {self.model_name}")
-            print(f"Ollama服务地址: {self.base_url}")
+            self.logger.info(f"测试Ollama嵌入模型连接 - 模型: {self.model_name}")
+            self.logger.info(f"Ollama服务地址: {self.base_url}")
             
             vector = self.generate_embedding(test_text)
             actual_dimension = len(vector)

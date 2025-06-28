@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional, Union, Tuple
 import pandas as pd
 import plotly.graph_objs
 from vanna.base import VannaBase
+from core.logging import get_vanna_logger
 # 导入配置参数
 from app_config import REWRITE_QUESTION_ENABLED, DISPLAY_RESULT_THINKING
 
@@ -14,18 +15,21 @@ class BaseLLMChat(VannaBase, ABC):
     def __init__(self, config=None):
         VannaBase.__init__(self, config=config)
 
+        # 初始化日志
+        self.logger = get_vanna_logger("BaseLLMChat")
+
         # 存储LLM解释性文本
         self.last_llm_explanation = None
         
-        print("传入的 config 参数如下：")
+        self.logger.info("传入的 config 参数如下：")
         for key, value in self.config.items():
-            print(f"  {key}: {value}")
+            self.logger.info(f"  {key}: {value}")
         
         # 默认参数
         self.temperature = 0.7
         
         if "temperature" in config:
-            print(f"temperature is changed to: {config['temperature']}")
+            self.logger.info(f"temperature is changed to: {config['temperature']}")
             self.temperature = config["temperature"]
         
         # 加载错误SQL提示配置
@@ -36,32 +40,32 @@ class BaseLLMChat(VannaBase, ABC):
         try:
             import app_config
             enable_error_sql = getattr(app_config, 'ENABLE_ERROR_SQL_PROMPT', False)
-            print(f"[DEBUG] 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = {enable_error_sql}")
+            self.logger.debug(f"错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = {enable_error_sql}")
             return enable_error_sql
         except (ImportError, AttributeError) as e:
-            print(f"[WARNING] 无法加载错误SQL提示配置: {e}，使用默认值 False")
+            self.logger.warning(f"无法加载错误SQL提示配置: {e}，使用默认值 False")
             return False
 
     def system_message(self, message: str) -> dict:
         """创建系统消息格式"""
-        print(f"system_content: {message}")
+        self.logger.debug(f"system_content: {message}")
         return {"role": "system", "content": message}
 
     def user_message(self, message: str) -> dict:
         """创建用户消息格式"""
-        print(f"\nuser_content: {message}")
+        self.logger.debug(f"\nuser_content: {message}")
         return {"role": "user", "content": message}
 
     def assistant_message(self, message: str) -> dict:
         """创建助手消息格式"""
-        print(f"assistant_content: {message}")
+        self.logger.debug(f"assistant_content: {message}")
         return {"role": "assistant", "content": message}
 
     def get_sql_prompt(self, initial_prompt: str, question: str, question_sql_list: list, ddl_list: list, doc_list: list, **kwargs):
         """
         基于VannaBase源码实现，在第7点添加中文别名指令
         """
-        print(f"[DEBUG] 开始生成SQL提示词，问题: {question}")
+        self.logger.debug(f"开始生成SQL提示词，问题: {question}")
         
         if initial_prompt is None:
             initial_prompt = f"You are a {self.dialect} expert. " + \
@@ -101,7 +105,7 @@ class BaseLLMChat(VannaBase, ABC):
             try:
                 error_sql_list = self.get_related_error_sql(question, **kwargs)
                 if error_sql_list:
-                    print(f"[DEBUG] 找到 {len(error_sql_list)} 个相关的错误SQL示例")
+                    self.logger.debug(f"找到 {len(error_sql_list)} 个相关的错误SQL示例")
                     
                     # 构建格式化的负面提示内容
                     negative_prompt_content = "===Negative Examples\n"
@@ -110,33 +114,36 @@ class BaseLLMChat(VannaBase, ABC):
                     for i, error_example in enumerate(error_sql_list, 1):
                         if "question" in error_example and "sql" in error_example:
                             similarity = error_example.get('similarity', 'N/A')
-                            print(f"[DEBUG] 错误SQL示例 {i}: 相似度={similarity}")
+                            self.logger.debug(f"错误SQL示例 {i}: 相似度={similarity}")
                             negative_prompt_content += f"问题: {error_example['question']}\n"
                             negative_prompt_content += f"错误的SQL: {error_example['sql']}\n\n"
                     
                     # 将负面提示添加到初始提示中
                     initial_prompt += negative_prompt_content
                 else:
-                    print("[DEBUG] 未找到相关的错误SQL示例")
+                    self.logger.debug("未找到相关的错误SQL示例")
             except Exception as e:
-                print(f"[WARNING] 获取错误SQL示例失败: {e}")
+                self.logger.warning(f"获取错误SQL示例失败: {e}")
 
         initial_prompt += (
             "===Response Guidelines \n"
             "1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. \n"
             "2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql \n"
             "3. If the provided context is insufficient, please explain why it can't be generated. \n"
-            "4. Please use the most relevant table(s). \n"
-            "5. If the question has been asked and answered before, please repeat the answer exactly as it was given before. \n"
-            f"6. Ensure that the output SQL is {self.dialect}-compliant and executable, and free of syntax errors. \n"
-            "7. 在生成 SQL 查询时，如果出现 ORDER BY 子句，请遵循以下规则：\n"
+            "4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].\n"
+            "   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', \n"
+            "     interpret it as 'How many dining stalls does Nancheng Service Area have?'\n"
+            "5. Please use the most relevant table(s). \n"
+            "6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. \n"
+            f"7. Ensure that the output SQL is {self.dialect}-compliant and executable, and free of syntax errors. \n"
+            "8. 在生成 SQL 查询时，如果出现 ORDER BY 子句，请遵循以下规则：\n"
             "   - 对所有的排序字段（如聚合字段 SUM()、普通列等），请在 ORDER BY 中显式添加 NULLS LAST。\n"
             "   - 不论是否使用 LIMIT，只要排序字段存在，都必须添加 NULLS LAST，以防止 NULL 排在结果顶部。\n"
             "   - 示例参考：\n"
             "     - ORDER BY total DESC NULLS LAST\n"
             "     - ORDER BY zf_order DESC NULLS LAST\n"
             "     - ORDER BY SUM(c.customer_count) DESC NULLS LAST \n"
-            "8. 【重要】请在SQL查询中为所有SELECT的列都使用中文别名：\n"
+            "9. 【重要】请在SQL查询中为所有SELECT的列都使用中文别名：\n"
             "   - 每个列都必须使用 AS 中文别名 的格式，没有例外\n"
             "   - 包括原始字段名也要添加中文别名，例如：SELECT gender AS 性别, card_category AS 卡片类型\n"
             "   - 计算字段也要有中文别名，例如：SELECT COUNT(*) AS 持卡人数\n"
@@ -147,7 +154,7 @@ class BaseLLMChat(VannaBase, ABC):
 
         for example in question_sql_list:
             if example is None:
-                print("example is None")
+                self.logger.warning("example is None")
             else:
                 if example is not None and "question" in example and "sql" in example:
                     message_log.append(self.user_message(example["question"]))
@@ -225,7 +232,7 @@ class BaseLLMChat(VannaBase, ABC):
         if not DISPLAY_RESULT_THINKING:
             original_code = plotly_code
             plotly_code = self._remove_thinking_content(plotly_code)
-            print(f"[DEBUG] generate_plotly_code隐藏thinking内容 - 原始长度: {len(original_code)}, 处理后长度: {len(plotly_code)}")
+            self.logger.debug(f"generate_plotly_code隐藏thinking内容 - 原始长度: {len(original_code)}, 处理后长度: {len(plotly_code)}")
 
         return self._sanitize_plotly_code(self._extract_python_code(plotly_code))
 
@@ -270,12 +277,12 @@ class BaseLLMChat(VannaBase, ABC):
         对于Flask应用，这个方法决定了前端是否显示图表生成按钮
         """
         if df is None or df.empty:
-            print(f"[DEBUG] should_generate_chart: df为空，返回False")
+            self.logger.debug("should_generate_chart: df为空，返回False")
             return False
         
         # 如果数据有多行或多列，通常适合生成图表
         result = len(df) > 1 or len(df.columns) > 1
-        print(f"[DEBUG] should_generate_chart: df.shape={df.shape}, 返回{result}")
+        self.logger.debug(f"should_generate_chart: df.shape={df.shape}, 返回{result}")
         
         if result:
             return True
@@ -290,12 +297,12 @@ class BaseLLMChat(VannaBase, ABC):
             # 清空上次的解释性文本
             self.last_llm_explanation = None
             
-            print(f"[DEBUG] 尝试为问题生成SQL: {question}")
+            self.logger.debug(f"尝试为问题生成SQL: {question}")
             # 调用父类的 generate_sql
             sql = super().generate_sql(question, **kwargs)
             
             if not sql or sql.strip() == "":
-                print(f"[WARNING] 生成的SQL为空")
+                self.logger.warning("生成的SQL为空")
                 explanation = "无法生成SQL查询，可能是问题描述不够清晰或缺少必要的数据表信息。"
                 # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
                 if not DISPLAY_RESULT_THINKING:
@@ -319,38 +326,38 @@ class BaseLLMChat(VannaBase, ABC):
             
             for indicator in error_indicators:
                 if indicator in sql_lower:
-                    print(f"[WARNING] LLM返回错误信息而非SQL: {sql}")
+                    self.logger.warning(f"LLM返回错误信息而非SQL: {sql}")
                     # 保存LLM的解释性文本，并根据配置处理thinking内容
                     explanation = sql
                     if not DISPLAY_RESULT_THINKING:
                         explanation = self._remove_thinking_content(explanation)
-                        print(f"[DEBUG] 隐藏thinking内容 - SQL生成解释性文本")
+                        self.logger.debug("隐藏thinking内容 - SQL生成解释性文本")
                     self.last_llm_explanation = explanation
                     return None
             
             # 简单检查是否像SQL语句（至少包含一些SQL关键词）
             sql_keywords = ["select", "insert", "update", "delete", "with", "from", "where"]
             if not any(keyword in sql_lower for keyword in sql_keywords):
-                print(f"[WARNING] 返回内容不像有效SQL: {sql}")
+                self.logger.warning(f"返回内容不像有效SQL: {sql}")
                 # 保存LLM的解释性文本，并根据配置处理thinking内容
                 explanation = sql
                 if not DISPLAY_RESULT_THINKING:
                     explanation = self._remove_thinking_content(explanation)
-                    print(f"[DEBUG] 隐藏thinking内容 - SQL生成非有效SQL内容")
+                    self.logger.debug("隐藏thinking内容 - SQL生成非有效SQL内容")
                 self.last_llm_explanation = explanation
                 return None
                 
-            print(f"[SUCCESS] 成功生成SQL:\n {sql}")
+            self.logger.info(f"成功生成SQL:\n {sql}")
             # 清空解释性文本
             self.last_llm_explanation = None
             return sql
             
         except Exception as e:
-            print(f"[ERROR] SQL生成过程中出现异常: {str(e)}")
-            print(f"[ERROR] 异常类型: {type(e).__name__}")
+            self.logger.error(f"SQL生成过程中出现异常: {str(e)}")
+            self.logger.error(f"异常类型: {type(e).__name__}")
             # 导入traceback以获取详细错误信息
             import traceback
-            print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+            self.logger.error(f"详细错误信息: {traceback.format_exc()}")
             explanation = f"SQL生成过程中出现异常: {str(e)}"
             # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
             if not DISPLAY_RESULT_THINKING:
@@ -372,7 +379,7 @@ class BaseLLMChat(VannaBase, ABC):
         if not DISPLAY_RESULT_THINKING:
             original_response = response
             response = self._remove_thinking_content(response)
-            print(f"[DEBUG] generate_question隐藏thinking内容 - 原始长度: {len(original_response)}, 处理后长度: {len(response)}")
+            self.logger.debug(f"generate_question隐藏thinking内容 - 原始长度: {len(original_response)}, 处理后长度: {len(response)}")
         
         return response
 
@@ -390,7 +397,7 @@ class BaseLLMChat(VannaBase, ABC):
     #         response = self.submit_prompt(prompt, **kwargs)
     #         return response
     #     except Exception as e:
-    #         print(f"[ERROR] LLM对话失败: {str(e)}")
+    #         self.logger.error(f"LLM对话失败: {str(e)}")
     #         return f"抱歉，我暂时无法回答您的问题。请稍后再试。"
 
     def chat_with_llm(self, question: str, system_prompt: str = None, **kwargs) -> str:
@@ -421,12 +428,12 @@ class BaseLLMChat(VannaBase, ABC):
             if not DISPLAY_RESULT_THINKING:
                 original_response = response
                 response = self._remove_thinking_content(response)
-                print(f"[DEBUG] chat_with_llm隐藏thinking内容 - 原始长度: {len(original_response)}, 处理后长度: {len(response)}")
+                self.logger.debug(f"chat_with_llm隐藏thinking内容 - 原始长度: {len(original_response)}, 处理后长度: {len(response)}")
             
             return response
             
         except Exception as e:
-            print(f"[ERROR] LLM对话失败: {str(e)}")
+            self.logger.error(f"LLM对话失败: {str(e)}")
             return f"抱歉，我暂时无法回答您的问题。请稍后再试。"
 
     def generate_rewritten_question(self, last_question: str, new_question: str, **kwargs) -> str:
@@ -443,12 +450,12 @@ class BaseLLMChat(VannaBase, ABC):
         """
         # 如果未启用合并功能或没有上一个问题，直接返回新问题
         if not REWRITE_QUESTION_ENABLED or last_question is None:
-            print(f"[DEBUG] 问题合并功能{'未启用' if not REWRITE_QUESTION_ENABLED else '上一个问题为空'}，直接返回新问题")
+            self.logger.debug(f"问题合并功能{'未启用' if not REWRITE_QUESTION_ENABLED else '上一个问题为空'}，直接返回新问题")
             return new_question
         
-        print(f"[DEBUG] 启用问题合并功能，尝试合并问题")
-        print(f"[DEBUG] 上一个问题: {last_question}")
-        print(f"[DEBUG] 新问题: {new_question}")
+        self.logger.debug("启用问题合并功能，尝试合并问题")
+        self.logger.debug(f"上一个问题: {last_question}")
+        self.logger.debug(f"新问题: {new_question}")
         
         try:
             prompt = [
@@ -466,13 +473,13 @@ class BaseLLMChat(VannaBase, ABC):
             if not DISPLAY_RESULT_THINKING:
                 original_question = rewritten_question
                 rewritten_question = self._remove_thinking_content(rewritten_question)
-                print(f"[DEBUG] generate_rewritten_question隐藏thinking内容 - 原始长度: {len(original_question)}, 处理后长度: {len(rewritten_question)}")
+                self.logger.debug(f"generate_rewritten_question隐藏thinking内容 - 原始长度: {len(original_question)}, 处理后长度: {len(rewritten_question)}")
             
-            print(f"[DEBUG] 合并后的问题: {rewritten_question}")
+            self.logger.debug(f"合并后的问题: {rewritten_question}")
             return rewritten_question
             
         except Exception as e:
-            print(f"[ERROR] 问题合并失败: {str(e)}")
+            self.logger.error(f"问题合并失败: {str(e)}")
             # 如果合并失败，返回新问题
             return new_question
 
@@ -494,14 +501,14 @@ class BaseLLMChat(VannaBase, ABC):
             
             # 确保 df 是 pandas DataFrame
             if not isinstance(df, pd.DataFrame):
-                print(f"[WARNING] df 不是 pandas DataFrame，类型: {type(df)}")
+                self.logger.warning(f"df 不是 pandas DataFrame，类型: {type(df)}")
                 return "无法生成摘要：数据格式不正确"
             
             if df.empty:
                 return "查询结果为空，无数据可供摘要。"
             
-            print(f"[DEBUG] 生成摘要 - 问题: {question}")
-            print(f"[DEBUG] DataFrame 形状: {df.shape}")
+            self.logger.debug(f"生成摘要 - 问题: {question}")
+            self.logger.debug(f"DataFrame 形状: {df.shape}")
             
             # 构建包含中文指令的系统消息
             system_content = (
@@ -531,15 +538,15 @@ class BaseLLMChat(VannaBase, ABC):
                 # 移除 <think></think> 标签及其内容
                 original_summary = summary
                 summary = self._remove_thinking_content(summary)
-                print(f"[DEBUG] 隐藏thinking内容 - 原始长度: {len(original_summary)}, 处理后长度: {len(summary)}")
+                self.logger.debug(f"隐藏thinking内容 - 原始长度: {len(original_summary)}, 处理后长度: {len(summary)}")
             
-            print(f"[DEBUG] 生成的摘要: {summary[:100]}...")
+            self.logger.debug(f"生成的摘要: {summary[:100]}...")
             return summary
             
         except Exception as e:
-            print(f"[ERROR] 生成摘要失败: {str(e)}")
+            self.logger.error(f"生成摘要失败: {str(e)}")
             import traceback
-            print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+            self.logger.error(f"详细错误信息: {traceback.format_exc()}")
             return f"生成摘要时出现错误：{str(e)}"
 
     def _remove_thinking_content(self, text: str) -> str:
@@ -598,7 +605,7 @@ class BaseLLMChat(VannaBase, ABC):
         try:
             sql = self.generate_sql(question=question, allow_llm_to_see_data=allow_llm_to_see_data)
         except Exception as e:
-            print(e)
+            self.logger.error(f"SQL generation error: {e}")
             self.last_llm_explanation = str(e)
             if print_results:
                 return None
@@ -608,7 +615,7 @@ class BaseLLMChat(VannaBase, ABC):
         # 如果SQL为空，说明有解释性文本，按照正常流程返回None
         # API层会检查 last_llm_explanation 来获取解释
         if sql is None:
-            print(f"[INFO] 无法生成SQL，解释: {self.last_llm_explanation}")
+            self.logger.info(f"无法生成SQL，解释: {self.last_llm_explanation}")
             if print_results:
                 return None
             else:
@@ -616,10 +623,10 @@ class BaseLLMChat(VannaBase, ABC):
 
         # 以下是正常的SQL执行流程（保持VannaBase原有逻辑）
         if print_results:
-            print(sql)
+            self.logger.info(f"Generated SQL: {sql}")
 
         if self.run_sql_is_set is False:
-            print("If you want to run the SQL query, connect to a database first.")
+            self.logger.info("If you want to run the SQL query, connect to a database first.")
             if print_results:
                 return None
             else:
@@ -629,7 +636,7 @@ class BaseLLMChat(VannaBase, ABC):
             df = self.run_sql(sql)
             
             if df is None:
-                print("The SQL query returned no results.")
+                self.logger.info("The SQL query returned no results.")
                 if print_results:
                     return None
                 else:
@@ -638,17 +645,17 @@ class BaseLLMChat(VannaBase, ABC):
             if print_results:
                 # 显示结果表格
                 if len(df) > 10:
-                    print(df.head(10).to_string())
-                    print(f"... ({len(df)} rows)")
+                    self.logger.info(f"Query results (first 10 rows):\n{df.head(10).to_string()}")
+                    self.logger.info(f"... ({len(df)} rows)")
                 else:
-                    print(df.to_string())
+                    self.logger.info(f"Query results:\n{df.to_string()}")
 
             # 如果启用了自动训练，添加问题-SQL对到训练集
             if auto_train:
                 try:
                     self.add_question_sql(question=question, sql=sql)
                 except Exception as e:
-                    print(f"Could not add question and sql to training data: {e}")
+                    self.logger.warning(f"Could not add question and sql to training data: {e}")
 
             if visualize:
                 try:
@@ -668,25 +675,25 @@ class BaseLLMChat(VannaBase, ABC):
                             )
                             if fig is not None:
                                 if print_results:
-                                    print("Chart generated (use fig.show() to display)")
+                                    self.logger.info("Chart generated (use fig.show() to display)")
                                 return sql, df, fig
                             else:
-                                print("Could not generate chart")
+                                self.logger.warning("Could not generate chart")
                                 return sql, df, None
                         else:
-                            print("No chart generated")
+                            self.logger.info("No chart generated")
                             return sql, df, None
                     else:
-                        print("Not generating chart for this data")
+                        self.logger.info("Not generating chart for this data")
                         return sql, df, None
                 except Exception as e:
-                    print(f"Couldn't generate chart: {e}")
+                    self.logger.error(f"Couldn't generate chart: {e}")
                     return sql, df, None
             else:
                 return sql, df, None
 
         except Exception as e:
-            print("Couldn't run sql: ", e)
+            self.logger.error(f"Couldn't run sql: {e}")
             if print_results:
                 return None
             else:

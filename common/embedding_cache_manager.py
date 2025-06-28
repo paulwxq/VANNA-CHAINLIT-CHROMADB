@@ -5,6 +5,7 @@ import time
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import app_config
+from core.logging import get_app_logger
 
 
 class EmbeddingCacheManager:
@@ -12,6 +13,7 @@ class EmbeddingCacheManager:
     
     def __init__(self):
         """初始化缓存管理器"""
+        self.logger = get_app_logger("EmbeddingCacheManager")
         self.redis_client = None
         self.cache_enabled = app_config.ENABLE_EMBEDDING_CACHE
         
@@ -28,9 +30,9 @@ class EmbeddingCacheManager:
                 )
                 # 测试连接
                 self.redis_client.ping()
-                print(f"[DEBUG] Embedding缓存管理器初始化成功")
+                self.logger.debug("Embedding缓存管理器初始化成功")
             except Exception as e:
-                print(f"[WARNING] Redis连接失败，embedding缓存将被禁用: {e}")
+                self.logger.warning(f"Redis连接失败，embedding缓存将被禁用: {e}")
                 self.cache_enabled = False
                 self.redis_client = None
     
@@ -72,7 +74,7 @@ class EmbeddingCacheManager:
                 'embedding_dimension': str(embedding_config.get('embedding_dimension', 'unknown'))
             }
         except Exception as e:
-            print(f"[WARNING] 获取模型信息失败: {e}")
+            self.logger.warning(f"获取模型信息失败: {e}")
             return {'model_name': 'unknown', 'embedding_dimension': 'unknown'}
     
     def get_cached_embedding(self, question: str) -> Optional[List[float]]:
@@ -97,13 +99,13 @@ class EmbeddingCacheManager:
                 data = json.loads(cached_data)
                 vector = data.get('vector')
                 if vector:
-                    print(f"[DEBUG] ✓ Embedding缓存命中: {question[:50]}...")
+                    self.logger.debug(f"✓ Embedding缓存命中: {question[:50]}...")
                     return vector
             
             return None
             
         except Exception as e:
-            print(f"[WARNING] 获取embedding缓存失败: {e}")
+            self.logger.warning(f"获取embedding缓存失败: {e}")
             return None
     
     def cache_embedding(self, question: str, vector: List[float]) -> bool:
@@ -141,7 +143,7 @@ class EmbeddingCacheManager:
                 json.dumps(cache_data, ensure_ascii=False)
             )
             
-            print(f"[DEBUG] ✓ Embedding向量已缓存: {question[:50]}... (维度: {len(vector)})")
+            self.logger.debug(f"✓ Embedding向量已缓存: {question[:50]}... (维度: {len(vector)})")
             
             # 检查缓存大小并清理
             self._cleanup_if_needed()
@@ -149,7 +151,7 @@ class EmbeddingCacheManager:
             return True
             
         except Exception as e:
-            print(f"[WARNING] 缓存embedding失败: {e}")
+            self.logger.warning(f"缓存embedding失败: {e}")
             return False
     
     def _cleanup_if_needed(self):
@@ -180,10 +182,10 @@ class EmbeddingCacheManager:
                 
                 if keys_to_delete:
                     self.redis_client.delete(*keys_to_delete)
-                    print(f"[DEBUG] 清理了 {len(keys_to_delete)} 个旧的embedding缓存")
+                    self.logger.debug(f"清理了 {len(keys_to_delete)} 个旧的embedding缓存")
                     
         except Exception as e:
-            print(f"[WARNING] 清理embedding缓存失败: {e}")
+            self.logger.warning(f"清理embedding缓存失败: {e}")
     
     def get_cache_stats(self) -> Dict[str, Any]:
         """
@@ -217,7 +219,7 @@ class EmbeddingCacheManager:
                     stats["memory_usage_mb"] = round(total_size_bytes / (1024 * 1024), 2)
             
         except Exception as e:
-            print(f"[WARNING] 获取缓存统计失败: {e}")
+            self.logger.warning(f"获取缓存统计失败: {e}")
         
         return stats
     
@@ -237,14 +239,14 @@ class EmbeddingCacheManager:
             
             if keys:
                 self.redis_client.delete(*keys)
-                print(f"[DEBUG] 已清空所有embedding缓存 ({len(keys)} 条)")
+                self.logger.debug(f"已清空所有embedding缓存 ({len(keys)} 条)")
                 return True
             else:
-                print(f"[DEBUG] 没有embedding缓存需要清空")
+                self.logger.debug("没有embedding缓存需要清空")
                 return True
                 
         except Exception as e:
-            print(f"[WARNING] 清空embedding缓存失败: {e}")
+            self.logger.warning(f"清空embedding缓存失败: {e}")
             return False
 
 

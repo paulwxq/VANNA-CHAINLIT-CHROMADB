@@ -2,6 +2,7 @@ import requests
 import time
 import numpy as np
 from typing import List, Callable
+from core.logging import get_vanna_logger
 
 class EmbeddingFunction:
     def __init__(self, model_name: str, api_key: str, base_url: str, embedding_dimension: int):
@@ -16,6 +17,9 @@ class EmbeddingFunction:
         self.max_retries = 3  # 设置默认的最大重试次数
         self.retry_interval = 2  # 设置默认的重试间隔秒数
         self.normalize_embeddings = True # 设置默认是否归一化
+        
+        # 初始化日志
+        self.logger = get_vanna_logger("EmbeddingFunction")
 
     def _normalize_vector(self, vector: List[float]) -> List[float]:
         """
@@ -54,7 +58,7 @@ class EmbeddingFunction:
                 vector = self.generate_embedding(text)
                 embeddings.append(vector)
             except Exception as e:
-                print(f"为文本 '{text}' 生成embedding失败: {e}")
+                self.logger.error(f"为文本 '{text}' 生成embedding失败: {e}")
                 # 重新抛出异常，不返回零向量
                 raise e
                 
@@ -135,7 +139,7 @@ class EmbeddingFunction:
                         retries += 1
                         if retries <= self.max_retries:
                             wait_time = self.retry_interval * (2 ** (retries - 1))  # 指数退避
-                            print(f"API请求失败，等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
+                            self.logger.warning(f"API请求失败，等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
                             time.sleep(wait_time)
                             continue
                     
@@ -155,14 +159,14 @@ class EmbeddingFunction:
                         # 验证向量维度
                         actual_dim = len(vector)
                         if actual_dim != self.embedding_dimension:
-                            print(f"警告: 向量维度不匹配: 期望 {self.embedding_dimension}, 实际 {actual_dim}")
+                            self.logger.warning(f"向量维度不匹配: 期望 {self.embedding_dimension}, 实际 {actual_dim}")
                     
                     # 如果需要归一化
                     if self.normalize_embeddings:
                         vector = self._normalize_vector(vector)
                     
                     # 添加成功生成embedding的debug日志
-                    print(f"[DEBUG] ✓ 成功生成embedding向量，维度: {len(vector)}")
+                    self.logger.debug(f"成功生成embedding向量，维度: {len(vector)}")
                     
                     return vector
                 else:
@@ -174,7 +178,7 @@ class EmbeddingFunction:
                 
                 if retries <= self.max_retries:
                     wait_time = self.retry_interval * (2 ** (retries - 1))  # 指数退避
-                    print(f"生成embedding时出错: {str(e)}, 等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
+                    self.logger.warning(f"生成embedding时出错: {str(e)}, 等待 {wait_time} 秒后重试 ({retries}/{self.max_retries})")
                     time.sleep(wait_time)
                 else:
                     # 抛出异常而不是返回零向量，确保问题不被掩盖
@@ -203,8 +207,8 @@ class EmbeddingFunction:
         }
         
         try:
-            print(f"测试嵌入模型连接 - 模型: {self.model_name}")
-            print(f"API服务地址: {self.base_url}")
+            self.logger.info(f"测试嵌入模型连接 - 模型: {self.model_name}")
+            self.logger.info(f"API服务地址: {self.base_url}")
             
             # 验证配置
             if not self.api_key:
@@ -241,6 +245,7 @@ def test_embedding_connection() -> dict:
     Returns:
         dict: 测试结果，包括成功/失败状态、错误消息等
     """
+    logger = get_vanna_logger("EmbeddingTest")
     try:
         # 获取嵌入函数实例
         embedding_function = get_embedding_function()
@@ -249,18 +254,18 @@ def test_embedding_connection() -> dict:
         test_result = embedding_function.test_connection()
         
         if test_result["success"]:
-            print(f"嵌入模型连接测试成功!")
+            logger.info(f"嵌入模型连接测试成功!")
             if "警告" in test_result["message"]:
-                print(test_result["message"])
-                print(f"建议将app_config.py中的EMBEDDING_CONFIG['embedding_dimension']修改为{test_result['actual_dimension']}")
+                logger.warning(test_result["message"])
+                logger.warning(f"建议将app_config.py中的EMBEDDING_CONFIG['embedding_dimension']修改为{test_result['actual_dimension']}")
         else:
-            print(f"嵌入模型连接测试失败: {test_result['message']}")
+            logger.error(f"嵌入模型连接测试失败: {test_result['message']}")
             
         return test_result
         
     except Exception as e:
         error_message = f"无法测试嵌入模型连接: {str(e)}"
-        print(error_message)
+        logger.error(error_message)
         return {
             "success": False,
             "message": error_message

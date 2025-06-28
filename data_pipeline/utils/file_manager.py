@@ -1,7 +1,7 @@
 import os
-import logging
 from typing import Dict, Set, Optional
 from pathlib import Path
+from core.logging import get_data_pipeline_logger
 
 class FileNameManager:
     """文件名管理器，处理文件命名和冲突"""
@@ -10,7 +10,7 @@ class FileNameManager:
         self.output_dir = output_dir
         self.used_names: Set[str] = set()
         self.name_mapping: Dict[str, str] = {}  # 原始名 -> 实际文件名
-        self.logger = logging.getLogger("schema_tools.FileNameManager")
+        self.logger = get_data_pipeline_logger("FileNameManager")
         
         # 扫描已存在的文件
         self._scan_existing_files()

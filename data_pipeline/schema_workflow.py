@@ -14,7 +14,7 @@ from data_pipeline.ddl_generation.training_data_agent import SchemaTrainingDataA
 from data_pipeline.qa_generation.qs_agent import QuestionSQLGenerationAgent
 from data_pipeline.validators.sql_validation_agent import SQLValidationAgent
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
-from data_pipeline.utils.logger import setup_logging
+from core.logging import get_data_pipeline_logger
 
 
 class SchemaWorkflowOrchestrator:
@@ -56,7 +56,7 @@ class SchemaWorkflowOrchestrator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # 初始化日志
-        self.logger = logging.getLogger("schema_tools.SchemaWorkflowOrchestrator")
+        self.logger = get_data_pipeline_logger("SchemaWorkflow")
         
         # 工作流程状态
         self.workflow_state = {
@@ -645,7 +645,8 @@ async def main():
     
     # 验证输入文件
     if not os.path.exists(args.table_list):
-        print(f"错误: 表清单文件不存在: {args.table_list}")
+        logger = get_data_pipeline_logger("SchemaWorkflow")
+        logger.error(f"错误: 表清单文件不存在: {args.table_list}")
         sys.exit(1)
     
     try:
@@ -661,15 +662,16 @@ async def main():
             enable_training_data_load=not args.skip_training_load
         )
         
-        # 显示启动信息
-        print(f"🚀 开始执行Schema工作流编排...")
-        print(f"📁 输出目录: {args.output_dir}")
-        print(f"📋 表清单: {args.table_list}")
-        print(f"🏢 业务背景: {args.business_context}")
-        print(f"💾 数据库: {orchestrator.db_name}")
-        print(f"🔍 SQL验证: {'启用' if not args.skip_validation else '禁用'}")
-        print(f"🔧 LLM修复: {'启用' if not args.disable_llm_repair else '禁用'}")
-        print(f"🎯 训练数据加载: {'启用' if not args.skip_training_load else '禁用'}")
+        # 获取logger用于启动信息
+        logger = get_data_pipeline_logger("SchemaWorkflow")
+        logger.info(f"🚀 开始执行Schema工作流编排...")
+        logger.info(f"📁 输出目录: {args.output_dir}")
+        logger.info(f"📋 表清单: {args.table_list}")
+        logger.info(f"🏢 业务背景: {args.business_context}")
+        logger.info(f"💾 数据库: {orchestrator.db_name}")
+        logger.info(f"🔍 SQL验证: {'启用' if not args.skip_validation else '禁用'}")
+        logger.info(f"🔧 LLM修复: {'启用' if not args.disable_llm_repair else '禁用'}")
+        logger.info(f"🎯 训练数据加载: {'启用' if not args.skip_training_load else '禁用'}")
         
         # 执行完整工作流程
         report = await orchestrator.execute_complete_workflow()
@@ -680,23 +682,23 @@ async def main():
         # 输出结果并设置退出码
         if report["success"]:
             if report["processing_results"].get("sql_validation", {}).get("success_rate", 1.0) >= 0.8:
-                print(f"\n🎉 工作流程执行成功!")
+                logger.info(f"\n🎉 工作流程执行成功!")
                 exit_code = 0  # 完全成功
             else:
-                print(f"\n⚠️  工作流程执行完成，但SQL验证成功率较低")
+                logger.warning(f"\n⚠️  工作流程执行完成，但SQL验证成功率较低")
                 exit_code = 1  # 部分成功
         else:
-            print(f"\n❌ 工作流程执行失败")
+            logger.error(f"\n❌ 工作流程执行失败")
             exit_code = 2  # 失败
         
-        print(f"📄 主要输出文件: {report['final_outputs']['primary_output_file']}")
+        logger.info(f"📄 主要输出文件: {report['final_outputs']['primary_output_file']}")
         sys.exit(exit_code)
         
     except KeyboardInterrupt:
-        print("\n\n⏹️  用户中断，程序退出")
+        logger.info("\n\n⏹️  用户中断，程序退出")
         sys.exit(130)
     except Exception as e:
-        print(f"\n❌ 程序执行失败: {e}")
+        logger.error(f"\n❌ 程序执行失败: {e}")
         if args.verbose:
             import traceback
             traceback.print_exc()

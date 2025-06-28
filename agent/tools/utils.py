@@ -7,6 +7,10 @@ import json
 from typing import Dict, Any, Callable, List, Optional
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
+from core.logging import get_agent_logger
+
+# Initialize logger
+logger = get_agent_logger("AgentUtils")
 
 def handle_tool_errors(func: Callable) -> Callable:
     """
@@ -17,7 +21,7 @@ def handle_tool_errors(func: Callable) -> Callable:
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print(f"[ERROR] 工具 {func.__name__} 执行失败: {str(e)}")
+            logger.error(f"工具 {func.__name__} 执行失败: {str(e)}")
             return {
                 "success": False,
                 "error": f"工具执行异常: {str(e)}",
@@ -50,7 +54,7 @@ class LLMWrapper:
                 return self._invoke_without_tools(messages, **kwargs)
                 
         except Exception as e:
-            print(f"[ERROR] LLM包装器调用失败: {str(e)}")
+            logger.error(f"LLM包装器调用失败: {str(e)}")
             return AIMessage(content=f"LLM调用失败: {str(e)}")
     
     def _should_use_tools(self, messages: List[BaseMessage]) -> bool:
@@ -88,7 +92,7 @@ class LLMWrapper:
                 return AIMessage(content=response)
                 
         except Exception as e:
-            print(f"[ERROR] 工具调用失败: {str(e)}")
+            logger.error(f"工具调用失败: {str(e)}")
             return self._invoke_without_tools(messages, **kwargs)
     
     def _invoke_without_tools(self, messages: List[BaseMessage], **kwargs):
@@ -206,26 +210,26 @@ def get_compatible_llm():
                     model=llm_config.get("model"),
                     temperature=llm_config.get("temperature", 0.7)
                 )
-                print("[INFO] 使用标准OpenAI兼容API")
+                logger.info("使用标准OpenAI兼容API")
                 return llm
             except ImportError:
-                print("[WARNING] langchain_openai 未安装，使用 Vanna 实例包装器")
+                logger.warning("langchain_openai 未安装，使用 Vanna 实例包装器")
         
         # 优先使用统一的 Vanna 实例
         from common.vanna_instance import get_vanna_instance
         vn = get_vanna_instance()
-        print("[INFO] 使用Vanna实例包装器")
+        logger.info("使用Vanna实例包装器")
         return LLMWrapper(vn)
         
     except Exception as e:
-        print(f"[ERROR] 获取 Vanna 实例失败: {str(e)}")
+        logger.error(f"获取 Vanna 实例失败: {str(e)}")
         # 回退到原有逻辑
         from common.utils import get_current_llm_config
         from customllm.qianwen_chat import QianWenChat
         
         llm_config = get_current_llm_config()
         custom_llm = QianWenChat(config=llm_config)
-        print("[INFO] 使用QianWen包装器")
+        logger.info("使用QianWen包装器")
         return LLMWrapper(custom_llm)
 
 def _is_valid_sql_format(sql_text: str) -> bool:

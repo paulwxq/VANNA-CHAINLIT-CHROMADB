@@ -1,4 +1,8 @@
 # 给dataops 对话助手返回结果
+# 初始化日志系统 - 必须在最前面
+from core.logging import initialize_logging, get_app_logger, set_log_context, clear_log_context
+initialize_logging()
+
 from vanna.flask import VannaFlaskApp
 from core.vanna_llm_factory import create_vanna_instance
 from flask import request, jsonify
@@ -30,6 +34,9 @@ from app_config import (  # 添加Redis相关配置导入
     DEFAULT_ANONYMOUS_USER,
     ENABLE_QUESTION_ANSWER_CACHE
 )
+
+# 创建app logger
+logger = get_app_logger("CituApp")
 
 # 设置默认的最大返回行数
 DEFAULT_MAX_RETURN_ROWS = 200
@@ -131,9 +138,9 @@ def ask_full():
                 if ENABLE_RESULT_SUMMARY:
                     try:
                         summary = vn.generate_summary(question=question, df=df)
-                        print(f"[INFO] 成功生成摘要: {summary}")
+                        logger.info(f"成功生成摘要: {summary}")
                     except Exception as e:
-                        print(f"[WARNING] 生成摘要失败: {str(e)}")
+                        logger.warning(f"生成摘要失败: {str(e)}")
                         summary = None
 
         # 构建返回数据
@@ -156,7 +163,7 @@ def ask_full():
         ))
         
     except Exception as e:
-        print(f"[ERROR] ask_full执行失败: {str(e)}")
+        logger.error(f"ask_full执行失败: {str(e)}")
         
         # 即使发生异常，也检查是否有业务层面的解释
         if hasattr(vn, 'last_llm_explanation') and vn.last_llm_explanation:
@@ -219,7 +226,7 @@ def citu_run_sql():
         ))
         
     except Exception as e:
-        print(f"[ERROR] citu_run_sql执行失败: {str(e)}")
+        logger.error(f"citu_run_sql执行失败: {str(e)}")
         from common.result import internal_error_response
         return jsonify(internal_error_response(
             response_text=f"SQL执行失败，请检查SQL语句是否正确"
@@ -245,27 +252,27 @@ def ask_cached():
     try:
         # 生成conversation_id
         # 调试：查看generate_id的实际行为
-        print(f"[DEBUG] 输入问题: '{question}'")
+        logger.debug(f"输入问题: '{question}'")
         conversation_id = app.cache.generate_id(question=question)
-        print(f"[DEBUG] 生成的conversation_id: {conversation_id}")
+        logger.debug(f"生成的conversation_id: {conversation_id}")
         
         # 再次用相同问题测试
         conversation_id2 = app.cache.generate_id(question=question)
-        print(f"[DEBUG] 再次生成的conversation_id: {conversation_id2}")
-        print(f"[DEBUG] 两次ID是否相同: {conversation_id == conversation_id2}")
+        logger.debug(f"再次生成的conversation_id: {conversation_id2}")
+        logger.debug(f"两次ID是否相同: {conversation_id == conversation_id2}")
         
         # 检查缓存
         cached_sql = app.cache.get(id=conversation_id, field="sql")
         
         if cached_sql is not None:
             # 缓存命中
-            print(f"[CACHE HIT] 使用缓存结果: {conversation_id}")
+            logger.info(f"[CACHE HIT] 使用缓存结果: {conversation_id}")
             sql = cached_sql
             df = app.cache.get(id=conversation_id, field="df")
             summary = app.cache.get(id=conversation_id, field="summary")
         else:
             # 缓存未命中，执行新查询
-            print(f"[CACHE MISS] 执行新查询: {conversation_id}")
+            logger.info(f"[CACHE MISS] 执行新查询: {conversation_id}")
             
             sql, df, _ = vn.ask(
                 question=question,
@@ -301,9 +308,9 @@ def ask_cached():
             if ENABLE_RESULT_SUMMARY and isinstance(df, pd.DataFrame) and not df.empty:
                 try:
                     summary = vn.generate_summary(question=question, df=df)
-                    print(f"[INFO] 成功生成摘要: {summary}")
+                    logger.info(f"成功生成摘要: {summary}")
                 except Exception as e:
-                    print(f"[WARNING] 生成摘要失败: {str(e)}")
+                    logger.warning(f"生成摘要失败: {str(e)}")
                     summary = None
             
             app.cache.set(id=conversation_id, field="summary", value=summary)
@@ -348,7 +355,7 @@ def ask_cached():
         ))
         
     except Exception as e:
-        print(f"[ERROR] ask_cached执行失败: {str(e)}")
+        logger.error(f"ask_cached执行失败: {str(e)}")
         from common.result import internal_error_response
         return jsonify(internal_error_response(
             response_text="查询处理失败，请稍后重试"
@@ -386,10 +393,10 @@ def citu_train_question_sql():
         # 正确的调用方式：同时传递question和sql
         if question:
             training_id = vn.train(question=question, sql=sql)
-            print(f"训练成功，训练ID为：{training_id}，问题：{question}，SQL：{sql}")
+            logger.info(f"训练成功，训练ID为：{training_id}，问题：{question}，SQL：{sql}")
         else:
             training_id = vn.train(sql=sql)
-            print(f"训练成功，训练ID为：{training_id}，SQL：{sql}")
+            logger.info(f"训练成功，训练ID为：{training_id}，SQL：{sql}")
 
         from common.result import success_response
         return jsonify(success_response(
@@ -418,23 +425,23 @@ def get_citu_langraph_agent():
     if citu_langraph_agent is None:
         try:
             from agent.citu_agent import CituLangGraphAgent
-            print("[CITU_APP] 开始创建LangGraph Agent实例...")
+            logger.info("开始创建LangGraph Agent实例...")
             citu_langraph_agent = CituLangGraphAgent()
-            print("[CITU_APP] LangGraph Agent实例创建成功")
+            logger.info("LangGraph Agent实例创建成功")
         except ImportError as e:
-            print(f"[CRITICAL] Agent模块导入失败: {str(e)}")
-            print("[CRITICAL] 请检查agent模块是否存在以及依赖是否正确安装")
+            logger.critical(f"Agent模块导入失败: {str(e)}")
+            logger.critical("请检查agent模块是否存在以及依赖是否正确安装")
             raise Exception(f"Agent模块导入失败: {str(e)}")
         except Exception as e:
-            print(f"[CRITICAL] LangGraph Agent实例创建失败: {str(e)}")
-            print(f"[CRITICAL] 错误类型: {type(e).__name__}")
+            logger.critical(f"LangGraph Agent实例创建失败: {str(e)}")
+            logger.critical(f"错误类型: {type(e).__name__}")
             # 提供更有用的错误信息
             if "config" in str(e).lower():
-                print("[CRITICAL] 可能是配置文件问题，请检查配置")
+                logger.critical("可能是配置文件问题，请检查配置")
             elif "llm" in str(e).lower():
-                print("[CRITICAL] 可能是LLM连接问题，请检查LLM配置")
+                logger.critical("可能是LLM连接问题，请检查LLM配置")
             elif "tool" in str(e).lower():
-                print("[CRITICAL] 可能是工具加载问题，请检查工具模块")
+                logger.critical("可能是工具加载问题，请检查工具模块")
             raise Exception(f"Agent初始化失败: {str(e)}")
     return citu_langraph_agent
 
@@ -495,15 +502,15 @@ def ask_agent():
                         metadata = message.get("metadata", {})
                         context_type = metadata.get("type")
                         if context_type:
-                            print(f"[AGENT_API] 检测到上下文类型: {context_type}")
+                            logger.info(f"[AGENT_API] 检测到上下文类型: {context_type}")
                             break
             except Exception as e:
-                print(f"[WARNING] 获取上下文类型失败: {str(e)}")
+                logger.warning(f"获取上下文类型失败: {str(e)}")
         
         # 4. 检查缓存（新逻辑：放宽使用条件，严控存储条件）
         cached_answer = redis_conversation_manager.get_cached_answer(question, context)
         if cached_answer:
-            print(f"[AGENT_API] 使用缓存答案")
+            logger.info(f"[AGENT_API] 使用缓存答案")
             
             # 确定缓存答案的助手回复内容（使用与非缓存相同的优先级逻辑）
             cached_response_type = cached_answer.get("type", "UNKNOWN")
@@ -567,31 +574,31 @@ def ask_agent():
         # 6. 构建带上下文的问题
         if context:
             enhanced_question = f"\n[CONTEXT]\n{context}\n\n[CURRENT]\n{question}"
-            print(f"[AGENT_API] 使用上下文，长度: {len(context)}字符")
+            logger.info(f"[AGENT_API] 使用上下文，长度: {len(context)}字符")
         else:
             enhanced_question = question
-            print(f"[AGENT_API] 新对话，无上下文")
+            logger.info(f"[AGENT_API] 新对话，无上下文")
         
         # 7. 确定最终使用的路由模式（优先级逻辑）
         if api_routing_mode:
             # API传了参数，优先使用
             effective_routing_mode = api_routing_mode
-            print(f"[AGENT_API] 使用API指定的路由模式: {effective_routing_mode}")
+            logger.info(f"[AGENT_API] 使用API指定的路由模式: {effective_routing_mode}")
         else:
             # API没传参数，使用配置文件
             try:
                 from app_config import QUESTION_ROUTING_MODE
                 effective_routing_mode = QUESTION_ROUTING_MODE
-                print(f"[AGENT_API] 使用配置文件路由模式: {effective_routing_mode}")
+                logger.info(f"[AGENT_API] 使用配置文件路由模式: {effective_routing_mode}")
             except ImportError:
                 effective_routing_mode = "hybrid"
-                print(f"[AGENT_API] 配置文件读取失败，使用默认路由模式: {effective_routing_mode}")
+                logger.info(f"[AGENT_API] 配置文件读取失败，使用默认路由模式: {effective_routing_mode}")
         
         # 8. 现有Agent处理逻辑（修改为传递路由模式）
         try:
             agent = get_citu_langraph_agent()
         except Exception as e:
-            print(f"[CRITICAL] Agent初始化失败: {str(e)}")
+            logger.critical(f"Agent初始化失败: {str(e)}")
             return jsonify(service_unavailable_response(
                 response_text="AI服务暂时不可用，请稍后重试",
                 can_retry=True
@@ -687,7 +694,7 @@ def ask_agent():
             )), error_code
         
     except Exception as e:
-        print(f"[ERROR] ask_agent执行失败: {str(e)}")
+        logger.error(f"ask_agent执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="查询处理失败，请稍后重试"
         )), 500
@@ -784,9 +791,9 @@ def agent_health():
                 health_data["status"] = "degraded"
                 health_data["message"] = "部分组件异常"
         except Exception as e:
-            print(f"[ERROR] 健康检查异常: {str(e)}")
+            logger.error(f"健康检查异常: {str(e)}")
             import traceback
-            print(f"[ERROR] 详细健康检查错误: {traceback.format_exc()}")
+            logger.error(f"详细健康检查错误: {traceback.format_exc()}")
             health_data["status"] = "degraded"
             health_data["message"] = f"完整测试失败: {str(e)}"
         
@@ -803,9 +810,9 @@ def agent_health():
             return jsonify(health_error_response(**health_data)), 503
             
     except Exception as e:
-        print(f"[ERROR] 顶层健康检查异常: {str(e)}")
+        logger.error(f"顶层健康检查异常: {str(e)}")
         import traceback
-        print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+        logger.error(f"详细错误信息: {traceback.format_exc()}")
         from common.result import internal_error_response
         return jsonify(internal_error_response(
             response_text="健康检查失败，请稍后重试"
@@ -1517,7 +1524,7 @@ def training_error_question_sql():
         question = data.get('question')
         sql = data.get('sql')
         
-        print(f"[DEBUG] 接收到错误SQL训练请求: question={question}, sql={sql}")
+        logger.debug(f"接收到错误SQL训练请求: question={question}, sql={sql}")
         
         if not question or not sql:
             from common.result import bad_request_response
@@ -1535,7 +1542,7 @@ def training_error_question_sql():
         # 使用vn实例的train_error_sql方法存储错误SQL
         id = vn.train_error_sql(question=question, sql=sql)
         
-        print(f"[INFO] 成功存储错误SQL，ID: {id}")
+        logger.info(f"成功存储错误SQL，ID: {id}")
         
         from common.result import success_response
         return jsonify(success_response(
@@ -1547,7 +1554,7 @@ def training_error_question_sql():
         ))
         
     except Exception as e:
-        print(f"[ERROR] 存储错误SQL失败: {str(e)}")
+        logger.error(f"存储错误SQL失败: {str(e)}")
         from common.result import internal_error_response
         return jsonify(internal_error_response(
             response_text="存储错误SQL失败，请稍后重试"
@@ -1593,7 +1600,7 @@ def get_user_conversations(user_id: str):
                     conversation['conversation_title'] = "空对话"
                     
             except Exception as e:
-                print(f"[WARNING] 获取对话标题失败 {conversation_id}: {str(e)}")
+                logger.warning(f"获取对话标题失败 {conversation_id}: {str(e)}")
                 conversation['conversation_title'] = "对话"
         
         return jsonify(success_response(
@@ -1747,7 +1754,7 @@ def get_user_conversations_with_messages(user_id: str):
         ))
         
     except Exception as e:
-        print(f"[ERROR] 获取用户完整对话数据失败: {str(e)}")
+        logger.error(f"获取用户完整对话数据失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取用户对话数据失败，请稍后重试"
         )), 500
@@ -1770,7 +1777,7 @@ def embedding_cache_stats():
         ))
         
     except Exception as e:
-        print(f"[ERROR] 获取embedding缓存统计失败: {str(e)}")
+        logger.error(f"获取embedding缓存统计失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取embedding缓存统计失败，请稍后重试"
         )), 500
@@ -1801,7 +1808,7 @@ def embedding_cache_cleanup():
             )), 500
         
     except Exception as e:
-        print(f"[ERROR] 清空embedding缓存失败: {str(e)}")
+        logger.error(f"清空embedding缓存失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="清空embedding缓存失败，请稍后重试"
         )), 500
@@ -1827,15 +1834,15 @@ def get_qa_feedback_manager():
                 elif 'vn' in globals():
                     vanna_instance = vn
                 else:
-                    print("[INFO] 未找到可用的vanna实例，将创建新的数据库连接")
+                    logger.info("未找到可用的vanna实例，将创建新的数据库连接")
             except Exception as e:
-                print(f"[INFO] 获取vanna实例失败: {e}，将创建新的数据库连接")
+                logger.info(f"获取vanna实例失败: {e}，将创建新的数据库连接")
                 vanna_instance = None
             
             qa_feedback_manager = QAFeedbackManager(vanna_instance=vanna_instance)
-            print("[CITU_APP] QA反馈管理器实例创建成功")
+            logger.info("QA反馈管理器实例创建成功")
         except Exception as e:
-            print(f"[CRITICAL] QA反馈管理器创建失败: {str(e)}")
+            logger.critical(f"QA反馈管理器创建失败: {str(e)}")
             raise Exception(f"QA反馈管理器初始化失败: {str(e)}")
     return qa_feedback_manager
 
@@ -1904,7 +1911,7 @@ def qa_feedback_query():
         ))
         
     except Exception as e:
-        print(f"[ERROR] qa_feedback_query执行失败: {str(e)}")
+        logger.error(f"qa_feedback_query执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="查询反馈记录失败，请稍后重试"
         )), 500
@@ -1929,7 +1936,7 @@ def qa_feedback_delete(feedback_id):
             )), 404
             
     except Exception as e:
-        print(f"[ERROR] qa_feedback_delete执行失败: {str(e)}")
+        logger.error(f"qa_feedback_delete执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="删除反馈记录失败，请稍后重试"
         )), 500
@@ -1973,7 +1980,7 @@ def qa_feedback_update(feedback_id):
             )), 404
             
     except Exception as e:
-        print(f"[ERROR] qa_feedback_update执行失败: {str(e)}")
+        logger.error(f"qa_feedback_update执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="更新反馈记录失败，请稍后重试"
         )), 500
@@ -2026,7 +2033,7 @@ def qa_feedback_add_to_training():
                         sql=record['sql']
                     )
                     positive_count += 1
-                    print(f"[TRAINING] 正向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
+                    logger.info(f"正向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
                 else:
                     # 负向反馈 - 加入错误SQL训练集
                     training_id = vn.train_error_sql(
@@ -2034,18 +2041,18 @@ def qa_feedback_add_to_training():
                         sql=record['sql']
                     )
                     negative_count += 1
-                    print(f"[TRAINING] 负向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
+                    logger.info(f"负向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
                 
                 successfully_trained_ids.append(record['id'])
                 
             except Exception as e:
-                print(f"[ERROR] 训练失败 - 反馈ID: {record['id']}, 错误: {e}")
+                logger.error(f"训练失败 - 反馈ID: {record['id']}, 错误: {e}")
                 error_count += 1
         
         # 更新训练状态
         if successfully_trained_ids:
             updated_count = manager.mark_training_status(successfully_trained_ids, True)
-            print(f"[TRAINING] 批量更新训练状态完成，影响 {updated_count} 条记录")
+            logger.info(f"批量更新训练状态完成，影响 {updated_count} 条记录")
         
         # 构建响应
         total_processed = positive_count + negative_count + already_trained_count + error_count
@@ -2070,7 +2077,7 @@ def qa_feedback_add_to_training():
         ))
         
     except Exception as e:
-        print(f"[ERROR] qa_feedback_add_to_training执行失败: {str(e)}")
+        logger.error(f"qa_feedback_add_to_training执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="添加训练数据失败，请稍后重试"
         )), 500
@@ -2123,7 +2130,7 @@ def qa_feedback_add():
         ))
         
     except Exception as e:
-        print(f"[ERROR] qa_feedback_add执行失败: {str(e)}")
+        logger.error(f"qa_feedback_add执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="创建反馈记录失败，请稍后重试"
         )), 500
@@ -2158,7 +2165,7 @@ def qa_feedback_stats():
         ))
         
     except Exception as e:
-        print(f"[ERROR] qa_feedback_stats执行失败: {str(e)}")
+        logger.error(f"qa_feedback_stats执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取统计信息失败，请稍后重试"
         )), 500
@@ -2178,7 +2185,7 @@ def qa_cache_stats():
         ))
         
     except Exception as e:
-        print(f"[ERROR] 获取问答缓存统计失败: {str(e)}")
+        logger.error(f"获取问答缓存统计失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取问答缓存统计失败，请稍后重试"
         )), 500
@@ -2209,7 +2216,7 @@ def qa_cache_list():
         ))
         
     except Exception as e:
-        print(f"[ERROR] 获取问答缓存列表失败: {str(e)}")
+        logger.error(f"获取问答缓存列表失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取问答缓存列表失败，请稍后重试"
         )), 500
@@ -2235,7 +2242,7 @@ def qa_cache_cleanup():
         ))
         
     except Exception as e:
-        print(f"[ERROR] 清空问答缓存失败: {str(e)}")
+        logger.error(f"清空问答缓存失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="清空问答缓存失败，请稍后重试"
         )), 500
@@ -2367,7 +2374,7 @@ def get_total_training_count():
             return len(training_data)
         return 0
     except Exception as e:
-        print(f"[WARNING] 获取训练数据总数失败: {e}")
+        logger.warning(f"获取训练数据总数失败: {e}")
         return 0
 
 @app.flask_app.route('/api/v0/training_data/query', methods=['POST'])
@@ -2460,7 +2467,7 @@ def training_data_query():
         ))
         
     except Exception as e:
-        print(f"[ERROR] training_data_query执行失败: {str(e)}")
+        logger.error(f"training_data_query执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="查询训练数据失败，请稍后重试"
         )), 500
@@ -2533,7 +2540,7 @@ def training_data_create():
         ))
         
     except Exception as e:
-        print(f"[ERROR] training_data_create执行失败: {str(e)}")
+        logger.error(f"training_data_create执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="创建训练数据失败，请稍后重试"
         )), 500
@@ -2605,7 +2612,7 @@ def training_data_delete():
         ))
         
     except Exception as e:
-        print(f"[ERROR] training_data_delete执行失败: {str(e)}")
+        logger.error(f"training_data_delete执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="删除训练数据失败，请稍后重试"
         )), 500
@@ -2666,7 +2673,7 @@ def training_data_stats():
         ))
         
     except Exception as e:
-        print(f"[ERROR] training_data_stats执行失败: {str(e)}")
+        logger.error(f"training_data_stats执行失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取统计信息失败，请稍后重试"
         )), 500
@@ -2702,7 +2709,7 @@ def cache_overview_full():
         ))
         
     except Exception as e:
-        print(f"[ERROR] 获取综合缓存概览失败: {str(e)}")
+        logger.error(f"获取综合缓存概览失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取缓存概览失败，请稍后重试"
         )), 500
@@ -2748,5 +2755,5 @@ const chatSession = new ChatSession();
 chatSession.askQuestion("各年龄段客户的流失率如何？");
 """
 
-print("正在启动Flask应用: http://localhost:8084")
+logger.info("正在启动Flask应用: http://localhost:8084")
 app.run(host="0.0.0.0", port=8084, debug=True)

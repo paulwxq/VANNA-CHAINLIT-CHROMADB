@@ -4,6 +4,10 @@ Vanna LLM 工厂文件，支持多种LLM提供商和向量数据库
 import app_config, os
 from core.embedding_function import get_embedding_function
 from common.vanna_combinations import get_vanna_class, print_available_combinations
+from core.logging import get_vanna_logger
+
+# 初始化日志
+logger = get_vanna_logger("VannaFactory")
 
 def create_vanna_instance(config_module=None):
     """
@@ -48,11 +52,11 @@ def create_vanna_instance(config_module=None):
         vector_db_type = model_info["vector_db"].lower()
         
         cls = get_vanna_class(llm_type, vector_db_type)
-        print(f"创建{llm_type.upper()}+{vector_db_type.upper()}实例")
+        logger.info(f"创建{llm_type.upper()}+{vector_db_type.upper()}实例")
         
     except ValueError as e:
-        print(f"错误: {e}")
-        print("\n可用的组合:")
+        logger.error(f"{e}")
+        logger.info("可用的组合:")
         print_available_combinations()
         raise
     
@@ -62,24 +66,24 @@ def create_vanna_instance(config_module=None):
     # 配置向量数据库
     if model_info["vector_db"] == "chromadb":
         config["path"] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 返回项目根目录
-        print(f"已配置使用ChromaDB，路径：{config['path']}")
+        logger.info(f"已配置使用ChromaDB，路径：{config['path']}")
     elif model_info["vector_db"] == "pgvector":
         # 构建PostgreSQL连接字符串
         connection_string = f"postgresql://{vector_db_config['user']}:{vector_db_config['password']}@{vector_db_config['host']}:{vector_db_config['port']}/{vector_db_config['dbname']}"
         config["connection_string"] = connection_string
-        print(f"已配置使用PgVector，连接字符串: {connection_string}")
+        logger.info(f"已配置使用PgVector，连接字符串: {connection_string}")
     
     # 配置embedding函数
     embedding_function = get_embedding_function()
     config["embedding_function"] = embedding_function
-    print(f"已配置使用{model_info['embedding_type'].upper()}嵌入模型: {model_info['embedding_model']}")
+    logger.info(f"已配置使用{model_info['embedding_type'].upper()}嵌入模型: {model_info['embedding_model']}")
     
     # 创建实例
     vn = cls(config=config)
 
     # 连接到业务数据库
     vn.connect_to_postgres(**config_module.APP_DB_CONFIG)           
-    print(f"已连接到业务数据库: "
+    logger.info(f"已连接到业务数据库: "
           f"{config_module.APP_DB_CONFIG['host']}:"
           f"{config_module.APP_DB_CONFIG['port']}/"
           f"{config_module.APP_DB_CONFIG['dbname']}")

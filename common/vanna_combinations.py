@@ -2,13 +2,17 @@
 Vanna LLM与向量数据库的组合类
 统一管理所有LLM提供商与向量数据库的组合
 """
+from core.logging import get_app_logger
+
+# 初始化logger
+_logger = get_app_logger("VannaCombinations")
 
 # 向量数据库导入
 from vanna.chromadb import ChromaDB_VectorStore
 try:
     from custompgvector import PG_VectorStore
 except ImportError:
-    print("警告: 无法导入 PG_VectorStore，PGVector相关组合类将不可用")
+    _logger.warning("无法导入 PG_VectorStore，PGVector相关组合类将不可用")
     PG_VectorStore = None
 
 # LLM提供商导入 - 使用新的重构后的实现
@@ -17,7 +21,7 @@ from customllm.deepseek_chat import DeepSeekChat
 try:
     from customllm.ollama_chat import OllamaChat
 except ImportError:
-    print("警告: 无法导入 OllamaChat，Ollama相关组合类将不可用")
+    _logger.warning("无法导入 OllamaChat，Ollama相关组合类将不可用")
     OllamaChat = None
 
 
@@ -168,19 +172,19 @@ def list_available_combinations():
 
 def print_available_combinations():
     """打印所有可用的组合"""
-    print("可用的LLM与向量数据库组合:")
-    print("=" * 40)
+    _logger.info("可用的LLM与向量数据库组合:")
+    _logger.info("=" * 40)
     
     combinations = list_available_combinations()
     
     for llm_type, vector_dbs in combinations.items():
-        print(f"\n{llm_type.upper()} LLM:")
+        _logger.info(f"\n{llm_type.upper()} LLM:")
         for vector_db in vector_dbs:
             class_name = LLM_CLASS_MAP[llm_type][vector_db].__name__
-            print(f"  + {vector_db} -> {class_name}")
+            _logger.info(f"  + {vector_db} -> {class_name}")
     
     if not any(combinations.values()):
-        print("没有可用的组合，请检查依赖是否正确安装")
+        _logger.warning("没有可用的组合，请检查依赖是否正确安装")
 
 
 # ===== 向后兼容性支持 =====

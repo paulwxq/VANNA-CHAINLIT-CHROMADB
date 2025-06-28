@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, END
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage, HumanMessage
+from core.logging import get_agent_logger
 
 from agent.state import AgentState
 from agent.classifier import QuestionClassifier
@@ -15,39 +16,42 @@ class CituLangGraphAgent:
     """Citu LangGraph智能助手主类 - 使用@tool装饰器 + Agent工具调用"""
     
     def __init__(self):
+        # 初始化日志
+        self.logger = get_agent_logger("CituAgent")
+        
         # 加载配置
         try:
             from agent.config import get_current_config, get_nested_config
             self.config = get_current_config()
-            print("[CITU_AGENT] 加载Agent配置完成")
+            self.logger.info("加载Agent配置完成")
         except ImportError:
             self.config = {}
-            print("[CITU_AGENT] 配置文件不可用，使用默认配置")
+            self.logger.warning("配置文件不可用，使用默认配置")
         
         self.classifier = QuestionClassifier()
         self.tools = TOOLS
         self.llm = get_compatible_llm()
         
         # 注意：现在使用直接工具调用模式，不再需要预创建Agent执行器
-        print("[CITU_AGENT] 使用直接工具调用模式")
+        self.logger.info("使用直接工具调用模式")
         
         # 不在构造时创建workflow，改为动态创建以支持路由模式参数
         # self.workflow = self._create_workflow()
-        print("[CITU_AGENT] LangGraph Agent with Direct Tools初始化完成")
+        self.logger.info("LangGraph Agent with Direct Tools初始化完成")
     
     def _create_workflow(self, routing_mode: str = None) -> StateGraph:
         """根据路由模式创建不同的工作流"""
         # 确定使用的路由模式
         if routing_mode:
             QUESTION_ROUTING_MODE = routing_mode
-            print(f"[CITU_AGENT] 创建工作流，使用传入的路由模式: {QUESTION_ROUTING_MODE}")
+            self.logger.info(f"创建工作流，使用传入的路由模式: {QUESTION_ROUTING_MODE}")
         else:
             try:
                 from app_config import QUESTION_ROUTING_MODE
-                print(f"[CITU_AGENT] 创建工作流，使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
+                self.logger.info(f"创建工作流，使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
             except ImportError:
                 QUESTION_ROUTING_MODE = "hybrid"
-                print(f"[CITU_AGENT] 配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
+                self.logger.warning(f"配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
         
         workflow = StateGraph(AgentState)
         
@@ -137,12 +141,12 @@ class CituLangGraphAgent:
             state["current_step"] = "direct_database_init"
             state["execution_path"].append("init_direct_database")
             
-            print(f"[DIRECT_DATABASE] 直接数据库模式初始化完成")
+            self.logger.info("直接数据库模式初始化完成")
             
             return state
             
         except Exception as e:
-            print(f"[ERROR] 直接数据库模式初始化异常: {str(e)}")
+            self.logger.error(f"直接数据库模式初始化异常: {str(e)}")
             state["error"] = f"直接数据库模式初始化失败: {str(e)}"
             state["error_code"] = 500
             state["execution_path"].append("init_direct_database_error")
@@ -163,12 +167,12 @@ class CituLangGraphAgent:
             state["current_step"] = "direct_chat_init"
             state["execution_path"].append("init_direct_chat")
             
-            print(f"[DIRECT_CHAT] 直接聊天模式初始化完成")
+            self.logger.info("直接聊天模式初始化完成")
             
             return state
             
         except Exception as e:
-            print(f"[ERROR] 直接聊天模式初始化异常: {str(e)}")
+            self.logger.error(f"直接聊天模式初始化异常: {str(e)}")
             state["error"] = f"直接聊天模式初始化失败: {str(e)}"
             state["error_code"] = 500
             state["execution_path"].append("init_direct_chat_error")
@@ -180,12 +184,12 @@ class CituLangGraphAgent:
             # 从state中获取路由模式，而不是从配置文件读取
             routing_mode = state.get("routing_mode", "hybrid")
             
-            print(f"[CLASSIFY_NODE] 开始分类问题: {state['question']}")
+            self.logger.info(f"开始分类问题: {state['question']}")
             
             # 获取上下文类型（如果有的话）
             context_type = state.get("context_type")
             if context_type:
-                print(f"[CLASSIFY_NODE] 检测到上下文类型: {context_type}")
+                self.logger.info(f"检测到上下文类型: {context_type}")
             
             # 使用渐进式分类策略，传递路由模式
             classification_result = self.classifier.classify(state["question"], context_type, routing_mode)
@@ -199,13 +203,13 @@ class CituLangGraphAgent:
             state["current_step"] = "classified"
             state["execution_path"].append("classify")
             
-            print(f"[CLASSIFY_NODE] 分类结果: {classification_result.question_type}, 置信度: {classification_result.confidence}")
-            print(f"[CLASSIFY_NODE] 路由模式: {routing_mode}, 分类方法: {classification_result.method}")
+            self.logger.info(f"分类结果: {classification_result.question_type}, 置信度: {classification_result.confidence}")
+            self.logger.info(f"路由模式: {routing_mode}, 分类方法: {classification_result.method}")
             
             return state
             
         except Exception as e:
-            print(f"[ERROR] 问题分类异常: {str(e)}")
+            self.logger.error(f"问题分类异常: {str(e)}")
             state["error"] = f"问题分类失败: {str(e)}"
             state["error_code"] = 500
             state["execution_path"].append("classify_error")
@@ -214,12 +218,12 @@ class CituLangGraphAgent:
     async def _agent_sql_generation_node(self, state: AgentState) -> AgentState:
         """SQL生成验证节点 - 负责生成SQL、验证SQL和决定路由"""
         try:
-            print(f"[SQL_GENERATION] 开始处理SQL生成和验证: {state['question']}")
+            self.logger.info(f"开始处理SQL生成和验证: {state['question']}")
             
             question = state["question"]
             
             # 步骤1：生成SQL
-            print(f"[SQL_GENERATION] 步骤1：生成SQL")
+            self.logger.info("步骤1：生成SQL")
             sql_result = generate_sql.invoke({"question": question, "allow_llm_to_see_data": True})
             
             if not sql_result.get("success"):
@@ -228,7 +232,7 @@ class CituLangGraphAgent:
                 error_type = sql_result.get("error_type", "")
                 
                 #print(f"[SQL_GENERATION] SQL生成失败: {error_message}")
-                print(f"[DEBUG] error_type = '{error_type}'")
+                self.logger.debug(f"error_type = '{error_type}'")
                 
                 # 根据错误类型生成用户提示
                 if "no relevant tables" in error_message.lower() or "table not found" in error_message.lower():
@@ -244,7 +248,7 @@ class CituLangGraphAgent:
                     state["validation_error_type"] = "llm_explanation"
                     state["current_step"] = "sql_generation_completed"
                     state["execution_path"].append("agent_sql_generation")
-                    print(f"[SQL_GENERATION] 返回LLM解释性答案: {error_message}")
+                    self.logger.info(f"返回LLM解释性答案: {error_message}")
                     return state
                 else:
                     user_prompt = "无法生成有效的SQL查询，请尝试重新描述您的问题。"
@@ -257,7 +261,7 @@ class CituLangGraphAgent:
                 state["current_step"] = "sql_generation_failed"
                 state["execution_path"].append("agent_sql_generation_failed")
                 
-                print(f"[SQL_GENERATION] 生成失败: {failure_reason} - {user_prompt}")
+                self.logger.warning(f"生成失败: {failure_reason} - {user_prompt}")
                 return state
             
             sql = sql_result.get("sql")
@@ -273,13 +277,13 @@ class CituLangGraphAgent:
                 state["validation_error_type"] = "llm_explanation"
                 state["current_step"] = "sql_generation_completed"
                 state["execution_path"].append("agent_sql_generation")
-                print(f"[SQL_GENERATION] 返回LLM解释性答案: {explanation}")
+                self.logger.info(f"返回LLM解释性答案: {explanation}")
                 return state
             
             if sql:
-                print(f"[SQL_GENERATION] SQL生成成功: {sql}")
+                self.logger.info(f"SQL生成成功: {sql}")
             else:
-                print(f"[SQL_GENERATION] SQL为空，但不是解释性响应")
+                self.logger.warning("SQL为空，但不是解释性响应")
                 # 这种情况应该很少见，但为了安全起见保留原有的错误处理
                 return state
             
@@ -292,12 +296,12 @@ class CituLangGraphAgent:
                 state["validation_error_type"] = "invalid_sql_format"
                 state["current_step"] = "sql_generation_completed"  
                 state["execution_path"].append("agent_sql_generation")
-                print(f"[SQL_GENERATION] 内容不是有效SQL，当作解释返回: {sql}")
+                self.logger.info(f"内容不是有效SQL，当作解释返回: {sql}")
                 return state
             
             # 步骤2：SQL验证（如果启用）
             if self._is_sql_validation_enabled():
-                print(f"[SQL_GENERATION] 步骤2：验证SQL")
+                self.logger.info("步骤2：验证SQL")
                 validation_result = await self._validate_sql_with_custom_priority(sql)
                 
                 if not validation_result.get("valid"):
@@ -306,7 +310,7 @@ class CituLangGraphAgent:
                     error_message = validation_result.get("error_message")
                     can_repair = validation_result.get("can_repair", False)
                     
-                    print(f"[SQL_GENERATION] SQL验证失败: {error_type} - {error_message}")
+                    self.logger.warning(f"SQL验证失败: {error_type} - {error_message}")
                     
                     if error_type == "forbidden_keywords":
                         # 禁止词错误，直接失败，不尝试修复
@@ -316,12 +320,12 @@ class CituLangGraphAgent:
                         state["validation_error_type"] = "forbidden_keywords"
                         state["current_step"] = "sql_validation_failed"
                         state["execution_path"].append("forbidden_keywords_failed")
-                        print(f"[SQL_GENERATION] 禁止词验证失败，直接结束")
+                        self.logger.warning("禁止词验证失败，直接结束")
                         return state
                     
                     elif error_type == "syntax_error" and can_repair and self._is_auto_repair_enabled():
                         # 语法错误，尝试修复（仅一次）
-                        print(f"[SQL_GENERATION] 尝试修复SQL语法错误(仅一次): {error_message}")
+                        self.logger.info(f"尝试修复SQL语法错误(仅一次): {error_message}")
                         state["sql_repair_attempted"] = True
                         
                         repair_result = await self._attempt_sql_repair_once(sql, error_message)
@@ -335,12 +339,12 @@ class CituLangGraphAgent:
                             state["sql_repair_success"] = True
                             state["current_step"] = "sql_generation_completed"
                             state["execution_path"].append("sql_repair_success")
-                            print(f"[SQL_GENERATION] SQL修复成功: {repaired_sql}")
+                            self.logger.info(f"SQL修复成功: {repaired_sql}")
                             return state
                         else:
                             # 修复失败，直接结束
                             repair_error = repair_result.get("error", "修复失败")
-                            print(f"[SQL_GENERATION] SQL修复失败: {repair_error}")
+                            self.logger.warning(f"SQL修复失败: {repair_error}")
                             state["sql_generation_success"] = False
                             state["sql_validation_success"] = False
                             state["sql_repair_success"] = False
@@ -357,13 +361,13 @@ class CituLangGraphAgent:
                         state["validation_error_type"] = error_type
                         state["current_step"] = "sql_validation_failed"
                         state["execution_path"].append("sql_validation_failed")
-                        print(f"[SQL_GENERATION] SQL验证失败，不尝试修复")
+                        self.logger.warning("SQL验证失败，不尝试修复")
                         return state
                 else:
-                    print(f"[SQL_GENERATION] SQL验证通过")
+                    self.logger.info("SQL验证通过")
                     state["sql_validation_success"] = True
             else:
-                print(f"[SQL_GENERATION] 跳过SQL验证（未启用）")
+                self.logger.info("跳过SQL验证（未启用）")
                 state["sql_validation_success"] = True
             
             # 生成和验证都成功
@@ -371,13 +375,13 @@ class CituLangGraphAgent:
             state["current_step"] = "sql_generation_completed"
             state["execution_path"].append("agent_sql_generation")
             
-            print(f"[SQL_GENERATION] SQL生成验证完成，准备执行")
+            self.logger.info("SQL生成验证完成，准备执行")
             return state
             
         except Exception as e:
-            print(f"[ERROR] SQL生成验证节点异常: {str(e)}")
+            self.logger.error(f"SQL生成验证节点异常: {str(e)}")
             import traceback
-            print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+            self.logger.error(f"详细错误信息: {traceback.format_exc()}")
             state["sql_generation_success"] = False
             state["sql_validation_success"] = False
             state["user_prompt"] = f"SQL生成验证异常: {str(e)}"
@@ -389,13 +393,13 @@ class CituLangGraphAgent:
     def _agent_sql_execution_node(self, state: AgentState) -> AgentState:
         """SQL执行节点 - 负责执行已验证的SQL和生成摘要"""
         try:
-            print(f"[SQL_EXECUTION] 开始执行SQL: {state.get('sql', 'N/A')}")
+            self.logger.info(f"开始执行SQL: {state.get('sql', 'N/A')}")
             
             sql = state.get("sql")
             question = state["question"]
             
             if not sql:
-                print(f"[SQL_EXECUTION] 没有可执行的SQL")
+                self.logger.warning("没有可执行的SQL")
                 state["error"] = "没有可执行的SQL语句"
                 state["error_code"] = 500
                 state["current_step"] = "sql_execution_error"
@@ -403,11 +407,11 @@ class CituLangGraphAgent:
                 return state
             
             # 步骤1：执行SQL
-            print(f"[SQL_EXECUTION] 步骤1：执行SQL")
+            self.logger.info("步骤1：执行SQL")
             execute_result = execute_sql.invoke({"sql": sql})
             
             if not execute_result.get("success"):
-                print(f"[SQL_EXECUTION] SQL执行失败: {execute_result.get('error')}")
+                self.logger.error(f"SQL执行失败: {execute_result.get('error')}")
                 state["error"] = execute_result.get("error", "SQL执行失败")
                 state["error_code"] = 500
                 state["current_step"] = "sql_execution_error"
@@ -416,15 +420,15 @@ class CituLangGraphAgent:
             
             query_result = execute_result.get("data_result")
             state["query_result"] = query_result
-            print(f"[SQL_EXECUTION] SQL执行成功，返回 {query_result.get('row_count', 0)} 行数据")
+            self.logger.info(f"SQL执行成功，返回 {query_result.get('row_count', 0)} 行数据")
             
             # 步骤2：生成摘要（根据配置和数据情况）
             if ENABLE_RESULT_SUMMARY and query_result.get('row_count', 0) > 0:
-                print(f"[SQL_EXECUTION] 步骤2：生成摘要")
+                self.logger.info("步骤2：生成摘要")
                 
                 # 重要：提取原始问题用于摘要生成，避免历史记录循环嵌套
                 original_question = self._extract_original_question(question)
-                print(f"[SQL_EXECUTION] 原始问题: {original_question}")
+                self.logger.debug(f"原始问题: {original_question}")
                 
                 summary_result = generate_summary.invoke({
                     "question": original_question,  # 使用原始问题而不是enhanced_question
@@ -433,26 +437,26 @@ class CituLangGraphAgent:
                 })
                 
                 if not summary_result.get("success"):
-                    print(f"[SQL_EXECUTION] 摘要生成失败: {summary_result.get('message')}")
+                    self.logger.warning(f"摘要生成失败: {summary_result.get('message')}")
                     # 摘要生成失败不是致命错误，使用默认摘要
                     state["summary"] = f"查询执行完成，共返回 {query_result.get('row_count', 0)} 条记录。"
                 else:
                     state["summary"] = summary_result.get("summary")
-                    print(f"[SQL_EXECUTION] 摘要生成成功")
+                    self.logger.info("摘要生成成功")
             else:
-                print(f"[SQL_EXECUTION] 跳过摘要生成（ENABLE_RESULT_SUMMARY={ENABLE_RESULT_SUMMARY}，数据行数={query_result.get('row_count', 0)}）")
+                self.logger.info(f"跳过摘要生成（ENABLE_RESULT_SUMMARY={ENABLE_RESULT_SUMMARY}，数据行数={query_result.get('row_count', 0)}）")
                 # 不生成摘要时，不设置summary字段，让格式化响应节点决定如何处理
             
             state["current_step"] = "sql_execution_completed"
             state["execution_path"].append("agent_sql_execution")
             
-            print(f"[SQL_EXECUTION] SQL执行完成")
+            self.logger.info("SQL执行完成")
             return state
             
         except Exception as e:
-            print(f"[ERROR] SQL执行节点异常: {str(e)}")
+            self.logger.error(f"SQL执行节点异常: {str(e)}")
             import traceback
-            print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+            self.logger.error(f"详细错误信息: {traceback.format_exc()}")
             state["error"] = f"SQL执行失败: {str(e)}"
             state["error_code"] = 500
             state["current_step"] = "sql_execution_error"
@@ -467,17 +471,17 @@ class CituLangGraphAgent:
         保留此方法仅为向后兼容，新的工作流使用拆分后的节点
         """
         try:
-            print(f"[DATABASE_AGENT] ⚠️  使用已废弃的database节点，建议使用新的拆分节点")
-            print(f"[DATABASE_AGENT] 开始处理数据库查询: {state['question']}")
+            self.logger.warning("使用已废弃的database节点，建议使用新的拆分节点")
+            self.logger.info(f"开始处理数据库查询: {state['question']}")
             
             question = state["question"]
             
             # 步骤1：生成SQL
-            print(f"[DATABASE_AGENT] 步骤1：生成SQL")
+            self.logger.info("步骤1：生成SQL")
             sql_result = generate_sql.invoke({"question": question, "allow_llm_to_see_data": True})
             
             if not sql_result.get("success"):
-                print(f"[DATABASE_AGENT] SQL生成失败: {sql_result.get('error')}")
+                self.logger.error(f"SQL生成失败: {sql_result.get('error')}")
                 state["error"] = sql_result.get("error", "SQL生成失败")
                 state["error_code"] = 500
                 state["current_step"] = "database_error"
@@ -486,7 +490,7 @@ class CituLangGraphAgent:
             
             sql = sql_result.get("sql")
             state["sql"] = sql
-            print(f"[DATABASE_AGENT] SQL生成成功: {sql}")
+            self.logger.info(f"SQL生成成功: {sql}")
             
             # 步骤1.5：检查是否为解释性响应而非SQL
             error_type = sql_result.get("error_type")
@@ -496,7 +500,7 @@ class CituLangGraphAgent:
                 state["chat_response"] = explanation + " 请尝试提问其它问题。"
                 state["current_step"] = "database_completed"
                 state["execution_path"].append("agent_database")
-                print(f"[DATABASE_AGENT] 返回LLM解释性答案: {explanation}")
+                self.logger.info(f"返回LLM解释性答案: {explanation}")
                 return state
             
             # 额外验证：检查SQL格式（防止工具误判）
@@ -506,15 +510,15 @@ class CituLangGraphAgent:
                 state["chat_response"] = sql + " 请尝试提问其它问题。"
                 state["current_step"] = "database_completed"  
                 state["execution_path"].append("agent_database")
-                print(f"[DATABASE_AGENT] 内容不是有效SQL，当作解释返回: {sql}")
+                self.logger.info(f"内容不是有效SQL，当作解释返回: {sql}")
                 return state
             
             # 步骤2：执行SQL
-            print(f"[DATABASE_AGENT] 步骤2：执行SQL")
+            self.logger.info("步骤2：执行SQL")
             execute_result = execute_sql.invoke({"sql": sql})
             
             if not execute_result.get("success"):
-                print(f"[DATABASE_AGENT] SQL执行失败: {execute_result.get('error')}")
+                self.logger.error(f"SQL执行失败: {execute_result.get('error')}")
                 state["error"] = execute_result.get("error", "SQL执行失败")
                 state["error_code"] = 500
                 state["current_step"] = "database_error"
@@ -523,15 +527,15 @@ class CituLangGraphAgent:
             
             query_result = execute_result.get("data_result")
             state["query_result"] = query_result
-            print(f"[DATABASE_AGENT] SQL执行成功，返回 {query_result.get('row_count', 0)} 行数据")
+            self.logger.info(f"SQL执行成功，返回 {query_result.get('row_count', 0)} 行数据")
             
             # 步骤3：生成摘要（可通过配置控制，仅在有数据时生成）
             if ENABLE_RESULT_SUMMARY and query_result.get('row_count', 0) > 0:
-                print(f"[DATABASE_AGENT] 步骤3：生成摘要")
+                self.logger.info("步骤3：生成摘要")
                 
                 # 重要：提取原始问题用于摘要生成，避免历史记录循环嵌套
                 original_question = self._extract_original_question(question)
-                print(f"[DATABASE_AGENT] 原始问题: {original_question}")
+                self.logger.debug(f"原始问题: {original_question}")
                 
                 summary_result = generate_summary.invoke({
                     "question": original_question,  # 使用原始问题而不是enhanced_question
@@ -540,26 +544,26 @@ class CituLangGraphAgent:
                 })
                 
                 if not summary_result.get("success"):
-                    print(f"[DATABASE_AGENT] 摘要生成失败: {summary_result.get('message')}")
+                    self.logger.warning(f"摘要生成失败: {summary_result.get('message')}")
                     # 摘要生成失败不是致命错误，使用默认摘要
                     state["summary"] = f"查询执行完成，共返回 {query_result.get('row_count', 0)} 条记录。"
                 else:
                     state["summary"] = summary_result.get("summary")
-                    print(f"[DATABASE_AGENT] 摘要生成成功")
+                    self.logger.info("摘要生成成功")
             else:
-                print(f"[DATABASE_AGENT] 跳过摘要生成（ENABLE_RESULT_SUMMARY={ENABLE_RESULT_SUMMARY}，数据行数={query_result.get('row_count', 0)}）")
+                self.logger.info(f"跳过摘要生成（ENABLE_RESULT_SUMMARY={ENABLE_RESULT_SUMMARY}，数据行数={query_result.get('row_count', 0)}）")
                 # 不生成摘要时，不设置summary字段，让格式化响应节点决定如何处理
             
             state["current_step"] = "database_completed"
             state["execution_path"].append("agent_database")
             
-            print(f"[DATABASE_AGENT] 数据库查询完成")
+            self.logger.info("数据库查询完成")
             return state
             
         except Exception as e:
-            print(f"[ERROR] 数据库Agent异常: {str(e)}")
+            self.logger.error(f"数据库Agent异常: {str(e)}")
             import traceback
-            print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+            self.logger.error(f"详细错误信息: {traceback.format_exc()}")
             state["error"] = f"数据库查询失败: {str(e)}"
             state["error_code"] = 500
             state["current_step"] = "database_error"
@@ -569,7 +573,7 @@ class CituLangGraphAgent:
     def _agent_chat_node(self, state: AgentState) -> AgentState:
         """聊天Agent节点 - 直接工具调用模式"""
         try:
-            print(f"[CHAT_AGENT] 开始处理聊天: {state['question']}")
+            self.logger.info(f"开始处理聊天: {state['question']}")
             
             question = state["question"]
             
@@ -584,7 +588,7 @@ class CituLangGraphAgent:
                 pass
             
             # 直接调用general_chat工具
-            print(f"[CHAT_AGENT] 调用general_chat工具")
+            self.logger.info("调用general_chat工具")
             chat_result = general_chat.invoke({
                 "question": question,
                 "context": context
@@ -592,22 +596,22 @@ class CituLangGraphAgent:
             
             if chat_result.get("success"):
                 state["chat_response"] = chat_result.get("response", "")
-                print(f"[CHAT_AGENT] 聊天处理成功")
+                self.logger.info("聊天处理成功")
             else:
                 # 处理失败，使用备用响应
                 state["chat_response"] = chat_result.get("response", "抱歉，我暂时无法处理您的问题。请稍后再试。")
-                print(f"[CHAT_AGENT] 聊天处理失败，使用备用响应: {chat_result.get('error')}")
+                self.logger.warning(f"聊天处理失败，使用备用响应: {chat_result.get('error')}")
             
             state["current_step"] = "chat_completed"
             state["execution_path"].append("agent_chat")
             
-            print(f"[CHAT_AGENT] 聊天处理完成")
+            self.logger.info("聊天处理完成")
             return state
             
         except Exception as e:
-            print(f"[ERROR] 聊天Agent异常: {str(e)}")
+            self.logger.error(f"聊天Agent异常: {str(e)}")
             import traceback
-            print(f"[ERROR] 详细错误信息: {traceback.format_exc()}")
+            self.logger.error(f"详细错误信息: {traceback.format_exc()}")
             state["chat_response"] = "抱歉，我暂时无法处理您的问题。请稍后再试，或者尝试询问数据相关的问题。"
             state["current_step"] = "chat_error"
             state["execution_path"].append("agent_chat_error")
@@ -616,7 +620,7 @@ class CituLangGraphAgent:
     def _format_response_node(self, state: AgentState) -> AgentState:
         """格式化最终响应节点"""
         try:
-            print(f"[FORMAT_NODE] 开始格式化响应，问题类型: {state['question_type']}")
+            self.logger.info(f"开始格式化响应，问题类型: {state['question_type']}")
             
             state["current_step"] = "completed"
             state["execution_path"].append("format_response")
@@ -737,11 +741,11 @@ class CituLangGraphAgent:
                     }
                 }
             
-            print(f"[FORMAT_NODE] 响应格式化完成")
+            self.logger.info("响应格式化完成")
             return state
             
         except Exception as e:
-            print(f"[ERROR] 响应格式化异常: {str(e)}")
+            self.logger.error(f"响应格式化异常: {str(e)}")
             state["final_response"] = {
                 "success": False,
                 "error": f"响应格式化异常: {str(e)}",
@@ -760,7 +764,7 @@ class CituLangGraphAgent:
         """
         sql_generation_success = state.get("sql_generation_success", False)
         
-        print(f"[ROUTE] SQL生成路由: success={sql_generation_success}")
+        self.logger.debug(f"SQL生成路由: success={sql_generation_success}")
         
         if sql_generation_success:
             return "continue_execution"  # 路由到SQL执行节点
@@ -780,7 +784,7 @@ class CituLangGraphAgent:
         question_type = state["question_type"]
         confidence = state["classification_confidence"]
         
-        print(f"[ROUTE] 分类路由: {question_type}, 置信度: {confidence} (完全信任分类器决策)")
+        self.logger.debug(f"分类路由: {question_type}, 置信度: {confidence} (完全信任分类器决策)")
         
         if question_type == "DATABASE":
             return "DATABASE"
@@ -803,11 +807,11 @@ class CituLangGraphAgent:
             Dict包含完整的处理结果
         """
         try:
-            print(f"[CITU_AGENT] 开始处理问题: {question}")
+            self.logger.info(f"开始处理问题: {question}")
             if context_type:
-                print(f"[CITU_AGENT] 上下文类型: {context_type}")
+                self.logger.info(f"上下文类型: {context_type}")
             if routing_mode:
-                print(f"[CITU_AGENT] 使用指定路由模式: {routing_mode}")
+                self.logger.info(f"使用指定路由模式: {routing_mode}")
             
             # 动态创建workflow（基于路由模式）
             workflow = self._create_workflow(routing_mode)
@@ -826,12 +830,12 @@ class CituLangGraphAgent:
             # 提取最终结果
             result = final_state["final_response"]
             
-            print(f"[CITU_AGENT] 问题处理完成: {result.get('success', False)}")
+            self.logger.info(f"问题处理完成: {result.get('success', False)}")
             
             return result
             
         except Exception as e:
-            print(f"[ERROR] Agent执行异常: {str(e)}")
+            self.logger.error(f"Agent执行异常: {str(e)}")
             return {
                 "success": False,
                 "error": f"Agent系统异常: {str(e)}",
@@ -1127,7 +1131,7 @@ class CituLangGraphAgent:
             return question.strip()
             
         except Exception as e:
-            print(f"[WARNING] 提取原始问题失败: {str(e)}")
+            self.logger.warning(f"提取原始问题失败: {str(e)}")
             return question.strip()
 
     async def health_check(self) -> Dict[str, Any]:
