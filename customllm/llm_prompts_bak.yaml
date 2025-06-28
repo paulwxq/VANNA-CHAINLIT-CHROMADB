@@ -1,0 +1,112 @@
+# 提示词配置文件
+# 包含所有LLM交互使用的提示词模板
+# 用于customllm/base_llm_chat.py
+
+sql_generation:
+  # SQL生成的初始提示词
+  initial_prompt: |
+    You are a {dialect} expert. 
+    Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+  # SQL生成的响应指南
+  response_guidelines: |
+    ===Response Guidelines 
+    1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+    2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+    3. If the provided context is insufficient, please explain why it can't be generated. 
+    4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+       - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+         interpret it as 'How many dining stalls does Nancheng Service Area have?'
+    5. Please use the most relevant table(s). 
+    6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+    7. Ensure that the output SQL is {dialect}-compliant and executable, and free of syntax errors. 
+    8. 在生成 SQL 查询时，如果出现 ORDER BY 子句，请遵循以下规则：
+       - 对所有的排序字段（如聚合字段 SUM()、普通列等），请在 ORDER BY 中显式添加 NULLS LAST。
+       - 不论是否使用 LIMIT，只要排序字段存在，都必须添加 NULLS LAST，以防止 NULL 排在结果顶部。
+       - 示例参考：
+         - ORDER BY total DESC NULLS LAST
+         - ORDER BY zf_order DESC NULLS LAST
+         - ORDER BY SUM(c.customer_count) DESC NULLS LAST 
+    9. 【重要】请在SQL查询中为所有SELECT的列都使用中文别名：
+       - 每个列都必须使用 AS 中文别名 的格式，没有例外
+       - 包括原始字段名也要添加中文别名，例如：SELECT gender AS 性别, card_category AS 卡片类型
+       - 计算字段也要有中文别名，例如：SELECT COUNT(*) AS 持卡人数
+       - 中文别名要准确反映字段的业务含义
+
+chart_generation:
+  # 中文图表指令
+  chinese_chart_instructions: |
+    使用中文创建图表，要求：
+    1. 根据用户问题和数据内容，为图表生成有意义的中文标题
+    2. 根据数据列的实际含义，为X轴和Y轴生成准确的中文标签
+    3. 如果有图例，确保图例标签使用中文
+    4. 所有文本（包括标题、轴标签、图例、数据标签等）都必须使用中文
+    5. 标题应该简洁明了地概括图表要展示的内容
+    6. 轴标签应该准确反映对应数据列的业务含义
+    7. 选择最适合数据特点的图表类型（柱状图、折线图、饼图等）
+
+  # 系统消息模板
+  system_message_template: |
+    用户问题：'{question}'
+    
+    以下是回答用户问题的pandas DataFrame数据：
+    
+    {sql_part}
+    
+    DataFrame结构信息：
+    {df_metadata}
+
+  # 用户消息模板
+  user_message_template: |
+    请为这个DataFrame生成Python Plotly可视化代码。要求：
+    
+    1. 假设数据存储在名为'df'的pandas DataFrame中
+    2. 如果DataFrame只有一个值，使用Indicator图表
+    3. 只返回Python代码，不要任何解释
+    4. 代码必须可以直接运行
+    
+    {chinese_chart_instructions}
+    
+    特别注意：
+    - 不要使用'图表标题'、'X轴标签'、'Y轴标签'这样的通用标签
+    - 要根据实际数据内容和用户问题生成具体、有意义的中文标签
+    - 例如：如果是性别统计，X轴可能是'性别'，Y轴可能是'人数'或'占比'
+    - 标题应该概括图表的主要内容，如'男女持卡比例分布'
+    
+    数据标签和悬停信息要求：
+    - 不要使用%{text}这样的占位符变量
+    - 使用具体的数据值和中文单位，例如：text=df['列名'].astype(str) + '人'
+    - 悬停信息要清晰易懂，使用中文描述
+    - 确保所有显示的文本都是实际的数据值，不是变量占位符
+
+question_generation:
+  # 根据SQL生成问题的提示词
+  system_prompt: |
+    请你根据下方SQL语句推测用户的业务提问，只返回清晰的自然语言问题，不要包含任何解释或SQL内容，也不要出现表名，问题要使用中文，并以问号结尾。
+
+chat_with_llm:
+  # 聊天对话的默认系统提示词
+  default_system_prompt: |
+    你是一个友好的AI助手，请用中文回答用户的问题。
+
+question_merge:
+  # 问题合并的系统提示词
+  system_prompt: |
+    你的目标是将一系列相关的问题合并成一个单一的问题。如果第二个问题与第一个问题无关且完全独立，则返回第二个问题。
+    只返回新的合并问题，不要添加任何额外的解释。该问题理论上应该能够用一个SQL语句来回答。
+    请用中文回答。
+
+summary_generation:
+  # 摘要生成的系统消息
+  system_message_template: |
+    你是一个专业的数据分析助手。用户提出了问题：'{question}'
+    
+    以下是查询结果的 pandas DataFrame 数据：{df_markdown}
+    
+    请用中文进行思考和分析，并用中文回答。
+
+  # 摘要生成的用户提示词
+  user_instructions: |
+    请基于用户提出的问题，简要总结这些数据。要求：
+    1. 只进行简要总结，不要添加额外的解释
+    2. 如果数据中有数字，请保留适当的精度 

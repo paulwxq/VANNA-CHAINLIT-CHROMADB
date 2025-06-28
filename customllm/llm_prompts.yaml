@@ -1,0 +1,116 @@
+# 提示词配置文件
+# 包含所有LLM交互使用的提示词模板
+# 用于customllm/base_llm_chat.py
+
+sql_generation:
+  # SQL生成的初始提示词
+  initial_prompt: |
+    You are a {dialect} expert. 
+    Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+  # SQL生成的响应指南
+  response_guidelines: |
+    ===Response Guidelines 
+    **IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+    
+    1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+    2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+    3. If the provided context is insufficient, please explain why it can't be generated. 
+    4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+       - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+         interpret it as 'How many dining stalls does Nancheng Service Area have?'
+    5. Please use the most relevant table(s). 
+    6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+    7. Ensure that the output SQL is {dialect}-compliant and executable, and free of syntax errors. 
+    8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+    9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+       - Every column MUST use AS with a Chinese alias
+       - Raw column names without aliases are NOT acceptable
+       - Examples: 
+         * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+         * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+         * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+       - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+chart_generation:
+  # Chart generation instructions
+  chinese_chart_instructions: |
+    Create charts with the following requirements:
+    1. Generate meaningful titles based on user questions and data content
+    2. Generate accurate labels for X-axis and Y-axis based on the actual meaning of data columns
+    3. If there are legends, ensure legend labels are descriptive
+    4. All text (including titles, axis labels, legends, data labels, etc.) must be clear and meaningful
+    5. Titles should concisely summarize what the chart is showing
+    6. Axis labels should accurately reflect the business meaning of corresponding data columns
+    7. Choose the most suitable chart type for the data characteristics (bar chart, line chart, pie chart, etc.)
+    8. All chart text must be in Chinese.
+
+  # System message template
+  system_message_template: |
+    User question: '{question}'
+    
+    Here is the pandas DataFrame data to answer the user's question:
+    
+    {sql_part}
+    
+    DataFrame structure information:
+    {df_metadata}
+
+  # User message template
+  user_message_template: |
+    Please generate Python Plotly visualization code for this DataFrame. Requirements:
+    
+    1. Assume the data is stored in a pandas DataFrame named 'df'
+    2. If the DataFrame has only one value, use an Indicator chart
+    3. Return only Python code without any explanations
+    4. The code must be directly executable
+    
+    {chinese_chart_instructions}
+    
+    Special notes:
+    - Do not use generic labels like 'Chart Title', 'X-axis Label', 'Y-axis Label'
+    - Generate specific, meaningful labels based on actual data content and user questions
+    - For example: if it's gender statistics, X-axis might be 'Gender', Y-axis might be 'Count' or 'Percentage'
+    - The title should summarize the main content of the chart, such as 'Gender Distribution of Cardholders'
+    
+    Data labels and hover information requirements:
+    - Do not use placeholder variables like %{text}
+    - Use specific data values and units, e.g.: text=df['column_name'].astype(str) + ' people'
+    - Hover information should be clear and easy to understand
+    - Ensure all displayed text is actual data values, not variable placeholders
+    
+    Please generate all text content in Chinese.
+
+question_generation:
+  # Generate question from SQL prompt
+  system_prompt: |
+    Based on the SQL statement below, infer the user's business question. Return only a clear natural language question without any explanations or SQL content. Do not include table names. The question should end with a question mark.
+    Please respond in Chinese.
+
+chat_with_llm:
+  # Default system prompt for chat conversations
+  default_system_prompt: |
+    You are a friendly AI assistant. Please respond in Chinese.
+
+question_merge:
+  # Question merging system prompt
+  system_prompt: |
+    Your goal is to merge a series of related questions into a single question. If the second question is unrelated and completely independent from the first question, return the second question.
+    Return only the new merged question without any additional explanations. The question should theoretically be answerable with a single SQL statement.
+    Please respond in Chinese.
+
+summary_generation:
+  # Summary generation system message
+  system_message_template: |
+    You are a professional data analysis assistant. The user asked: '{question}'
+    
+    Here is the pandas DataFrame data from the query results:{df_markdown}
+    
+    Please think and analyze in the context provided and respond accordingly.
+
+  # Summary generation user instructions
+  user_instructions: |
+    Based on the user's question, please briefly summarize this data. Requirements:
+    1. Provide only a brief summary without adding extra explanations
+    2. If there are numbers in the data, maintain appropriate precision
+    Please respond in Chinese. 

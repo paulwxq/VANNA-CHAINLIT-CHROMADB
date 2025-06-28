@@ -72,7 +72,7 @@ modules:
         backup_count: 8
   
   vanna:
-    level: INFO
+    level: DEBUG
     console:
       enabled: true
       level: INFO
