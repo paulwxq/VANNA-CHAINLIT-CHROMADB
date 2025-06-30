@@ -30,26 +30,26 @@ GET /api/v0/training_data/stats
 ### 响应示例
 ```json
 {
-  "code": 200,
-  "success": true,
-  "message": "操作成功",
-  "data": {
-    "total_count": 228,
-    "type_breakdown": {
-      "sql": 210,
-      "ddl": 9,
-      "documentation": 8,
-      "error_sql": 1
+    "code": 200,
+    "data": {
+        "last_updated": "2025-06-30T16:03:42.112380",
+        "response": "统计信息获取成功",
+        "total_count": 228,
+        "type_breakdown": {
+            "ddl": 9,
+            "documentation": 9,
+            "error_sql": 1,
+            "sql": 209
+        },
+        "type_percentages": {
+            "ddl": 3.95,
+            "documentation": 3.95,
+            "error_sql": 0.44,
+            "sql": 91.67
+        }
     },
-    "type_percentages": {
-      "sql": 92.11,
-      "ddl": 3.95,
-      "documentation": 3.51,
-      "error_sql": 0.44
-    },
-    "response": "统计信息获取成功",
-    "last_updated": "2025-06-24T17:39:36.895114"
-  }
+    "message": "操作成功",
+    "success": true
 }
 ```
 
@@ -83,32 +83,38 @@ POST /api/v0/training_data/query
 ### 响应示例
 ```json
 {
-  "code": 200,
-  "success": true,
-  "message": "操作成功",
-  "data": {
-    "records": [
-      {
-        "id": "fb113c5e-6cde-4653-ac5f-7558f6e634db-sql",
-        "training_data_type": "sql",
-        "question": "查看活跃用户列表",
-        "content": "SELECT user_id, user_name, last_login FROM users WHERE last_login >= CURRENT_DATE - INTERVAL '30 days';"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "page_size": 5,
-      "total": 2,
-      "total_pages": 1,
-      "has_next": false,
-      "has_prev": false
+    "code": 200,
+    "data": {
+        "filters_applied": {
+            "search_keyword": "用户",
+            "training_data_type": "sql"
+        },
+        "pagination": {
+            "has_next": false,
+            "has_prev": false,
+            "page": 1,
+            "page_size": 20,
+            "total": 2,
+            "total_pages": 1
+        },
+        "records": [
+            {
+                "content": "SELECT user_id, user_name, last_login FROM users WHERE last_login >= CURRENT_DATE - INTERVAL '30 days';",
+                "id": "fb113c5e-6cde-4653-ac5f-7558f6e634db-sql",
+                "question": "查看活跃用户列表",
+                "training_data_type": "sql"
+            },
+            {
+                "content": "SELECT * FROM users WHERE delete_ts IS NULL;",
+                "id": "06885f86-9d52-46f3-ad77-62ac455f6ea9-sql",
+                "question": "查询所有用户信息",
+                "training_data_type": "sql"
+            }
+        ],
+        "response": "查询成功，共找到 2 条记录"
     },
-    "filters_applied": {
-      "training_data_type": "sql",
-      "search_keyword": "用户"
-    },
-    "response": "查询成功，共找到 2 条记录"
-  }
+    "message": "操作成功",
+    "success": true
 }
 ```
 
@@ -187,33 +193,74 @@ POST /api/v0/training_data/create
 ### 响应示例
 ```json
 {
-  "code": 200,
-  "success": true,
-  "message": "操作成功",
-  "data": {
-    "total_requested": 1,
-    "successfully_created": 1,
-    "failed_count": 0,
-    "results": [
-      {
-        "index": 0,
-        "success": true,
-        "type": "sql",
-        "training_id": "e1afe1c2-6956-4133-9cb6-0f83c5e1b12d-sql",
-        "message": "sql训练数据创建成功"
-      }
-    ],
-    "summary": {
-      "sql": 1,
-      "ddl": 0,
-      "documentation": 0,
-      "error_sql": 0
+    "code": 200,
+    "data": {
+        "current_total_count": 229,
+        "failed_count": 0,
+        "response": "训练数据创建完成",
+        "results": [
+            {
+                "index": 0,
+                "message": "sql训练数据创建成功",
+                "success": true,
+                "training_id": "f4903d4c-7c37-4140-bfde-930f0f50fbf3-sql",
+                "type": "sql"
+            }
+        ],
+        "successfully_created": 1,
+        "summary": {
+            "ddl": 0,
+            "documentation": 0,
+            "error_sql": 0,
+            "sql": 1
+        },
+        "total_requested": 1
     },
-    "current_total_count": 229,
-    "response": "训练数据创建完成"
-  }
+    "message": "操作成功",
+    "success": true
 }
 ```
+
+
+
+```json
+{
+    "code": 200,
+    "data": {
+        "current_total_count": 231,
+        "failed_count": 0,
+        "response": "训练数据创建完成",
+        "results": [
+            {
+                "index": 0,
+                "message": "sql训练数据创建成功",
+                "success": true,
+                "training_id": "0d3dd858-b3a3-4eca-863a-a41c552862a2-sql",
+                "type": "sql"
+            },
+            {
+                "index": 1,
+                "message": "documentation训练数据创建成功",
+                "success": true,
+                "training_id": "59b802fd-e0f7-48b4-b207-afd170d41c37-doc",
+                "type": "documentation"
+            }
+        ],
+        "successfully_created": 2,
+        "summary": {
+            "ddl": 0,
+            "documentation": 1,
+            "error_sql": 0,
+            "sql": 1
+        },
+        "total_requested": 2
+    },
+    "message": "操作成功",
+    "success": true
+}
+```
+
+
 
 ### SQL安全检查
 
@@ -247,7 +294,7 @@ POST /api/v0/training_data/create
 ```
 
 ### 批量操作限制
-- 单次批量操作最多支持50条记录
+- 单次批量操作最多支持50条记录。
 - 超出限制会返回400错误
 
 ---
@@ -277,28 +324,22 @@ POST /api/v0/training_data/delete
 ### 响应示例
 ```json
 {
-  "code": 200,
-  "success": true,
-  "message": "操作成功",
-  "data": {
-    "total_requested": 2,
-    "successfully_deleted": 1,
-    "failed_count": 1,
-    "deleted_ids": [
-      "e1afe1c2-6956-4133-9cb6-0f83c5e1b12d-sql"
-    ],
-    "failed_ids": [
-      "0db3b76a-6fa5-4c8e-9115-3ec7cc6159fe-doc"
-    ],
-    "failed_details": [
-      {
-        "id": "0db3b76a-6fa5-4c8e-9115-3ec7cc6159fe-doc",
-        "error": "记录不存在或删除失败"
-      }
-    ],
-    "current_total_count": 228,
-    "response": "训练数据删除完成"
-  }
+    "code": 200,
+    "data": {
+        "current_total_count": 229,
+        "deleted_ids": [
+            "0d3dd858-b3a3-4eca-863a-a41c552862a2-sql",
+            "59b802fd-e0f7-48b4-b207-afd170d41c37-doc"
+        ],
+        "failed_count": 0,
+        "failed_details": [],
+        "failed_ids": [],
+        "response": "训练数据删除完成",
+        "successfully_deleted": 2,
+        "total_requested": 2
+    },
+    "message": "操作成功",
+    "success": true
 }
 ```
 

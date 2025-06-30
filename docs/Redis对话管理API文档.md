@@ -28,7 +28,7 @@
 
 #### 请求示例
 ```http
-GET /api/v0/user/john_doe/conversations?limit=10
+GET /api/v0/user/guest/conversations?limit=10
 ```
 
 #### 响应示例
@@ -42,9 +42,11 @@ GET /api/v0/user/john_doe/conversations?limit=10
         "conversations": [
             {
                 "conversation_id": "conv_20241201_001",
-                "start_time": "2024-12-01T10:00:00",
-                "last_activity": "2024-12-01T10:30:00",
-                "message_count": 6
+                "user_id": "john_doe",
+                "created_at": "2024-12-01T10:00:00",
+                "updated_at": "2024-12-01T10:30:00",
+                "message_count": "6",
+                "conversation_title": "查询销售数据"
             }
         ],
         "total_count": 1
@@ -82,27 +84,33 @@ GET /api/v0/conversation/conv_20241201_001/messages?limit=50
     "data": {
         "conversation_id": "conv_20241201_001",
         "conversation_meta": {
+            "conversation_id": "conv_20241201_001",
+            "user_id": "john_doe",
             "created_at": "2024-12-01T10:00:00",
-            "message_count": 6
+            "updated_at": "2024-12-01T10:30:00",
+            "message_count": "6"
         },
         "messages": [
             {
+                "message_id": "msg_uuid_1",
                 "role": "user",
                 "content": "查询销售数据",
                 "timestamp": "2024-12-01T10:00:00",
                 "metadata": {}
             },
             {
+                "message_id": "msg_uuid_2",
                 "role": "assistant",
                 "content": "好的，我来帮您查询销售数据...",
                 "timestamp": "2024-12-01T10:00:05",
                 "metadata": {
                     "type": "DATABASE",
-                    "sql": "SELECT * FROM sales"
+                    "sql": "SELECT * FROM sales",
+                    "execution_path": ["start", "classify", "agent_database", "format_response"]
                 }
             }
         ],
-        "message_count": 6
+        "message_count": 2
     }
 }
 ```
@@ -182,29 +190,40 @@ GET /api/v0/user/john_doe/conversations/full?conversation_limit=20
         "conversations": [
             {
                 "conversation_id": "conv_20241201_001",
-                "start_time": "2024-12-01T10:00:00",
-                "last_activity": "2024-12-01T10:30:00",
+                "user_id": "john_doe",
+                "created_at": "2024-12-01T10:00:00",
+                "updated_at": "2024-12-01T10:30:00",
                 "meta": {
-                    "message_count": 6,
-                    "created_at": "2024-12-01T10:00:00"
+                    "conversation_id": "conv_20241201_001",
+                    "user_id": "john_doe",
+                    "created_at": "2024-12-01T10:00:00",
+                    "updated_at": "2024-12-01T10:30:00",
+                    "message_count": "6"
                 },
                 "messages": [
                     {
+                        "message_id": "msg_uuid_1",
                         "role": "user",
                         "content": "查询销售数据",
-                        "timestamp": "2024-12-01T10:00:00"
+                        "timestamp": "2024-12-01T10:00:00",
+                        "metadata": {}
                     },
                     {
+                        "message_id": "msg_uuid_2",
                         "role": "assistant",
                         "content": "好的，我来帮您查询销售数据...",
-                        "timestamp": "2024-12-01T10:00:05"
+                        "timestamp": "2024-12-01T10:00:05",
+                        "metadata": {
+                            "type": "DATABASE",
+                            "sql": "SELECT * FROM sales"
+                        }
                     }
                 ],
-                "message_count": 6
+                "message_count": 2
             }
         ],
         "total_conversations": 1,
-        "total_messages": 6,
+        "total_messages": 2,
         "conversation_limit_applied": null,
         "message_limit_applied": null,
         "query_time": "2024-12-01T15:30:00"
@@ -236,16 +255,13 @@ GET /api/v0/conversation_stats
     "code": 200,
     "message": "获取统计信息成功",
     "data": {
+        "available": true,
         "total_users": 125,
         "total_conversations": 1250,
-        "total_messages": 5000,
-        "active_users_today": 45,
-        "active_conversations_today": 200,
-        "cache_hit_rate": 0.75,
+        "cached_qa_count": 500,
         "redis_info": {
-            "connected": true,
-            "memory_usage": "120MB",
-            "keys_count": 2500
+            "memory_usage_mb": 120.5,
+            "connected_clients": 10
         }
     }
 }
@@ -274,11 +290,7 @@ POST /api/v0/conversation_cleanup
     "success": true,
     "code": 200,
     "message": "对话清理完成",
-    "data": {
-        "cleaned_conversations": 50,
-        "cleaned_messages": 200,
-        "cleanup_time": "2024-12-01T15:30:00"
-    }
+    "data": null
 }
 ```
 
@@ -300,6 +312,7 @@ POST /api/v0/conversation_cleanup
 | user_id | string | 请求体 | 否 | 用户ID |
 | conversation_id | string | 请求体 | 否 | 对话ID |
 | continue_conversation | boolean | 请求体 | 否 | 是否继续现有对话 |
+| routing_mode | string | 请求体 | 否 | 路由模式（database_direct, chat_direct, hybrid, llm_only） |
 
 #### 请求示例
 ```http
@@ -310,7 +323,8 @@ Content-Type: application/json
     "question": "查询最近一个月的销售数据",
     "session_id": "session_12345",
     "user_id": "john_doe",
-    "continue_conversation": true
+    "continue_conversation": true,
+    "routing_mode": "hybrid"
 }
 ```
 
@@ -319,12 +333,12 @@ Content-Type: application/json
 {
     "success": true,
     "code": 200,
-    "message": "查询执行完成",
+    "message": "操作成功",
     "data": {
         "type": "DATABASE",
-        "response": "",
+        "response": "查询到最近一个月的销售数据，共包含150条记录...",
         "sql": "SELECT * FROM sales WHERE date >= DATE_SUB(NOW(), INTERVAL 1 MONTH)",
-        "query_result": {
+        "records": {
             "rows": [...],
             "columns": ["date", "amount", "product"],
             "row_count": 150,
@@ -333,10 +347,10 @@ Content-Type: application/json
         },
         "summary": "查询到最近一个月的销售数据共150条记录...",
         "session_id": "session_12345",
-        "execution_path": ["classify_question", "generate_sql", "execute_sql", "generate_summary"],
+        "execution_path": ["start", "classify", "agent_database", "format_response"],
         "classification_info": {
-            "question_type": "DATABASE",
             "confidence": 0.95,
+            "reason": "用户询问销售数据统计",
             "method": "rule_based_database_keywords"
         },
         "conversation_id": "conv_20241201_002",
@@ -345,7 +359,12 @@ Content-Type: application/json
         "context_used": true,
         "from_cache": false,
         "conversation_status": "continued",
-        "conversation_message": "继续现有对话"
+        "conversation_message": "继续现有对话",
+        "requested_conversation_id": null,
+        "routing_mode_used": "hybrid",
+        "routing_mode_source": "api",
+        "agent_version": "langgraph_v1",
+        "timestamp": "2024-12-01T15:30:00"
     }
 }
 ```
@@ -387,7 +406,7 @@ Content-Type: application/json
     "code": 500,
     "message": "处理失败",
     "data": {
-        "error": "具体错误信息",
+        "response": "具体错误信息",
         "error_type": "error_type_code",
         "can_retry": true,
         "timestamp": "2024-12-01T15:30:00"
@@ -478,6 +497,8 @@ QUESTION_ANSWER_TTL = 24 * 3600      # 缓存过期时间（24小时）
 - 🆕 新增 `/api/v0/user/{user_id}/conversations/full` API
 - ✨ 支持一次性获取用户完整对话数据
 - 🔧 优化参数处理，支持不传递限制参数时返回所有记录
+- 🔄 **字段更新**: ask_agent API 响应中 query_result 改为 records
+- 📝 **新增字段**: conversation_title、routing_mode_used、routing_mode_source
 
 ### v1.0.0 (2024-11-01)
 - 🎉 首次发布 Redis 对话管理功能

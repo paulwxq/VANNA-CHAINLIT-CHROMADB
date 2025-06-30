@@ -6,7 +6,7 @@
 QA反馈模块提供了完整的用户反馈管理功能，支持用户对问答结果进行点赞/点踩反馈，并将反馈数据转化为训练数据。本模块包含6个主要API端点，支持反馈记录的创建、查询、修改、删除以及训练数据集成。
 
 ### 🔧 基础信息
-- **基础URL**: `http://localhost:5000`
+- **基础URL**: `http://localhost:8084`
 - **API前缀**: `/api/v0/qa_feedback/`
 - **数据格式**: JSON
 - **字符编码**: UTF-8
@@ -18,8 +18,8 @@ QA反馈模块提供了完整的用户反馈管理功能，支持用户对问答
 | API端点 | 方法 | 功能描述 |
 |---------|------|----------|
 | `/api/v0/qa_feedback/query` | POST | 查询反馈记录（支持分页、筛选、排序） |
-| `/api/v0/qa_feedback/delete/{id}` | DELETE | 删除指定反馈记录 |
-| `/api/v0/qa_feedback/update/{id}` | PUT | 修改指定反馈记录 |
+| `/api/v0/qa_feedback/delete/{feedback_id}` | DELETE | 删除指定反馈记录 |
+| `/api/v0/qa_feedback/update/{feedback_id}` | PUT | 修改指定反馈记录 |
 | `/api/v0/qa_feedback/add_to_training` | POST | **核心功能**：批量添加到训练集 |
 | `/api/v0/qa_feedback/add` | POST | 创建新的反馈记录 |
 | `/api/v0/qa_feedback/stats` | GET | 获取反馈统计信息 |
@@ -85,31 +85,62 @@ QA反馈模块提供了完整的用户反馈管理功能，支持用户对问答
 
 ```json
 {
-  "code": 200,
-  "success": true,
-  "message": "查询成功，共找到 25 条记录",
-  "data": {
-    "records": [
-      {
-        "id": 1,
-        "question": "查询所有用户信息",
-        "sql": "SELECT * FROM users",
-        "is_thumb_up": true,
-        "user_id": "user123",
-        "create_time": "2024-06-24T10:30:00",
-        "is_in_training_data": false,
-        "update_time": null
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "page_size": 20,
-      "total": 25,
-      "total_pages": 2,
-      "has_next": true,
-      "has_prev": false
-    }
-  }
+    "code": 200,
+    "data": {
+        "pagination": {
+            "has_next": false,
+            "has_prev": false,
+            "page": 1,
+            "page_size": 5,
+            "total": 4,
+            "total_pages": 1
+        },
+        "records": [
+            {
+                "create_time": "2024-01-18T11:40:00",
+                "id": 8,
+                "is_in_training_data": false,
+                "is_thumb_up": true,
+                "question": "按月统计订单趋势",
+                "sql": "SELECT DATE_TRUNC('month', create_time) as month, COUNT(*) as order_count FROM orders GROUP BY month ORDER BY month;",
+                "update_time": null,
+                "user_id": "user007"
+            },
+            {
+                "create_time": "2024-01-17T13:25:00",
+                "id": 7,
+                "is_in_training_data": false,
+                "is_thumb_up": true,
+                "question": "查询用户余额",
+                "sql": "SELECT user_id, account_balance FROM user_accounts WHERE user_id = '12345';",
+                "update_time": null,
+                "user_id": "user006"
+            },
+            {
+                "create_time": "2024-01-16T16:30:00",
+                "id": 5,
+                "is_in_training_data": false,
+                "is_thumb_up": true,
+                "question": "查询今日新增用户",
+                "sql": "SELECT COUNT(*) as new_users FROM users WHERE DATE(create_time) = CURRENT_DATE;",
+                "update_time": null,
+                "user_id": "user005"
+            },
+            {
+                "create_time": "2024-01-16T09:45:00",
+                "id": 4,
+                "is_in_training_data": false,
+                "is_thumb_up": true,
+                "question": "按服务区统计营收",
+                "sql": "SELECT service_name, SUM(pay_sum) as total_revenue FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY total_revenue DESC;",
+                "update_time": null,
+                "user_id": "user004"
+            }
+        ],
+        "response": "查询成功，共找到 4 条记录"
+    },
+    "message": "操作成功",
+    "success": true
 }
 ```
 
@@ -117,7 +148,7 @@ QA反馈模块提供了完整的用户反馈管理功能，支持用户对问答
 
 ### 2. 删除反馈记录 API
 
-**端点**: `DELETE /api/v0/qa_feedback/delete/{id}`
+**端点**: `DELETE /api/v0/qa_feedback/delete/{feedback_id}`
 
 **功能**: 根据记录ID删除指定的反馈记录。
 
@@ -125,7 +156,7 @@ QA反馈模块提供了完整的用户反馈管理功能，支持用户对问答
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| `id` | int | 是 | 反馈记录的ID |
+| `feedback_id` | int | 是 | 反馈记录的ID |
 
 #### 🌰 请求示例
 
@@ -165,7 +196,7 @@ DELETE /api/v0/qa_feedback/delete/123
 
 ### 3. 修改反馈记录 API
 
-**端点**: `PUT /api/v0/qa_feedback/update/{id}`
+**端点**: `PUT /api/v0/qa_feedback/update/{feedback_id}`
 
 **功能**: 修改指定反馈记录的内容。
 
@@ -173,7 +204,7 @@ DELETE /api/v0/qa_feedback/delete/123
 
 | 参数名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
-| `id` | int | 是 | 反馈记录的ID |
+| `feedback_id` | int | 是 | 反馈记录的ID |
 
 #### 📝 请求参数
 
@@ -349,14 +380,14 @@ GET /api/v0/qa_feedback/stats
 {
     "code": 200,
     "data": {
-        "negative_feedback": 10,
-        "positive_feedback": 8,
-        "positive_rate": 44.44,
         "response": "统计信息获取成功",
         "total_feedback": 18,
+        "positive_feedback": 8,
+        "negative_feedback": 10,
         "trained_feedback": 5,
-        "training_rate": 27.78,
-        "untrained_feedback": 13
+        "untrained_feedback": 13,
+        "positive_rate": 44.44,
+        "training_rate": 27.78
     },
     "message": "操作成功",
     "success": true
@@ -472,7 +503,7 @@ GET /api/v0/qa_feedback/stats
 ### 环境变量
 ```json
 {
-  "base_url": "http://localhost:5000",
+  "base_url": "http://localhost:8084",
   "api_prefix": "/api/v0/qa_feedback"
 }
 ```
