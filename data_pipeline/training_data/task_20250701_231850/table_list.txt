@@ -1,13 +1,1 @@
-# 示例表清单文件
-# 每行一个表名，支持 schema.table 格式
-# 以 # 开头的行为注释
-
-# 服务区相关表
-bss_car_day_count
-bss_business_day_data
-#bss_company
-#bss_section_route
-#bss_section_route_area_link
-#bss_service_area
-#bss_service_area_mapper
-
+bss_branch_copy

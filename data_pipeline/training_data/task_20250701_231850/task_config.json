@@ -11,5 +11,5 @@
     "enable_sql_validation": true,
     "enable_training_data_load": true
   },
-  "output_directory": "data_pipeline\\training_data\\task_20250701_231850"
+  "output_directory": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250701_231850"
 }

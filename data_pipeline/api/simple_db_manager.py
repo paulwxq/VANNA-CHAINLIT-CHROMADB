@@ -57,19 +57,25 @@ class SimpleTaskManager:
                    table_list_file: str = None,
                    business_context: str = None,
                    db_name: str = None,
+                   db_connection: str = None,
                    **kwargs) -> str:
         """创建新任务"""
         task_id = self.generate_task_id()
         
-        # 从 app_config 获取业务数据库连接信息
-        from app_config import APP_DB_CONFIG
-        
-        # 构建业务数据库连接字符串（用于参数记录）
-        business_db_connection = self._build_db_connection_string(APP_DB_CONFIG)
-        
-        # 使用传入的db_name或从APP_DB_CONFIG提取
-        if not db_name:
-            db_name = APP_DB_CONFIG.get('dbname', 'business_db')
+        # 处理数据库连接和名称
+        if db_connection:
+            # 使用传入的 db_connection 参数
+            business_db_connection = db_connection
+            # 如果没有提供 db_name，从连接字符串中提取
+            if not db_name:
+                db_name = self._extract_db_name(db_connection)
+        else:
+            # 从 app_config 获取业务数据库连接信息
+            from app_config import APP_DB_CONFIG
+            business_db_connection = self._build_db_connection_string(APP_DB_CONFIG)
+            # 使用传入的db_name或从APP_DB_CONFIG提取
+            if not db_name:
+                db_name = APP_DB_CONFIG.get('dbname', 'business_db')
         
         # 处理table_list_file参数
         # 如果未提供，将在执行时检查任务目录中的table_list.txt文件

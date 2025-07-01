@@ -2795,12 +2795,13 @@ def create_data_pipeline_task():
         # table_list_file和business_context现在都是可选参数
         # 如果未提供table_list_file，将使用文件上传模式
         
-        # 创建任务（自动使用app_config中的数据库配置）
+        # 创建任务（支持可选的db_connection参数）
         manager = get_data_pipeline_manager()
         task_id = manager.create_task(
             table_list_file=req.get('table_list_file'),
             business_context=req.get('business_context'),
             db_name=req.get('db_name'),  # 可选参数，用于指定特定数据库名称
+            db_connection=req.get('db_connection'),  # 可选参数，用于指定数据库连接字符串
             enable_sql_validation=req.get('enable_sql_validation', True),
             enable_llm_repair=req.get('enable_llm_repair', True),
             modify_original_file=req.get('modify_original_file', True),
