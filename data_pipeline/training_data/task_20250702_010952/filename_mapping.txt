@@ -1,0 +1,4 @@
+# 文件名映射报告
+# 格式: 原始表名 -> 实际文件名
+
+public.bss_branch_copy -> bss_branch_copy_detail.md

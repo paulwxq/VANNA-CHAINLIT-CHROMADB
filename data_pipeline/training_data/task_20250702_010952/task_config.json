@@ -1,0 +1,15 @@
+{
+  "task_id": "task_20250702_010952",
+  "created_at": "2025-07-02T01:09:52.930419",
+  "parameters": {
+    "db_connection": "postgresql://postgres:postgres@192.168.67.1:5432/highway_db",
+    "table_list_file": "{task_directory}/table_list.txt",
+    "business_context": "高速公路服务区管理系统",
+    "file_upload_mode": true,
+    "enable_llm_repair": true,
+    "modify_original_file": true,
+    "enable_sql_validation": true,
+    "enable_training_data_load": true
+  },
+  "output_directory": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250702_010952"
+}
