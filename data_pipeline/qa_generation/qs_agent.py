@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
 from data_pipeline.validators import FileCountValidator
 from data_pipeline.analyzers import MDFileAnalyzer, ThemeExtractor
-from core.logging import get_data_pipeline_logger
+from data_pipeline.dp_logging import get_logger
 from core.vanna_llm_factory import create_vanna_instance
 
 
@@ -20,7 +20,8 @@ class QuestionSQLGenerationAgent:
                  output_dir: str,
                  table_list_file: str,
                  business_context: str,
-                 db_name: str = None):
+                 db_name: str = None,
+                 task_id: str = None):
         """
         初始化Agent
         
@@ -29,6 +30,7 @@ class QuestionSQLGenerationAgent:
             table_list_file: 表清单文件路径
             business_context: 业务上下文
             db_name: 数据库名称（用于输出文件命名）
+            task_id: 任务ID
         """
         self.output_dir = Path(output_dir)
         self.table_list_file = table_list_file
@@ -36,7 +38,16 @@ class QuestionSQLGenerationAgent:
         self.db_name = db_name or "db"
         
         self.config = SCHEMA_TOOLS_CONFIG
-        self.logger = get_data_pipeline_logger("QSAgent")
+        self.task_id = task_id
+        
+        # 初始化独立日志系统
+        if task_id:
+            self.logger = get_logger("QuestionSQLGenerationAgent", task_id)
+        else:
+            # 脚本模式下，如果没有传递task_id，生成一个
+            from datetime import datetime
+            self.task_id = f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            self.logger = get_logger("QuestionSQLGenerationAgent", self.task_id)
         
         # 初始化组件
         self.validator = FileCountValidator()

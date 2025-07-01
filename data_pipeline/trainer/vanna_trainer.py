@@ -11,10 +11,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import app_config
-from core.logging import get_data_pipeline_logger
+import logging
 
 # 初始化日志
-logger = get_data_pipeline_logger("VannaTrainer")
+logger = logging.getLogger("VannaTrainer")
 
 # 设置正确的项目根目录路径
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

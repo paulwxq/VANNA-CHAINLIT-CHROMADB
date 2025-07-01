@@ -14,7 +14,7 @@ from data_pipeline.ddl_generation.training_data_agent import SchemaTrainingDataA
 from data_pipeline.qa_generation.qs_agent import QuestionSQLGenerationAgent
 from data_pipeline.validators.sql_validation_agent import SQLValidationAgent
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
-from core.logging import get_data_pipeline_logger
+from data_pipeline.dp_logging import get_logger
 
 
 class SchemaWorkflowOrchestrator:
@@ -25,6 +25,7 @@ class SchemaWorkflowOrchestrator:
                  table_list_file: str,
                  business_context: str,
                  output_dir: str = None,
+                 task_id: str = None,
                  enable_sql_validation: bool = True,
                  enable_llm_repair: bool = True,
                  modify_original_file: bool = True,
@@ -37,6 +38,7 @@ class SchemaWorkflowOrchestrator:
             table_list_file: 表清单文件路径
             business_context: 业务上下文描述
             output_dir: 输出目录
+            task_id: 任务ID (API模式传递，脚本模式自动生成)
             enable_sql_validation: 是否启用SQL验证
             enable_llm_repair: 是否启用LLM修复功能
             modify_original_file: 是否修改原始JSON文件
@@ -46,17 +48,32 @@ class SchemaWorkflowOrchestrator:
         self.table_list_file = table_list_file
         self.business_context = business_context
         self.db_name = self._extract_db_name_from_connection(db_connection)
-        self.output_dir = Path(output_dir) if output_dir else Path("./output")
         self.enable_sql_validation = enable_sql_validation
         self.enable_llm_repair = enable_llm_repair
         self.modify_original_file = modify_original_file
         self.enable_training_data_load = enable_training_data_load
         
+        # 处理task_id
+        if task_id is None:
+            # 脚本模式：自动生成manual开头的task_id
+            self.task_id = f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        else:
+            # API模式：使用传递的task_id
+            self.task_id = task_id
+        
+        # 设置输出目录
+        if output_dir is None:
+            # 脚本模式或未指定输出目录时，使用任务目录
+            self.output_dir = Path("data_pipeline/training_data") / self.task_id
+        else:
+            # API模式或明确指定输出目录时，使用指定的目录
+            self.output_dir = Path(output_dir)
+            
         # 确保输出目录存在
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 初始化日志
-        self.logger = get_data_pipeline_logger("SchemaWorkflow")
+            
+        # 初始化独立日志系统
+        self.logger = get_logger("SchemaWorkflowOrchestrator", self.task_id)
         
         # 工作流程状态
         self.workflow_state = {
@@ -158,6 +175,7 @@ class SchemaWorkflowOrchestrator:
                 table_list_file=self.table_list_file,
                 business_context=self.business_context,
                 output_dir=str(self.output_dir),
+                task_id=self.task_id,  # 传递task_id
                 pipeline="full"
             )
             
@@ -200,7 +218,8 @@ class SchemaWorkflowOrchestrator:
                 output_dir=str(self.output_dir),
                 table_list_file=self.table_list_file,
                 business_context=self.business_context,
-                db_name=self.db_name
+                db_name=self.db_name,
+                task_id=self.task_id  # 传递task_id
             )
             
             # 执行Question-SQL生成
@@ -252,6 +271,7 @@ class SchemaWorkflowOrchestrator:
                 db_connection=self.db_connection,
                 input_file=str(qs_file),
                 output_dir=str(self.output_dir),
+                task_id=self.task_id,  # 传递task_id
                 enable_sql_repair=self.enable_llm_repair,
                 modify_original_file=self.modify_original_file
             )
@@ -322,7 +342,7 @@ class SchemaWorkflowOrchestrator:
             
             # 执行训练数据加载
             self.logger.info("🔄 开始处理训练文件...")
-            load_successful = process_training_files(training_data_dir)
+            load_successful = process_training_files(training_data_dir, self.task_id)
             
             step_duration = time.time() - step_start_time
             
@@ -645,7 +665,12 @@ async def main():
     
     # 验证输入文件
     if not os.path.exists(args.table_list):
-        logger = get_data_pipeline_logger("SchemaWorkflow")
+        # 为脚本模式生成task_id
+        from datetime import datetime
+        script_task_id = f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        # 使用独立日志系统
+        from data_pipeline.dp_logging import get_logger
+        logger = get_logger("SchemaWorkflow", script_task_id)
         logger.error(f"错误: 表清单文件不存在: {args.table_list}")
         sys.exit(1)
     
@@ -663,7 +688,12 @@ async def main():
         )
         
         # 获取logger用于启动信息
-        logger = get_data_pipeline_logger("SchemaWorkflow")
+        # 为脚本模式生成task_id
+        from datetime import datetime
+        script_task_id = f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        # 使用独立日志系统
+        from data_pipeline.dp_logging import get_logger
+        logger = get_logger("SchemaWorkflow", script_task_id)
         logger.info(f"🚀 开始执行Schema工作流编排...")
         logger.info(f"📁 输出目录: {args.output_dir}")
         logger.info(f"📋 表清单: {args.table_list}")

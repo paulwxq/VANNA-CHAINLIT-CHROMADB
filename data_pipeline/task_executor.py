@@ -15,7 +15,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from data_pipeline.api.simple_workflow import SimpleWorkflowExecutor
-from core.logging import initialize_logging
 
 
 def main():
@@ -27,8 +26,8 @@ def main():
     
     args = parser.parse_args()
     
-    # 初始化日志系统
-    initialize_logging()
+    # 初始化日志系统（不需要，使用独立的日志系统）
+    pass
     
     # 验证参数
     if args.execution_mode == 'step' and not args.step_name:

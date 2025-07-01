@@ -11,7 +11,7 @@ from data_pipeline.utils.system_filter import SystemTableFilter
 from data_pipeline.utils.permission_checker import DatabasePermissionChecker
 from data_pipeline.utils.table_parser import TableListParser
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
-from core.logging import get_data_pipeline_logger
+from data_pipeline.dp_logging import get_logger
 
 class SchemaTrainingDataAgent:
     """Schema训练数据生成AI Agent"""
@@ -21,6 +21,7 @@ class SchemaTrainingDataAgent:
                  table_list_file: str,
                  business_context: str = None,
                  output_dir: str = None,
+                 task_id: str = None,
                  pipeline: str = "full"):
         
         self.db_connection = db_connection
@@ -49,7 +50,16 @@ class SchemaTrainingDataAgent:
         }
         
         self.failed_tables = []
-        self.logger = get_data_pipeline_logger("SchemaTrainingDataAgent")
+        self.task_id = task_id
+        
+        # 初始化独立日志系统
+        if task_id:
+            self.logger = get_logger("SchemaTrainingDataAgent", task_id)
+        else:
+            # 脚本模式下，如果没有传递task_id，生成一个
+            from datetime import datetime
+            self.task_id = f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            self.logger = get_logger("SchemaTrainingDataAgent", self.task_id)
     
     async def generate_training_data(self) -> Dict[str, Any]:
         """主入口：生成训练数据"""

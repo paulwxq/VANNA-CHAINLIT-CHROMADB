@@ -15,7 +15,7 @@ from data_pipeline.analyzers import MDFileAnalyzer, ThemeExtractor
 from data_pipeline.validators import FileCountValidator
 from data_pipeline.utils.logger import setup_logging
 from core.vanna_llm_factory import create_vanna_instance
-from core.logging import get_data_pipeline_logger
+import logging
 
 
 class MetadataOnlyGenerator:
@@ -47,7 +47,7 @@ class MetadataOnlyGenerator:
         self.theme_extractor = None
         
         # 初始化logger
-        self.logger = get_data_pipeline_logger("MetadataOnlyGenerator")
+        self.logger = logging.getLogger("MetadataOnlyGenerator")
         
         self.logger.info(f"🎯 元数据生成器初始化完成")
         self.logger.info(f"📁 输出目录: {output_dir}")
@@ -492,8 +492,12 @@ async def main():
     
     # 验证参数
     output_path = Path(args.output_dir)
+    # 为脚本模式生成task_id
+    from datetime import datetime
+    script_task_id = f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     # 初始化logger用于参数验证
-    logger = get_data_pipeline_logger("MetadataGeneratorMain")
+    from data_pipeline.dp_logging import get_logger
+    logger = get_logger("MetadataGeneratorMain", script_task_id)
     
     if not output_path.exists():
         logger.error(f"错误: 输出目录不存在: {args.output_dir}")

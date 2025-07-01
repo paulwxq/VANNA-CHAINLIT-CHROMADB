@@ -1,0 +1,198 @@
+[
+  {
+    "question": "统计最近7天各服务区的总收入和总订单数，并按收入从高到低排序",
+    "sql": "SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入, SUM(order_sum) AS 总订单数 FROM bss_business_day_data WHERE delete_ts IS NULL AND oper_date >= CURRENT_DATE - 7 GROUP BY service_name ORDER BY 总收入 DESC;"
+  },
+  {
+    "question": "计算各服务区不同支付方式的订单占比（微信/支付宝/现金），展示前五名",
+    "sql": "SELECT service_name AS 服务区名称, ROUND(SUM(wx_order)*100.0/SUM(order_sum),2) AS 微信占比, ROUND(SUM(zf_order)*100.0/SUM(order_sum),2) AS 支付宝占比, ROUND(SUM(rmb_order)*100.0/SUM(order_sum),2) AS 现金占比 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY SUM(order_sum) DESC LIMIT 5;"
+  },
+  {
+    "question": "分析2023年4月每日总营收变化趋势",
+    "sql": "SELECT oper_date AS 统计日期, SUM(pay_sum) AS 日营收总额 FROM bss_business_day_data WHERE delete_ts IS NULL AND EXTRACT(YEAR FROM oper_date) = 2023 AND EXTRACT(MONTH FROM oper_date) = 4 GROUP BY oper_date ORDER BY oper_date;"
+  },
+  {
+    "question": "查询最近一天营收超过5万元的服务区及对应支付方式渗透率",
+    "sql": "SELECT service_name AS 服务区名称, wx_order AS 微信订单数, zf_order AS 支付宝订单数, rmb_order AS 现金订单数, pay_sum AS 日营收 FROM bss_business_day_data WHERE delete_ts IS NULL AND oper_date = (SELECT MAX(oper_date) FROM bss_business_day_data) AND pay_sum > 50000 ORDER BY pay_sum DESC;"
+  },
+  {
+    "question": "统计各档口平均客单价（日均）并排名",
+    "sql": "SELECT branch_name AS 档口名称, ROUND(AVG(pay_sum/order_sum),2) AS 平均客单价 FROM bss_business_day_data WHERE delete_ts IS NULL AND order_sum > 0 GROUP BY branch_name ORDER BY 平均客单价 DESC;"
+  },
+  {
+    "question": "对比不同服务区现金支付占比的分布情况",
+    "sql": "SELECT service_name AS 服务区名称, ROUND(SUM(rmb) * 100.0 / SUM(pay_sum), 2) AS 现金占比 FROM bss_business_day_data WHERE delete_ts IS NULL AND pay_sum > 0 GROUP BY service_name ORDER BY 现金占比 DESC;"
+  },
+  {
+    "question": "查询指定日期（2023-04-01）微信支付金额TOP5的服务区明细",
+    "sql": "SELECT service_name AS 服务区名称, wx AS 微信支付金额, wx_order AS 微信订单数, pay_sum AS 总营收 FROM bss_business_day_data WHERE delete_ts IS NULL AND oper_date = '2023-04-01' ORDER BY wx DESC LIMIT 5;"
+  },
+  {
+    "question": "分析各服务区支付宝订单占比与总营收的关系",
+    "sql": "SELECT service_name AS 服务区名称, ROUND(SUM(zf_order)*100.0/SUM(order_sum),2) AS 支付宝订单占比, SUM(pay_sum) AS 总营收 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY 支付宝订单占比 DESC;"
+  },
+  {
+    "question": "统计各服务区不同支付方式的订单数量分布",
+    "sql": "SELECT service_name AS 服务区名称, SUM(wx_order) AS 微信订单数, SUM(zf_order) AS 支付宝订单数, SUM(rmb_order) AS 现金订单数 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY SUM(wx_order + zf_order + rmb_order) DESC;"
+  },
+  {
+    "question": "查询最近3天庐山服务区每日营收及支付方式构成",
+    "sql": "SELECT oper_date AS 统计日期, wx AS 微信金额, zfb AS 支付宝金额, rmb AS 现金金额, pay_sum AS 总营收 FROM bss_business_day_data WHERE delete_ts IS NULL AND service_name = '庐山服务区' AND oper_date >= CURRENT_DATE - 3 ORDER BY oper_date DESC;"
+  },
+  {
+    "question": "不同车辆类型的总车流量统计情况如何？",
+    "sql": "SELECT car_type AS 车辆类型, SUM(customer_count) AS 总车流量 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY car_type;"
+  },
+  {
+    "question": "哪些服务区的累计车流量位列前十？",
+    "sql": "SELECT service_area_id AS 服务区ID, SUM(customer_count) AS 总车流量 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY service_area_id ORDER BY 总车流量 DESC LIMIT 10;"
+  },
+  {
+    "question": "2022年3月2日各车型在服务区的流量分布是怎样的？",
+    "sql": "SELECT car_type AS 车辆类型, SUM(customer_count) AS 当日车流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date = '2022-03-02' GROUP BY car_type;"
+  },
+  {
+    "question": "每个服务区每月平均车流量是多少？",
+    "sql": "SELECT service_area_id AS 服务区ID, DATE_TRUNC('month', count_date) AS 月份, AVG(daily_total) AS 月均车流量 FROM (SELECT service_area_id, count_date, SUM(customer_count) AS daily_total FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY service_area_id, count_date) AS daily_counts GROUP BY service_area_id, 月份;"
+  },
+  {
+    "question": "最近一个月内，各服务区的日均车流量对比如何？",
+    "sql": "SELECT service_area_id AS 服务区ID, AVG(customer_count) AS 日均车流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date >= CURRENT_DATE - INTERVAL '1 month' GROUP BY service_area_id ORDER BY 日均车流量 DESC;"
+  },
+  {
+    "question": "车流量最高的五个服务区是哪些？",
+    "sql": "SELECT service_area_id AS 服务区ID, SUM(customer_count) AS 总车流量 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY service_area_id ORDER BY 总车流量 DESC LIMIT 5;"
+  },
+  {
+    "question": "各车型在不同服务区的车流量分布情况如何？",
+    "sql": "SELECT car_type AS 车辆类型, service_area_id AS 服务区ID, SUM(customer_count) AS 总车流量 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY car_type, service_area_id;"
+  },
+  {
+    "question": "某服务区（如service_area_id='17461166e7fa3ecda03534a5795ce985'）各车型的日均车流量是多少？",
+    "sql": "SELECT car_type AS 车辆类型, AVG(customer_count) AS 日均车流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND service_area_id = '17461166e7fa3ecda03534a5795ce985' GROUP BY car_type;"
+  },
+  {
+    "question": "2022年1月至3月期间，总车流量的月度变化趋势是怎样的？",
+    "sql": "SELECT DATE_TRUNC('month', count_date) AS 月份, SUM(customer_count) AS 总车流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date BETWEEN '2022-01-01' AND '2022-03-31' GROUP BY 月份 ORDER BY 月份;"
+  },
+  {
+    "question": "某服务区（如ID为'81f4eb731fb0728aef17ae61f1f1daef'）中，哪种车型的累计车流量最多？",
+    "sql": "SELECT car_type AS 车辆类型, SUM(customer_count) AS 总车流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND service_area_id = '81f4eb731fb0728aef17ae61f1f1daef' GROUP BY car_type ORDER BY 总车流量 DESC LIMIT 1;"
+  },
+  {
+    "question": "统计各档口单位车流营收产出（坪效）并按从高到低排序",
+    "sql": "SELECT b.branch_name AS 档口名称, SUM(b.pay_sum) / SUM(c.customer_count) AS 单位车流营收 FROM bss_business_day_data b JOIN bss_car_day_count c ON b.service_no = c.service_area_id AND b.oper_date = c.count_date WHERE b.delete_ts IS NULL AND c.delete_ts IS NULL GROUP BY b.branch_name ORDER BY 单位车流营收 DESC;"
+  },
+  {
+    "question": "对比不同服务区客单价（支付金额/订单数）排名",
+    "sql": "SELECT service_name AS 服务区名称, SUM(pay_sum) / SUM(order_sum) AS 客单价 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY 客单价 DESC LIMIT 10;"
+  },
+  {
+    "question": "查询最近7天车流最高的服务区对应坪效TOP5",
+    "sql": "SELECT s.service_name, SUM(s.pay_sum) / MAX(c.customer_count) AS 坪效 FROM (SELECT service_name, service_no, SUM(pay_sum) AS pay_sum FROM bss_business_day_data WHERE oper_date >= CURRENT_DATE - 7 AND delete_ts IS NULL GROUP BY service_name, service_no) s JOIN (SELECT service_area_id, SUM(customer_count) AS customer_count FROM bss_car_day_count WHERE count_date >= CURRENT_DATE - 7 AND delete_ts IS NULL GROUP BY service_area_id) c ON s.service_no = c.service_area_id GROUP BY s.service_name ORDER BY 坪效 DESC LIMIT 5;"
+  },
+  {
+    "question": "分析各档口月度坪效趋势（2023年4月数据）",
+    "sql": "SELECT TO_CHAR(b.oper_date, 'YYYY-MM') AS 月份, b.branch_name, SUM(b.pay_sum) / SUM(c.customer_count) AS 坪效 FROM bss_business_day_data b JOIN bss_car_day_count c ON b.service_no = c.service_area_id WHERE b.oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND b.delete_ts IS NULL AND c.delete_ts IS NULL GROUP BY 月份, b.branch_name ORDER BY 月份, 坪效 DESC;"
+  },
+  {
+    "question": "查询城际车辆占比超50%的服务区坪效对比",
+    "sql": "WITH car_ratio AS (SELECT service_area_id, SUM(CASE WHEN car_type = '城际' THEN customer_count ELSE 0 END) * 1.0 / SUM(customer_count) AS 城际占比 FROM bss_car_day_count GROUP BY service_area_id) SELECT b.service_name, SUM(b.pay_sum) / SUM(c.customer_count) AS 坪效 FROM bss_business_day_data b JOIN car_ratio r ON b.service_no = r.service_area_id JOIN bss_car_day_count c ON b.service_no = c.service_area_id WHERE r.城际占比 > 0.5 AND b.delete_ts IS NULL AND c.delete_ts IS NULL GROUP BY b.service_name ORDER BY 坪效 DESC;"
+  },
+  {
+    "question": "找出客单价最低的五个档口（客单价=金额/订单数）",
+    "sql": "SELECT branch_name, pay_sum / order_sum AS 客单价 FROM (SELECT branch_name, SUM(pay_sum) AS pay_sum, SUM(order_sum) AS order_sum FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY branch_name) t WHERE order_sum > 0 ORDER BY 客单价 ASC LIMIT 5;"
+  },
+  {
+    "question": "分析2023年Q2季度各服务区日均车流与营收关系",
+    "sql": "SELECT b.service_name, AVG(c.customer_count) AS 日均车流, AVG(b.pay_sum) AS 日均营收 FROM bss_business_day_data b JOIN bss_car_day_count c ON b.service_no = c.service_area_id WHERE b.oper_date BETWEEN '2023-04-01' AND '2023-06-30' GROUP BY b.service_name ORDER BY 日均车流 DESC;"
+  },
+  {
+    "question": "查询宜春服务区各档口微信支付占比TOP3",
+    "sql": "SELECT branch_name, SUM(wx) * 100.0 / SUM(pay_sum) AS 微信支付占比 FROM bss_business_day_data WHERE service_name = '宜春服务区' AND delete_ts IS NULL GROUP BY branch_name ORDER BY 微信支付占比 DESC LIMIT 3;"
+  },
+  {
+    "question": "统计各服务区坪效及车流排名差异（坪效排名与车流排名差值）",
+    "sql": "WITH rank_data AS (SELECT service_name, RANK() OVER (ORDER BY SUM(pay_sum)/SUM(customer_count) DESC) AS \"坪效排名\", RANK() OVER (ORDER BY SUM(customer_count) DESC) AS \"车流排名\" FROM bss_business_day_data b JOIN bss_car_day_count c ON b.service_no = c.service_area_id WHERE b.delete_ts IS NULL AND c.delete_ts IS NULL GROUP BY service_name) SELECT service_name, \"坪效排名\", \"车流排名\", ABS(\"坪效排名\" -\"车流排名\") AS \"排名差异\" FROM rank_data ORDER BY \"排名差异\" DESC;"
+  },
+  {
+    "question": "分析周末与工作日营收差异（以2023-04为例）",
+    "sql": "SELECT CASE WHEN EXTRACT(ISODOW FROM oper_date) IN (6,7) THEN '周末' ELSE '工作日' END AS 日期类型, AVG(pay_sum) AS 平均营收, AVG(customer_count) AS 平均车流 FROM bss_business_day_data b JOIN bss_car_day_count c ON b.service_no = c.service_area_id WHERE oper_date BETWEEN '2023-04-01' AND '2023-04-30' GROUP BY 日期类型;"
+  },
+  {
+    "question": "节假日与平日平均消费金额对比分析",
+    "sql": "SELECT '节假日' AS \"分析类型\", AVG(pay_sum) AS \"平均消费金额\" FROM bss_business_day_data WHERE oper_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL UNION ALL SELECT '平日', AVG(pay_sum) FROM bss_business_day_data WHERE oper_date NOT BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL;"
+  },
+  {
+    "question": "节假日与平日各类型车辆平均流量对比分析",
+    "sql": "SELECT car_type AS \"车辆类型\", AVG(CASE WHEN count_date BETWEEN '2023-10-01' AND '2023-10-07' THEN customer_count END) AS \"节假日均值\", AVG(CASE WHEN count_date NOT BETWEEN '2023-10-01' AND '2023-10-07' THEN customer_count END) AS \"平日均值\" FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY car_type;"
+  },
+  {
+    "question": "节假日与平日不同支付方式金额占比对比",
+    "sql": "SELECT '节假日' AS \"类型\", SUM(wx)/SUM(pay_sum) AS \"微信占比\", SUM(zfb)/SUM(pay_sum) AS \"支付宝占比\", SUM(rmb)/SUM(pay_sum) AS \"现金占比\" FROM bss_business_day_data WHERE oper_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL UNION ALL SELECT '平日', SUM(wx)/SUM(pay_sum), SUM(zfb)/SUM(pay_sum), SUM(rmb)/SUM(pay_sum) FROM bss_business_day_data WHERE oper_date NOT BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL;"
+  },
+  {
+    "question": "节假日总订单量Top10服务区",
+    "sql": "SELECT service_name AS \"服务区名称\", SUM(order_sum) AS \"总订单量\" FROM bss_business_day_data WHERE oper_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL GROUP BY service_name ORDER BY \"总订单量\" DESC LIMIT 10;"
+  },
+  {
+    "question": "节假日车流峰值日期识别",
+    "sql": "SELECT count_date AS \"日期\", SUM(customer_count) AS \"总车流量\" FROM bss_car_day_count WHERE count_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL GROUP BY count_date ORDER BY \"总车流量\" DESC LIMIT 1;"
+  },
+  {
+    "question": "平日周消费金额波动趋势分析",
+    "sql": "SELECT EXTRACT(DOW FROM oper_date) AS \"星期\", AVG(pay_sum) AS \"平均消费\" FROM bss_business_day_data WHERE oper_date NOT BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL GROUP BY EXTRACT(DOW FROM oper_date) ORDER BY \"星期\";"
+  },
+  {
+    "question": "节假日与非节假日现金支付占比差异",
+    "sql": "SELECT '节假日' AS \"类型\", SUM(rmb)/SUM(pay_sum) AS \"现金占比\" FROM bss_business_day_data WHERE oper_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL UNION ALL SELECT '平日', SUM(rmb)/SUM(pay_sum) FROM bss_business_day_data WHERE oper_date NOT BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL;"
+  },
+  {
+    "question": "节前节后3日车流环比增长率计算",
+    "sql": "SELECT (AVG(CASE WHEN count_date BETWEEN '2023-10-08' AND '2023-10-10' THEN customer_count END) - AVG(CASE WHEN count_date BETWEEN '2023-09-28' AND '2023-09-30' THEN customer_count END))/AVG(CASE WHEN count_date BETWEEN '2023-09-28' AND '2023-09-30' THEN customer_count END) AS \"增长率\" FROM bss_car_day_count WHERE count_date BETWEEN '2023-09-28' AND '2023-10-10' AND delete_ts IS NULL;"
+  },
+  {
+    "question": "节假日各档口消费总额Top10排名",
+    "sql": "SELECT branch_name AS \"档口名称\", SUM(pay_sum) AS \"总消费额\" FROM bss_business_day_data WHERE oper_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL GROUP BY branch_name ORDER BY \"总消费额\" DESC LIMIT 10;"
+  },
+  {
+    "question": "节假日车辆类型占比分布统计",
+    "sql": "SELECT car_type AS \"车辆类型\", SUM(customer_count) AS \"总量\", ROUND(100*SUM(customer_count)/(SELECT SUM(customer_count) FROM bss_car_day_count WHERE count_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL),2) AS \"占比百分比\" FROM bss_car_day_count WHERE count_date BETWEEN '2023-10-01' AND '2023-10-07' AND delete_ts IS NULL GROUP BY car_type ORDER BY \"总量\" DESC;"
+  },
+  {
+    "question": "统计最近一个月各服务区总营收排名（按支付金额降序）Top10",
+    "sql": "SELECT service_name AS 服务区, SUM(pay_sum) AS 总营收 FROM bss_business_day_data WHERE delete_ts IS NULL AND oper_date >= CURRENT_DATE - INTERVAL '1 month' GROUP BY service_name ORDER BY 总营收 DESC LIMIT 10;"
+  },
+  {
+    "question": "分析最近7天各区域（按服务区划分）日均车流密度Top5",
+    "sql": "SELECT service_area_id AS 服务区ID, AVG(customer_count) AS 日均车流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date >= CURRENT_DATE - INTERVAL '7 days' GROUP BY service_area_id ORDER BY 日均车流量 DESC LIMIT 5;"
+  },
+  {
+    "question": "对比营收Top10服务区与车流Top10服务区的重合率",
+    "sql": "WITH 营收排名 AS (SELECT service_name, SUM(pay_sum) AS 金额 FROM bss_business_day_data WHERE delete_ts IS NULL AND oper_date >= CURRENT_DATE - INTERVAL '1 month' GROUP BY service_name ORDER BY 金额 DESC LIMIT 10), 车流排名 AS (SELECT service_area_id, SUM(customer_count) AS 车流 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date >= CURRENT_DATE - INTERVAL '1 month' GROUP BY service_area_id ORDER BY 车流 DESC LIMIT 10) SELECT COUNT(*) FILTER (WHERE r.service_name = c.service_area_id) * 100.0 / 10 AS 重合率 FROM 营收排名 r, 车流排名 c;"
+  },
+  {
+    "question": "计算各区域（按branch_name首字分组）客单价（支付金额/订单数）Top3",
+    "sql": "SELECT SUBSTRING(branch_name FROM 1 FOR 1) AS 区域, service_name AS 服务区, AVG(pay_sum / order_sum) AS 客单价 FROM bss_business_day_data WHERE delete_ts IS NULL AND order_sum > 0 AND oper_date >= CURRENT_DATE - INTERVAL '1 month' GROUP BY SUBSTRING(branch_name FROM 1 FOR 1), service_name ORDER BY 区域, 客单价 DESC LIMIT 3;"
+  },
+  {
+    "question": "查询2023年Q2季度各服务区运营健康度评分（支付金额环比增长率）",
+    "sql": "SELECT service_name AS 服务区, (SUM(CASE WHEN EXTRACT(QUARTER FROM oper_date)=2 THEN pay_sum ELSE 0 END) - SUM(CASE WHEN EXTRACT(QUARTER FROM oper_date)=1 THEN pay_sum ELSE 0 END)) / NULLIF(SUM(CASE WHEN EXTRACT(QUARTER FROM oper_date)=1 THEN pay_sum ELSE 0 END), 0) AS 增长率 FROM bss_business_day_data WHERE delete_ts IS NULL AND EXTRACT(YEAR FROM oper_date)=2023 GROUP BY service_name ORDER BY 增长率 DESC;"
+  },
+  {
+    "question": "统计周末与工作日车流量差异最大的Top5服务区",
+    "sql": "SELECT service_area_id AS 服务区ID, AVG(CASE WHEN EXTRACT(ISODOW FROM count_date) IN (6,7) THEN customer_count ELSE 0 END) - AVG(CASE WHEN EXTRACT(ISODOW FROM count_date) NOT IN (6,7) THEN customer_count ELSE 0 END) AS 差异值 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY service_area_id ORDER BY 差异值 DESC LIMIT 5;"
+  },
+  {
+    "question": "查询2023年节假日（五一假期）期间营收异常波动（超3倍均值）的服务区",
+    "sql": "WITH 日均基准 AS (SELECT service_name, AVG(pay_sum) AS 基准值 FROM bss_business_day_data WHERE delete_ts IS NULL AND oper_date NOT BETWEEN '2023-04-29' AND '2023-05-03' GROUP BY service_name) SELECT b.service_name AS 服务区, b.pay_sum AS 节假日营收, d.基准值 FROM bss_business_day_data b JOIN 日均基准 d ON b.service_name = d.service_name WHERE b.delete_ts IS NULL AND b.oper_date BETWEEN '2023-04-29' AND '2023-05-03' AND b.pay_sum > d.基准值 * 3;"
+  },
+  {
+    "question": "分析不同车辆类型（过境/城际）对应服务区营收相关性",
+    "sql": "SELECT '过境车流' AS 类型, AVG(pay_sum) AS 平均营收 FROM bss_business_day_data b JOIN bss_car_day_count c ON b.service_name = c.service_area_id WHERE c.car_type = '过境' AND b.delete_ts IS NULL AND c.delete_ts IS NULL UNION ALL SELECT '城际车流', AVG(pay_sum) FROM bss_business_day_data b JOIN bss_car_day_count c ON b.service_name = c.service_area_id WHERE c.car_type = '城际' AND b.delete_ts IS NULL AND c.delete_ts IS NULL;"
+  },
+  {
+    "question": "统计最近30天支付方式偏好（各服务区微信/支付宝占比分布）",
+    "sql": "SELECT service_name AS 服务区, SUM(wx) / SUM(pay_sum) * 100 AS 微信占比, SUM(zfb) / SUM(pay_sum) * 100 AS 支付宝占比 FROM bss_business_day_data WHERE delete_ts IS NULL AND oper_date >= CURRENT_DATE - 30 GROUP BY service_name ORDER BY 微信占比 DESC LIMIT 10;"
+  }
+]

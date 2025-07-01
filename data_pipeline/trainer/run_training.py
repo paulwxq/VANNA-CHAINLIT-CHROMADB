@@ -308,18 +308,38 @@ def train_json_question_sql_pairs(json_file):
     except Exception as e:
         print(f" 错误：处理JSON问答训练 - {e}")
 
-def process_training_files(data_path):
+def process_training_files(data_path, task_id=None):
     """处理指定路径下的所有训练文件
     
     Args:
         data_path (str): 训练数据目录路径
+        task_id (str): 任务ID，用于日志记录
     """
-    print(f"\n===== 扫描训练数据目录: {os.path.abspath(data_path)} =====")
+    # 初始化日志
+    if task_id:
+        from data_pipeline.dp_logging import get_logger
+        logger = get_logger("TrainingDataLoader", task_id)
+        logger.info(f"扫描训练数据目录: {os.path.abspath(data_path)}")
+    else:
+        # 兼容原有调用方式
+        print(f"\n===== 扫描训练数据目录: {os.path.abspath(data_path)} =====")
+        logger = None
     
     # 检查目录是否存在
     if not os.path.exists(data_path):
-        print(f"错误: 训练数据目录不存在: {data_path}")
+        error_msg = f"错误: 训练数据目录不存在: {data_path}"
+        if logger:
+            logger.error(error_msg)
+        else:
+            print(error_msg)
         return False
+    
+    # 日志输出辅助函数
+    def log_message(message, level="info"):
+        if logger:
+            getattr(logger, level)(message)
+        else:
+            print(message)
     
     # 初始化统计计数器
     stats = {
@@ -338,7 +358,7 @@ def process_training_files(data_path):
             
             # 只处理文件，跳过目录
             if not os.path.isfile(item_path):
-                print(f"跳过子目录: {item}")
+                log_message(f"跳过子目录: {item}")
                 continue
                 
             file_lower = item.lower()
@@ -346,49 +366,49 @@ def process_training_files(data_path):
             # 根据文件类型调用相应的处理函数
             try:
                 if file_lower.endswith(".ddl"):
-                    print(f"\n处理DDL文件: {item_path}")
+                    log_message(f"处理DDL文件: {item_path}")
                     train_ddl_statements(item_path)
                     stats["ddl"] += 1
                     
                 elif file_lower.endswith(".md") or file_lower.endswith(".markdown"):
-                    print(f"\n处理文档文件: {item_path}")
+                    log_message(f"处理文档文件: {item_path}")
                     train_documentation_blocks(item_path)
                     stats["documentation"] += 1
                     
                 elif file_lower.endswith("_pair.json") or file_lower.endswith("_pairs.json"):
-                    print(f"\n处理JSON问答对文件: {item_path}")
+                    log_message(f"处理JSON问答对文件: {item_path}")
                     train_json_question_sql_pairs(item_path)
                     stats["question_sql_json"] += 1
                     
                 elif file_lower.endswith("_pair.sql") or file_lower.endswith("_pairs.sql"):
-                    print(f"\n处理格式化问答对文件: {item_path}")
+                    log_message(f"处理格式化问答对文件: {item_path}")
                     train_formatted_question_sql_pairs(item_path)
                     stats["question_sql_formatted"] += 1
                     
                 elif file_lower.endswith(".sql") and not (file_lower.endswith("_pair.sql") or file_lower.endswith("_pairs.sql")):
-                    print(f"\n处理SQL示例文件: {item_path}")
+                    log_message(f"处理SQL示例文件: {item_path}")
                     train_sql_examples(item_path)
                     stats["sql_example"] += 1
                 else:
-                    print(f"跳过不支持的文件类型: {item}")
+                    log_message(f"跳过不支持的文件类型: {item}")
             except Exception as e:
-                print(f"处理文件 {item_path} 时出错: {e}")
+                log_message(f"处理文件 {item_path} 时出错: {e}", "error")
                 
     except OSError as e:
-        print(f"读取目录失败: {e}")
+        log_message(f"读取目录失败: {e}", "error")
         return False
     
     # 打印处理统计
-    print("\n===== 训练文件处理统计 =====")
-    print(f"DDL文件: {stats['ddl']}个")
-    print(f"文档文件: {stats['documentation']}个")
-    print(f"SQL示例文件: {stats['sql_example']}个")
-    print(f"格式化问答对文件: {stats['question_sql_formatted']}个")
-    print(f"JSON问答对文件: {stats['question_sql_json']}个")
+    log_message("训练文件处理统计:")
+    log_message(f"DDL文件: {stats['ddl']}个")
+    log_message(f"文档文件: {stats['documentation']}个")
+    log_message(f"SQL示例文件: {stats['sql_example']}个")
+    log_message(f"格式化问答对文件: {stats['question_sql_formatted']}个")
+    log_message(f"JSON问答对文件: {stats['question_sql_json']}个")
     
     total_files = sum(stats.values())
     if total_files == 0:
-        print(f"警告: 在目录 {data_path} 中未找到任何可训练的文件")
+        log_message(f"警告: 在目录 {data_path} 中未找到任何可训练的文件", "warning")
         return False
         
     return True

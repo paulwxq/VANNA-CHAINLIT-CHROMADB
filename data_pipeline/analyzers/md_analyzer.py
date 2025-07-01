@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List, Dict, Any
-from core.logging import get_data_pipeline_logger
+import logging
 
 
 class MDFileAnalyzer:
@@ -8,7 +8,7 @@ class MDFileAnalyzer:
     
     def __init__(self, output_dir: str):
         self.output_dir = Path(output_dir)
-        self.logger = get_data_pipeline_logger("MDFileAnalyzer")
+        self.logger = logging.getLogger("MDFileAnalyzer")
         
     async def read_all_md_files(self) -> str:
         """

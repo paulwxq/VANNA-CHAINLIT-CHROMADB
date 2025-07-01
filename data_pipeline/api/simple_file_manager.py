@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 from datetime import datetime
 
-from core.logging import get_data_pipeline_logger
+import logging
 
 
 class SimpleFileManager:
@@ -23,7 +23,9 @@ class SimpleFileManager:
             base_output_dir: 基础输出目录
         """
         self.base_output_dir = Path(base_output_dir)
-        self.logger = get_data_pipeline_logger("SimpleFileManager")
+        # 使用简单的控制台日志，不使用文件日志
+        self.logger = logging.getLogger("SimpleFileManager")
+        self.logger.setLevel(logging.INFO)
         
         # 确保基础目录存在
         self.base_output_dir.mkdir(parents=True, exist_ok=True)

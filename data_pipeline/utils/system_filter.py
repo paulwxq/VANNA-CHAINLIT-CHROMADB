@@ -1,6 +1,6 @@
 from typing import List, Set
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
-from core.logging import get_data_pipeline_logger
+import logging
 
 class SystemTableFilter:
     """系统表过滤器"""
@@ -18,7 +18,7 @@ class SystemTableFilter:
     ]
     
     def __init__(self):
-        self.logger = get_data_pipeline_logger("SystemTableFilter")
+        self.logger = logging.getLogger("SystemTableFilter")
         
         # 加载自定义配置
         self.custom_prefixes = SCHEMA_TOOLS_CONFIG.get("custom_system_prefixes", [])

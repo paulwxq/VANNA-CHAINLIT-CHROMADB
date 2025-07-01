@@ -1,7 +1,7 @@
 import asyncio
 import time
 from abc import ABC, abstractmethod
-from core.logging import get_data_pipeline_logger
+import logging
 from typing import Dict, Any, Optional, Type, List
 from data_pipeline.utils.data_structures import ProcessingResult, TableProcessingContext
 
@@ -15,7 +15,7 @@ class ToolRegistry:
         """装饰器：注册工具"""
         def decorator(tool_class: Type['BaseTool']):
             cls._tools[name] = tool_class
-            logger = get_data_pipeline_logger("ToolRegistry")
+            logger = logging.getLogger("ToolRegistry")
             logger.debug(f"注册工具: {name} -> {tool_class.__name__}")
             return tool_class
         return decorator
@@ -33,7 +33,7 @@ class ToolRegistry:
             if hasattr(tool_class, 'needs_llm') and tool_class.needs_llm:
                 from core.vanna_llm_factory import create_vanna_instance
                 kwargs['vn'] = create_vanna_instance()
-                logger = get_data_pipeline_logger("ToolRegistry")
+                logger = logging.getLogger("ToolRegistry")
                 logger.debug(f"为工具 {name} 注入LLM实例")
             
             cls._instances[name] = tool_class(**kwargs)
@@ -57,7 +57,7 @@ class BaseTool(ABC):
     tool_name: str = ""      # 工具名称
     
     def __init__(self, **kwargs):
-        self.logger = get_data_pipeline_logger(f"tools.{self.__class__.__name__}")
+        self.logger = logging.getLogger(f"tools.{self.__class__.__name__}")
         
         # 如果工具需要LLM，检查是否已注入
         if self.needs_llm and 'vn' not in kwargs:
@@ -115,7 +115,7 @@ class PipelineExecutor:
     
     def __init__(self, pipeline_config: Dict[str, List[str]]):
         self.pipeline_config = pipeline_config
-        self.logger = get_data_pipeline_logger("tools.PipelineExecutor")
+        self.logger = logging.getLogger("tools.PipelineExecutor")
     
     async def execute_pipeline(self, pipeline_name: str, context: TableProcessingContext) -> Dict[str, ProcessingResult]:
         """执行指定的处理链"""

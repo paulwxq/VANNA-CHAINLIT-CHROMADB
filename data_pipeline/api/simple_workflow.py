@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from data_pipeline.schema_workflow import SchemaWorkflowOrchestrator
 from data_pipeline.api.simple_db_manager import SimpleTaskManager
 from data_pipeline.api.simple_file_manager import SimpleFileManager
-from core.logging import get_data_pipeline_logger
+from data_pipeline.dp_logging import get_logger
 
 
 class SimpleWorkflowExecutor:
@@ -30,7 +30,7 @@ class SimpleWorkflowExecutor:
             task_id: 任务ID
         """
         self.task_id = task_id
-        self.logger = get_data_pipeline_logger("SimpleWorkflowExecutor")
+        self.logger = get_logger("SimpleWorkflowExecutor", task_id)
         
         # 初始化管理器
         self.task_manager = SimpleTaskManager()
@@ -144,6 +144,7 @@ class SimpleWorkflowExecutor:
             table_list_file=self.task_params['table_list_file'],
             business_context=self.task_params['business_context'],
             output_dir=str(task_dir),
+            task_id=self.task_id,  # 传递task_id给编排器
             enable_sql_validation=self.task_params.get('enable_sql_validation', True),
             enable_llm_repair=self.task_params.get('enable_llm_repair', True),
             modify_original_file=self.task_params.get('modify_original_file', True),
@@ -444,7 +445,9 @@ class SimpleWorkflowManager:
         """初始化工作流管理器"""
         self.task_manager = SimpleTaskManager()
         self.file_manager = SimpleFileManager()
-        self.logger = get_data_pipeline_logger("SimpleWorkflowManager")
+        # 使用简单的控制台日志，不使用文件日志
+        self.logger = logging.getLogger("SimpleWorkflowManager")
+        self.logger.setLevel(logging.INFO)
     
     def create_task(self, 
                    table_list_file: str,

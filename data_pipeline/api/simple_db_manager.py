@@ -12,7 +12,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor, Json
 
 from app_config import PGVECTOR_CONFIG
-from core.logging import get_data_pipeline_logger
+import logging
 
 
 class SimpleTaskManager:
@@ -20,7 +20,9 @@ class SimpleTaskManager:
     
     def __init__(self):
         """初始化任务管理器"""
-        self.logger = get_data_pipeline_logger("SimpleTaskManager")
+        # 使用简单的控制台日志，不使用文件日志
+        self.logger = logging.getLogger("SimpleTaskManager")
+        self.logger.setLevel(logging.INFO)
         self._connection = None
     
     def _get_connection(self):

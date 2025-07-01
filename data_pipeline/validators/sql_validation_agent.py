@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
 from data_pipeline.validators import SQLValidator, SQLValidationResult, ValidationStats
-from core.logging import get_data_pipeline_logger
+from data_pipeline.dp_logging import get_logger
 
 
 class SQLValidationAgent:
@@ -18,6 +18,7 @@ class SQLValidationAgent:
                  db_connection: str,
                  input_file: str,
                  output_dir: str = None,
+                 task_id: str = None,
                  enable_sql_repair: bool = None,
                  modify_original_file: bool = None):
         """
@@ -27,6 +28,7 @@ class SQLValidationAgent:
             db_connection: 数据库连接字符串
             input_file: 输入的JSON文件路径（包含Question-SQL对）
             output_dir: 输出目录（默认为输入文件同目录）
+            task_id: 任务ID
             enable_sql_repair: 是否启用SQL修复（覆盖配置文件）
             modify_original_file: 是否修改原始文件（覆盖配置文件）
         """
@@ -40,7 +42,17 @@ class SQLValidationAgent:
             self.config['enable_sql_repair'] = enable_sql_repair
         if modify_original_file is not None:
             self.config['modify_original_file'] = modify_original_file
-        self.logger = get_data_pipeline_logger("SQLValidationAgent")
+            
+        self.task_id = task_id
+        
+        # 初始化独立日志系统
+        if task_id:
+            self.logger = get_logger("SQLValidationAgent", task_id)
+        else:
+            # 脚本模式下，如果没有传递task_id，生成一个
+            from datetime import datetime
+            self.task_id = f"manual_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            self.logger = get_logger("SQLValidationAgent", self.task_id)
         
         # 初始化验证器
         self.validator = SQLValidator(db_connection)

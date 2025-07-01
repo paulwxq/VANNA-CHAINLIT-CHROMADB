@@ -2,7 +2,7 @@
 原有日志系统已被新的统一日志系统替代
 保留此文件仅为避免导入错误
 """
-from core.logging import get_data_pipeline_logger
+# 移除旧的日志导入
 from typing import Optional
 import logging
 
@@ -14,8 +14,8 @@ def setup_logging(verbose: bool = False, log_file: Optional[str] = None, log_dir
     pass
 
 def get_logger(name: str = "DataPipeline"):
-    """直接返回新的logger"""
-    return get_data_pipeline_logger(name)
+    """直接返回logger"""
+    return logging.getLogger(name)
 
 def get_colored_console_handler(level=logging.INFO):
     """兼容性函数，返回None"""
@@ -25,7 +25,7 @@ class TableProcessingLogger:
     """兼容性类，实际使用新的日志系统"""
     
     def __init__(self, logger_name: str = "schema_tools.TableProcessor"):
-        self.logger = get_data_pipeline_logger("TableProcessor")
+        self.logger = logging.getLogger("TableProcessor")
         self.current_table = None
         self.start_time = None
     

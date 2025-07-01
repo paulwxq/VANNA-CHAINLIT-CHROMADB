@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from data_pipeline.utils.table_parser import TableListParser
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
-from core.logging import get_data_pipeline_logger
+import logging
 
 
 @dataclass
@@ -24,7 +24,7 @@ class FileCountValidator:
     """文件数量验证器"""
     
     def __init__(self):
-        self.logger = get_data_pipeline_logger("FileCountValidator")
+        self.logger = logging.getLogger("FileCountValidator")
         self.config = SCHEMA_TOOLS_CONFIG
         
     def validate(self, table_list_file: str, output_dir: str) -> ValidationResult:

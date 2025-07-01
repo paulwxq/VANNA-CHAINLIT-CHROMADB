@@ -3,7 +3,7 @@ import json
 from typing import List, Dict, Any
 
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
-from core.logging import get_data_pipeline_logger
+import logging
 
 
 class ThemeExtractor:
@@ -19,7 +19,7 @@ class ThemeExtractor:
         """
         self.vn = vn
         self.business_context = business_context
-        self.logger = get_data_pipeline_logger("ThemeExtractor")
+        self.logger = logging.getLogger("ThemeExtractor")
         self.config = SCHEMA_TOOLS_CONFIG
         
     async def extract_themes(self, md_contents: str) -> List[Dict[str, Any]]:

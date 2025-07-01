@@ -1,0 +1,88 @@
+{
+  "success": true,
+  "workflow_summary": {
+    "total_duration": 1076.83,
+    "completed_steps": [
+      "ddl_md_generation",
+      "question_sql_generation",
+      "sql_validation",
+      "training_data_load"
+    ],
+    "failed_steps": [],
+    "total_steps": 4,
+    "workflow_started": "2025-07-01T18:45:08.144882",
+    "workflow_completed": "2025-07-01T19:03:04.975353"
+  },
+  "input_parameters": {
+    "db_connection": "postgresql://postgres:***@192.168.67.1:6432/highway_db",
+    "table_list_file": "data_pipeline/tables.txt",
+    "business_context": "高速公路服务区管理系统",
+    "db_name": "highway_db",
+    "output_directory": "data_pipeline\\training_data\\task_20250701_184430",
+    "enable_sql_validation": true,
+    "enable_llm_repair": true,
+    "modify_original_file": true,
+    "enable_training_data_load": true
+  },
+  "processing_results": {
+    "ddl_md_generation": {
+      "total_tables": 2,
+      "processed_successfully": 2,
+      "failed": 0,
+      "files_generated": 4,
+      "duration": 124.50190877914429
+    },
+    "question_sql_generation": {
+      "output_file": "data_pipeline\\training_data\\task_20250701_184430\\qs_highway_db_20250701_185822_pair.json",
+      "total_questions": 50,
+      "total_themes": 5,
+      "successful_themes": 5,
+      "failed_themes": [],
+      "duration": 696.1132636070251
+    },
+    "sql_validation": {
+      "original_sql_count": 50,
+      "valid_sql_count": 49,
+      "invalid_sql_count": 1,
+      "success_rate": 0.98,
+      "repair_stats": {
+        "attempted": 6,
+        "successful": 5,
+        "failed": 1
+      },
+      "file_modification_stats": {
+        "modified": 5,
+        "deleted": 1,
+        "failed_modifications": 0
+      },
+      "average_execution_time": 0.033519439697265625,
+      "total_retries": 0,
+      "duration": 191.81386828422546
+    },
+    "training_data_load": {
+      "training_data_dir": "data_pipeline\\training_data\\task_20250701_184430",
+      "load_successful": true,
+      "total_records": 340,
+      "data_type_counts": {
+        "sql": 301,
+        "documentation": 20,
+        "ddl": 18,
+        "error_sql": 1
+      },
+      "duration": 62.95965242385864
+    }
+  },
+  "final_outputs": {
+    "primary_output_file": "data_pipeline\\training_data\\task_20250701_184430\\qs_highway_db_20250701_185822_pair.json",
+    "output_directory": "data_pipeline\\training_data\\task_20250701_184430",
+    "final_question_count": 49,
+    "backup_files_created": true
+  },
+  "performance_metrics": {
+    "step1_duration": 124.5,
+    "step2_duration": 696.11,
+    "step3_duration": 191.81,
+    "step4_duration": 62.96,
+    "total_duration": 1076.83
+  }
+}

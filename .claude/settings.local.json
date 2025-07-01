@@ -18,7 +18,12 @@
       "Bash(rm:*)",
       "Bash(.venv/bin/python:*)",
       "Bash(./.venv/Scripts/python.exe:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(\".venv/Scripts/python.exe\" -c \"import sys; sys.path.append('.'); from data_pipeline.logging import get_logger; print('独立日志系统导入成功')\")",
+      "Bash(\".venv/Scripts/python.exe\" -c \"import sys; sys.path.append('.'); from data_pipeline.schema_workflow import SchemaWorkflowOrchestrator; print('SchemaWorkflowOrchestrator导入成功')\")",
+      "Bash(\".venv/Scripts/python.exe\" -c \"import sys; sys.path.append('.'); from data_pipeline.api.simple_workflow import SimpleWorkflowExecutor; print('SimpleWorkflowExecutor导入成功')\")",
+      "Bash(\".venv/Scripts/python.exe\":*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

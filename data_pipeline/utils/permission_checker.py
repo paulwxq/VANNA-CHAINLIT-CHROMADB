@@ -1,13 +1,13 @@
 from typing import Dict, Optional
 import asyncio
-from core.logging import get_data_pipeline_logger
+import logging
 
 class DatabasePermissionChecker:
     """数据库权限检查器"""
     
     def __init__(self, db_inspector):
         self.db_inspector = db_inspector
-        self.logger = get_data_pipeline_logger("DatabasePermissionChecker")
+        self.logger = logging.getLogger("DatabasePermissionChecker")
         self._permission_cache: Optional[Dict[str, bool]] = None
     
     async def check_permissions(self) -> Dict[str, bool]:
