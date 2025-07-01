@@ -1,0 +1,62 @@
+-- Schema Tools生成的主题元数据
+-- 业务背景: 高速公路服务区管理系统
+-- 生成时间: 2025-07-01 23:48:11
+-- 数据库: highway_db
+
+-- 创建表（如果不存在）
+CREATE TABLE IF NOT EXISTS metadata (
+    id SERIAL PRIMARY KEY,    -- 主键
+    topic_name VARCHAR(100) NOT NULL,  -- 业务主题名称
+    description TEXT,                  -- 业务主体说明
+    related_tables TEXT[],			  -- 相关表名
+    biz_entities TEXT[],               -- 主要业务实体名称
+    biz_metrics TEXT[],                -- 主要业务指标名称
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    -- 插入时间
+);
+
+-- 插入主题数据
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '日营收分析',
+  '分析各服务区每日营收结构及支付方式占比，评估经营质量与支付偏好',
+  'bss_business_day_data',
+  '服务区,档口,支付方式',
+  '日营收总额,支付方式占比,档口收益排名'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '车流特征分析',
+  '统计各服务区车辆类型分布及时段规律，辅助基础设施规划与服务资源配置',
+  'bss_car_day_count',
+  '服务区,车辆类型,统计日期',
+  '车流量趋势,车型占比分析,高峰时段识别'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '档口效能评估',
+  '对比不同档口单位车流的营收转化率，发现运营效率差异与改进空间',
+  'bss_business_day_data,bss_car_day_count',
+  '服务区,档口,运营时段',
+  '坪效对比,客单价分析,转化率排名'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '节假日效应分析',
+  '对比节假日与常规时段的营收波动及车流变化，优化促销策略与人力配置',
+  'bss_business_day_data,bss_car_day_count',
+  '服务区,节假日类型,支付方式',
+  '节前/节中/节后对比,车流峰值分析,支付方式迁移趋势'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '异常数据监测',
+  '识别营收数据与车流数据的匹配异常，发现潜在运营问题或数据采集故障',
+  'bss_business_day_data,bss_car_day_count',
+  '服务区,数据来源,支付方式',
+  '营收-车流偏离度,支付方式异常检测,数据完整性校验'
+);
+

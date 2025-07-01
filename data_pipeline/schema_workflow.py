@@ -64,7 +64,9 @@ class SchemaWorkflowOrchestrator:
         # 设置输出目录
         if output_dir is None:
             # 脚本模式或未指定输出目录时，使用任务目录
-            self.output_dir = Path("data_pipeline/training_data") / self.task_id
+            # 获取项目根目录的绝对路径
+            project_root = Path(__file__).parent.parent
+            self.output_dir = project_root / "data_pipeline" / "training_data" / self.task_id
         else:
             # API模式或明确指定输出目录时，使用指定的目录
             self.output_dir = Path(output_dir)

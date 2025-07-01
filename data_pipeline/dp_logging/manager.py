@@ -81,8 +81,10 @@ class DataPipelineLogManager:
     def _create_file_handler(cls, task_id: str) -> std_logging.FileHandler:
         """创建文件处理器"""
         try:
-            # 确定日志文件路径
-            task_dir = Path("data_pipeline/training_data") / task_id
+            # 获取项目根目录的绝对路径
+            project_root = Path(__file__).parent.parent.parent
+            task_dir = project_root / "data_pipeline" / "training_data" / task_id
+            
             task_dir.mkdir(parents=True, exist_ok=True)
             
             log_file = task_dir / "data_pipeline.log"

@@ -1,7 +1,7 @@
--- 中文名: 业务支撑系统中的服务区营业日数据表
--- 描述: 业务支撑系统中的服务区营业日数据表，记录各服务区每日营业统计信息（交易/服务等），支持运营分析与管理
+-- 中文名: 高速公路服务区每日业务统计数据表
+-- 描述: 高速公路服务区每日业务统计数据表，支持运营分析与监控
 create table public.bss_business_day_data (
-  id varchar(32) not null     -- 主键标识，主键,
+  id varchar(32) not null     -- 主键ID，主键,
   version integer not null    -- 版本号,
   create_ts timestamp         -- 创建时间,
   created_by varchar(50)      -- 创建人,
@@ -21,11 +21,11 @@ create table public.bss_business_day_data (
   rmb numeric(19,4)           -- 现金支付金额,
   rmb_order integer           -- 现金订单数量,
   xs numeric(19,4)            -- 行吧支付金额,
-  xs_order integer            -- 行吧订单数量,
+  xs_order integer            -- 行吧支付数量,
   jd numeric(19,4)            -- 金豆支付金额,
-  jd_order integer            -- 金豆订单数量,
+  jd_order integer            -- 金豆支付数量,
   order_sum integer           -- 订单总数,
-  pay_sum numeric(19,4)       -- 总支付金额,
+  pay_sum numeric(19,4)       -- 支付总金额,
   source_type integer         -- 数据来源类别,
   primary key (id)
 );

@@ -54,8 +54,8 @@ class SimpleTaskManager:
         return f"task_{timestamp}"
     
     def create_task(self, 
-                   table_list_file: str,
-                   business_context: str,
+                   table_list_file: str = None,
+                   business_context: str = None,
                    db_name: str = None,
                    **kwargs) -> str:
         """创建新任务"""
@@ -71,21 +71,33 @@ class SimpleTaskManager:
         if not db_name:
             db_name = APP_DB_CONFIG.get('dbname', 'business_db')
         
+        # 处理table_list_file参数
+        # 如果未提供，将在执行时检查任务目录中的table_list.txt文件
+        task_table_list_file = table_list_file
+        if not task_table_list_file:
+            from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+            upload_config = SCHEMA_TOOLS_CONFIG.get("file_upload", {})
+            target_filename = upload_config.get("target_filename", "table_list.txt")
+            # 使用相对于任务目录的路径
+            task_table_list_file = f"{{task_directory}}/{target_filename}"
+        
         # 构建参数
         parameters = {
             "db_connection": business_db_connection,  # 业务数据库连接（用于schema_workflow执行）
-            "table_list_file": table_list_file,
-            "business_context": business_context,
+            "table_list_file": task_table_list_file,
+            "business_context": business_context or "数据库管理系统",
+            "file_upload_mode": table_list_file is None,  # 标记是否使用文件上传模式
             **kwargs
         }
         
         try:
             conn = self._get_connection()
             with conn.cursor() as cursor:
+                # 创建任务记录
                 cursor.execute("""
                     INSERT INTO data_pipeline_tasks (
-                        id, task_type, status, parameters, created_by, 
-                        db_name, business_context, output_directory
+                        task_id, task_type, status, parameters, created_type, 
+                        by_user, db_name, output_directory
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     task_id, 
@@ -93,10 +105,31 @@ class SimpleTaskManager:
                     'pending', 
                     Json(parameters),
                     'api',
+                    'guest',
                     db_name,
-                    business_context,
-                    f"./data_pipeline/training_data/{task_id}"
+                    f"data_pipeline/training_data/{task_id}"
                 ))
+                
+                # 预创建所有步骤记录（策略A）
+                step_names = ['ddl_generation', 'qa_generation', 'sql_validation', 'training_load']
+                for step_name in step_names:
+                    cursor.execute("""
+                        INSERT INTO data_pipeline_task_steps (
+                            task_id, step_name, step_status
+                        ) VALUES (%s, %s, %s)
+                    """, (task_id, step_name, 'pending'))
+            
+            # 创建任务目录
+            try:
+                from data_pipeline.api.simple_file_manager import SimpleFileManager
+                file_manager = SimpleFileManager()
+                success = file_manager.create_task_directory(task_id)
+                if success:
+                    self.logger.info(f"任务目录创建成功: {task_id}")
+                else:
+                    self.logger.warning(f"任务目录创建失败，但任务记录已保存: {task_id}")
+            except Exception as dir_error:
+                self.logger.warning(f"创建任务目录时出错: {dir_error}，但任务记录已保存: {task_id}")
                 
             self.logger.info(f"任务创建成功: {task_id}")
             return task_id
@@ -110,7 +143,7 @@ class SimpleTaskManager:
         try:
             conn = self._get_connection()
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("SELECT * FROM data_pipeline_tasks WHERE id = %s", (task_id,))
+                cursor.execute("SELECT * FROM data_pipeline_tasks WHERE task_id = %s", (task_id,))
                 result = cursor.fetchone()
                 return dict(result) if result else None
         except Exception as e:
@@ -140,7 +173,7 @@ class SimpleTaskManager:
                 cursor.execute(f"""
                     UPDATE data_pipeline_tasks 
                     SET {', '.join(update_fields)}
-                    WHERE id = %s
+                    WHERE task_id = %s
                 """, values)
                 
                 self.logger.info(f"任务状态更新: {task_id} -> {status}")
@@ -148,129 +181,121 @@ class SimpleTaskManager:
             self.logger.error(f"任务状态更新失败: {e}")
             raise
     
-    def update_step_status(self, task_id: str, step_name: str, step_status: str):
+    def update_step_status(self, task_id: str, step_name: str, step_status: str, error_message: Optional[str] = None):
         """更新步骤状态"""
         try:
             conn = self._get_connection()
             with conn.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE data_pipeline_tasks 
-                    SET step_status = jsonb_set(step_status, %s, %s)
-                    WHERE id = %s
-                """, ([step_name], json.dumps(step_status), task_id))
+                update_fields = ["step_status = %s"]
+                values = [step_status]
+                
+                # 如果状态是running，记录开始时间
+                if step_status == 'running':
+                    update_fields.append("started_at = CURRENT_TIMESTAMP")
+                
+                # 如果状态是completed或failed，记录完成时间
+                if step_status in ['completed', 'failed']:
+                    update_fields.append("completed_at = CURRENT_TIMESTAMP")
+                
+                # 如果有错误信息，记录错误信息
+                if error_message:
+                    update_fields.append("error_message = %s")
+                    values.append(error_message)
+                
+                values.extend([task_id, step_name])
+                
+                cursor.execute(f"""
+                    UPDATE data_pipeline_task_steps 
+                    SET {', '.join(update_fields)}
+                    WHERE task_id = %s AND step_name = %s
+                """, values)
                 
                 self.logger.debug(f"步骤状态更新: {task_id}.{step_name} -> {step_status}")
         except Exception as e:
             self.logger.error(f"步骤状态更新失败: {e}")
             raise
     
-    def create_execution(self, task_id: str, execution_step: str) -> str:
-        """创建执行记录"""
+    def update_step_execution_id(self, task_id: str, step_name: str, execution_id: str):
+        """更新步骤的execution_id"""
+        try:
+            conn = self._get_connection()
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE data_pipeline_task_steps 
+                    SET execution_id = %s
+                    WHERE task_id = %s AND step_name = %s
+                """, (execution_id, task_id, step_name))
+                
+                self.logger.debug(f"步骤execution_id更新: {task_id}.{step_name} -> {execution_id}")
+        except Exception as e:
+            self.logger.error(f"步骤execution_id更新失败: {e}")
+            raise
+    
+    def start_step(self, task_id: str, step_name: str) -> str:
+        """开始执行步骤"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        execution_id = f"{task_id}_step_{execution_step}_exec_{timestamp}"
+        execution_id = f"{task_id}_step_{step_name}_exec_{timestamp}"
         
         try:
-            conn = self._get_connection()
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO data_pipeline_task_executions (
-                        task_id, execution_step, status, execution_id
-                    ) VALUES (%s, %s, %s, %s)
-                """, (task_id, execution_step, 'running', execution_id))
+            # 更新步骤状态为running并设置execution_id
+            self.update_step_status(task_id, step_name, 'running')
+            self.update_step_execution_id(task_id, step_name, execution_id)
                 
-                self.logger.info(f"执行记录创建: {execution_id}")
-                return execution_id
+            self.logger.info(f"步骤开始执行: {task_id}.{step_name} -> {execution_id}")
+            return execution_id
         except Exception as e:
-            self.logger.error(f"执行记录创建失败: {e}")
+            self.logger.error(f"步骤开始执行失败: {e}")
             raise
     
-    def complete_execution(self, execution_id: str, status: str, error_message: Optional[str] = None):
-        """完成执行记录"""
+    def complete_step(self, task_id: str, step_name: str, status: str, error_message: Optional[str] = None):
+        """完成步骤执行"""
         try:
-            conn = self._get_connection()
-            with conn.cursor() as cursor:
-                # 计算执行时长
-                cursor.execute("""
-                    SELECT started_at FROM data_pipeline_task_executions 
-                    WHERE execution_id = %s
-                """, (execution_id,))
-                result = cursor.fetchone()
-                
-                duration_seconds = None
-                if result and result[0]:
-                    duration_seconds = int((datetime.now() - result[0]).total_seconds())
-                
-                # 更新执行记录
-                update_fields = ["status = %s", "completed_at = CURRENT_TIMESTAMP"]
-                values = [status]
-                
-                if duration_seconds is not None:
-                    update_fields.append("duration_seconds = %s")
-                    values.append(duration_seconds)
-                
-                if error_message:
-                    update_fields.append("error_message = %s")
-                    values.append(error_message)
-                
-                values.append(execution_id)
-                
-                cursor.execute(f"""
-                    UPDATE data_pipeline_task_executions 
-                    SET {', '.join(update_fields)}
-                    WHERE execution_id = %s
-                """, values)
-                
-                self.logger.info(f"执行记录完成: {execution_id} -> {status}")
+            self.update_step_status(task_id, step_name, status, error_message)
+            self.logger.info(f"步骤执行完成: {task_id}.{step_name} -> {status}")
         except Exception as e:
-            self.logger.error(f"执行记录完成失败: {e}")
+            self.logger.error(f"步骤执行完成失败: {e}")
             raise
     
-    def record_log(self, task_id: str, log_level: str, message: str, 
-                   execution_id: Optional[str] = None, step_name: Optional[str] = None):
-        """记录日志到数据库"""
-        try:
-            conn = self._get_connection()
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO data_pipeline_task_logs (
-                        task_id, execution_id, log_level, message, step_name
-                    ) VALUES (%s, %s, %s, %s, %s)
-                """, (task_id, execution_id, log_level, message, step_name))
-        except Exception as e:
-            self.logger.error(f"日志记录失败: {e}")
-    
-    def get_task_logs(self, task_id: str, limit: int = 100) -> List[Dict[str, Any]]:
-        """获取任务日志"""
+    def get_task_steps(self, task_id: str) -> List[Dict[str, Any]]:
+        """获取任务的所有步骤状态"""
         try:
             conn = self._get_connection()
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
-                    SELECT * FROM data_pipeline_task_logs 
+                    SELECT * FROM data_pipeline_task_steps 
                     WHERE task_id = %s 
-                    ORDER BY timestamp DESC 
-                    LIMIT %s
-                """, (task_id, limit))
-                
-                return [dict(row) for row in cursor.fetchall()]
-        except Exception as e:
-            self.logger.error(f"获取任务日志失败: {e}")
-            raise
-    
-    def get_task_executions(self, task_id: str) -> List[Dict[str, Any]]:
-        """获取任务执行记录"""
-        try:
-            conn = self._get_connection()
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("""
-                    SELECT * FROM data_pipeline_task_executions 
-                    WHERE task_id = %s 
-                    ORDER BY started_at DESC
+                    ORDER BY 
+                        CASE step_name 
+                          WHEN 'ddl_generation' THEN 1
+                          WHEN 'qa_generation' THEN 2
+                          WHEN 'sql_validation' THEN 3
+                          WHEN 'training_load' THEN 4
+                          ELSE 5 
+                        END
                 """, (task_id,))
                 
                 return [dict(row) for row in cursor.fetchall()]
         except Exception as e:
-            self.logger.error(f"获取执行记录失败: {e}")
+            self.logger.error(f"获取任务步骤状态失败: {e}")
             raise
+    
+    def get_step_status(self, task_id: str, step_name: str) -> Optional[Dict[str, Any]]:
+        """获取特定步骤的状态"""
+        try:
+            conn = self._get_connection()
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT * FROM data_pipeline_task_steps 
+                    WHERE task_id = %s AND step_name = %s
+                """, (task_id, step_name))
+                
+                result = cursor.fetchone()
+                return dict(result) if result else None
+        except Exception as e:
+            self.logger.error(f"获取步骤状态失败: {e}")
+            raise
+    
+
     
     def get_tasks_list(self, limit: int = 50, offset: int = 0, status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
         """获取任务列表"""
@@ -303,7 +328,7 @@ class SimpleTaskManager:
         try:
             conn = self._get_connection()
             with conn.cursor() as cursor:
-                cursor.execute("SELECT started_at FROM data_pipeline_tasks WHERE id = %s", (task_id,))
+                cursor.execute("SELECT started_at FROM data_pipeline_tasks WHERE task_id = %s", (task_id,))
                 result = cursor.fetchone()
                 return result[0] if result and result[0] else None
         except Exception:

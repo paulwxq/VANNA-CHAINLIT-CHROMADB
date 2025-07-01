@@ -2792,15 +2792,8 @@ def create_data_pipeline_task():
     try:
         req = request.get_json(force=True)
         
-        # 验证必需参数 - 移除db_connection，改为使用app_config配置
-        required_params = ['table_list_file', 'business_context']
-        missing_params = [param for param in required_params if not req.get(param)]
-        
-        if missing_params:
-            return jsonify(bad_request_response(
-                response_text=f"缺少必需参数: {', '.join(missing_params)}",
-                missing_params=missing_params
-            )), 400
+        # table_list_file和business_context现在都是可选参数
+        # 如果未提供table_list_file，将使用文件上传模式
         
         # 创建任务（自动使用app_config中的数据库配置）
         manager = get_data_pipeline_manager()
@@ -2823,8 +2816,17 @@ def create_data_pipeline_task():
             "created_at": task_info.get('created_at').isoformat() if task_info.get('created_at') else None
         }
         
+        # 检查是否为文件上传模式
+        file_upload_mode = not req.get('table_list_file')
+        response_message = "任务创建成功"
+        
+        if file_upload_mode:
+            response_data["file_upload_mode"] = True
+            response_data["next_step"] = f"POST /api/v0/data_pipeline/tasks/{task_id}/upload-table-list"
+            response_message += "，请上传表清单文件后再执行任务"
+        
         return jsonify(success_response(
-            response_text="任务创建成功",
+            response_text=response_message,
             data=response_data
         )), 201
         
@@ -2967,27 +2969,43 @@ def get_data_pipeline_task_status(task_id):
                 response_text=f"任务不存在: {task_id}"
             )), 404
         
-        # 获取执行记录
-        executions = manager.get_task_executions(task_id)
-        current_execution = executions[0] if executions else None
+        # 获取步骤状态
+        steps = manager.get_task_steps(task_id)
+        current_step = None
+        for step in steps:
+            if step['step_status'] == 'running':
+                current_step = step
+                break
+        
+        # 构建步骤状态摘要
+        step_status_summary = {}
+        for step in steps:
+            step_status_summary[step['step_name']] = step['step_status']
         
         response_data = {
-            "task_id": task_info['id'],
+            "task_id": task_info['task_id'],
             "status": task_info['status'],
-            "step_status": task_info.get('step_status', {}),
+            "step_status": step_status_summary,
             "created_at": task_info['created_at'].isoformat() if task_info.get('created_at') else None,
             "started_at": task_info['started_at'].isoformat() if task_info.get('started_at') else None,
             "completed_at": task_info['completed_at'].isoformat() if task_info.get('completed_at') else None,
             "parameters": task_info.get('parameters', {}),
             "result": task_info.get('result'),
             "error_message": task_info.get('error_message'),
-            "current_execution": {
-                "execution_id": current_execution['execution_id'],
-                "step": current_execution['execution_step'],
-                "status": current_execution['status'],
-                "started_at": current_execution['started_at'].isoformat() if current_execution.get('started_at') else None
-            } if current_execution else None,
-            "total_executions": len(executions)
+            "current_step": {
+                "execution_id": current_step['execution_id'],
+                "step": current_step['step_name'],
+                "status": current_step['step_status'],
+                "started_at": current_step['started_at'].isoformat() if current_step and current_step.get('started_at') else None
+            } if current_step else None,
+            "total_steps": len(steps),
+            "steps": [{
+                "step_name": step['step_name'],
+                "step_status": step['step_status'],
+                "started_at": step['started_at'].isoformat() if step.get('started_at') else None,
+                "completed_at": step['completed_at'].isoformat() if step.get('completed_at') else None,
+                "error_message": step.get('error_message')
+            } for step in steps]
         }
         
         return jsonify(success_response(
@@ -3004,10 +3022,10 @@ def get_data_pipeline_task_status(task_id):
 @app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/logs', methods=['GET'])
 def get_data_pipeline_task_logs(task_id):
     """
-    获取数据管道任务日志
+    获取数据管道任务日志（从任务目录文件读取）
     
     查询参数:
-    - limit: 日志数量限制，默认100
+    - limit: 日志行数限制，默认100
     - level: 日志级别过滤，可选
     
     响应:
@@ -3019,14 +3037,13 @@ def get_data_pipeline_task_logs(task_id):
             "task_id": "task_20250627_143052",
             "logs": [
                 {
-                    "timestamp": "2025-06-27T14:30:52",
+                    "timestamp": "2025-06-27 14:30:52",
                     "level": "INFO",
-                    "message": "任务开始执行",
-                    "step_name": "ddl_generation",
-                    "execution_id": "task_20250627_143052_step_ddl_generation_exec_20250627_143100"
+                    "message": "任务开始执行"
                 }
             ],
-            "total": 15
+            "total": 15,
+            "source": "file"
         }
     }
     """
@@ -3046,31 +3063,62 @@ def get_data_pipeline_task_logs(task_id):
                 response_text=f"任务不存在: {task_id}"
             )), 404
         
-        # 获取日志
-        logs = manager.get_task_logs(task_id, limit=limit)
+        # 获取任务目录下的日志文件
+        import os
+        from pathlib import Path
         
-        # 过滤日志级别
-        if level:
-            logs = [log for log in logs if log.get('log_level') == level.upper()]
+        # 获取项目根目录的绝对路径
+        project_root = Path(__file__).parent.absolute()
+        task_dir = project_root / "data_pipeline" / "training_data" / task_id
+        log_file = task_dir / "data_pipeline.log"
         
-        # 格式化日志
-        formatted_logs = []
-        for log in logs:
-            formatted_logs.append({
-                "timestamp": log['timestamp'].isoformat() if log.get('timestamp') else None,
-                "level": log.get('log_level'),
-                "message": log.get('message'),
-                "step_name": log.get('step_name'),
-                "execution_id": log.get('execution_id'),
-                "module_name": log.get('module_name'),
-                "function_name": log.get('function_name'),
-                "extra_data": log.get('extra_data')
-            })
+        logs = []
+        if log_file.exists():
+            try:
+                # 读取日志文件的最后N行
+                with open(log_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    
+                # 取最后limit行
+                recent_lines = lines[-limit:] if len(lines) > limit else lines
+                
+                # 解析日志行
+                import re
+                log_pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\] (.+?): (.+)$'
+                
+                for line in recent_lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                        
+                    match = re.match(log_pattern, line)
+                    if match:
+                        timestamp, log_level, logger_name, message = match.groups()
+                        
+                        # 级别过滤
+                        if level and log_level != level.upper():
+                            continue
+                            
+                        logs.append({
+                            "timestamp": timestamp,
+                            "level": log_level,
+                            "logger": logger_name,
+                            "message": message
+                        })
+                    else:
+                        # 处理多行日志（如异常堆栈）
+                        if logs:
+                            logs[-1]["message"] += f"\n{line}"
+                        
+            except Exception as e:
+                logger.error(f"读取日志文件失败: {e}")
         
         response_data = {
             "task_id": task_id,
-            "logs": formatted_logs,
-            "total": len(formatted_logs)
+            "logs": logs,
+            "total": len(logs),
+            "source": "file",
+            "log_file": str(log_file) if log_file.exists() else None
         }
         
         return jsonify(success_response(
@@ -3194,28 +3242,50 @@ def get_data_pipeline_task_files(task_id):
 def download_data_pipeline_task_file(task_id, file_name):
     """下载任务文件"""
     try:
-        file_manager = get_data_pipeline_file_manager()
+        logger.info(f"开始下载文件: task_id={task_id}, file_name={file_name}")
         
-        # 验证文件存在且安全
-        if not file_manager.file_exists(task_id, file_name):
+        # 直接构建文件路径，避免依赖数据库
+        from pathlib import Path
+        import os
+        
+        # 获取项目根目录的绝对路径
+        project_root = Path(__file__).parent.absolute()
+        task_dir = project_root / "data_pipeline" / "training_data" / task_id
+        file_path = task_dir / file_name
+        
+        logger.info(f"文件路径: {file_path}")
+        
+        # 检查文件是否存在
+        if not file_path.exists():
+            logger.warning(f"文件不存在: {file_path}")
             return jsonify(not_found_response(
                 response_text=f"文件不存在: {file_name}"
             )), 404
         
-        if not file_manager.is_file_safe(task_id, file_name):
+        # 检查是否为文件（而不是目录）
+        if not file_path.is_file():
+            logger.warning(f"路径不是文件: {file_path}")
+            return jsonify(bad_request_response(
+                response_text=f"路径不是有效文件: {file_name}"
+            )), 400
+        
+        # 安全检查：确保文件在允许的目录内
+        try:
+            file_path.resolve().relative_to(task_dir.resolve())
+        except ValueError:
+            logger.warning(f"文件路径不安全: {file_path}")
             return jsonify(bad_request_response(
                 response_text="非法的文件路径"
             )), 400
         
-        # 获取文件路径
-        file_path = file_manager.get_file_path(task_id, file_name)
-        
         # 检查文件是否可读
         if not os.access(file_path, os.R_OK):
+            logger.warning(f"文件不可读: {file_path}")
             return jsonify(bad_request_response(
                 response_text="文件不可读"
             )), 400
         
+        logger.info(f"开始发送文件: {file_path}")
         return send_file(
             file_path,
             as_attachment=True,
@@ -3223,9 +3293,135 @@ def download_data_pipeline_task_file(task_id, file_name):
         )
         
     except Exception as e:
-        logger.error(f"下载任务文件失败: {str(e)}")
+        logger.error(f"下载任务文件失败: task_id={task_id}, file_name={file_name}, 错误: {str(e)}", exc_info=True)
         return jsonify(internal_error_response(
             response_text="下载文件失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/upload-table-list', methods=['POST'])
+def upload_table_list_file(task_id):
+    """
+    上传表清单文件
+    
+    表单参数:
+    - file: 要上传的表清单文件（multipart/form-data）
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "表清单文件上传成功",
+        "data": {
+            "task_id": "task_20250701_123456",
+            "filename": "table_list.txt",
+            "file_size": 1024,
+            "file_size_formatted": "1.0 KB"
+        }
+    }
+    """
+    try:
+        # 验证任务是否存在
+        manager = get_data_pipeline_manager()
+        task_info = manager.get_task_status(task_id)
+        if not task_info:
+            return jsonify(not_found_response(
+                response_text=f"任务不存在: {task_id}"
+            )), 404
+        
+        # 检查是否有文件上传
+        if 'file' not in request.files:
+            return jsonify(bad_request_response(
+                response_text="请选择要上传的表清单文件",
+                missing_params=['file']
+            )), 400
+        
+        file = request.files['file']
+        
+        # 验证文件名
+        if file.filename == '':
+            return jsonify(bad_request_response(
+                response_text="请选择有效的文件"
+            )), 400
+        
+        try:
+            # 使用文件管理器上传文件
+            file_manager = get_data_pipeline_file_manager()
+            result = file_manager.upload_table_list_file(task_id, file)
+            
+            response_data = {
+                "task_id": task_id,
+                "filename": result["filename"],
+                "file_size": result["file_size"],
+                "file_size_formatted": result["file_size_formatted"],
+                "upload_time": result["upload_time"].isoformat() if result.get("upload_time") else None
+            }
+            
+            return jsonify(success_response(
+                response_text="表清单文件上传成功",
+                data=response_data
+            )), 200
+            
+        except ValueError as e:
+            # 文件验证错误（如文件太大、空文件等）
+            return jsonify(bad_request_response(
+                response_text=str(e)
+            )), 400
+        except Exception as e:
+            logger.error(f"上传表清单文件失败: {str(e)}")
+            return jsonify(internal_error_response(
+                response_text="文件上传失败，请稍后重试"
+            )), 500
+        
+    except Exception as e:
+        logger.error(f"处理表清单文件上传请求失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="处理上传请求失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/table-list-info', methods=['GET'])
+def get_table_list_info(task_id):
+    """
+    获取任务的表清单文件信息
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "获取表清单文件信息成功",
+        "data": {
+            "task_id": "task_20250701_123456",
+            "has_file": true,
+            "filename": "table_list.txt",
+            "file_path": "./data_pipeline/training_data/task_20250701_123456/table_list.txt",
+            "file_size": 1024,
+            "file_size_formatted": "1.0 KB",
+            "uploaded_at": "2025-07-01T12:34:56",
+            "table_count": 5,
+            "is_readable": true
+        }
+    }
+    """
+    try:
+        file_manager = get_data_pipeline_file_manager()
+        
+        # 获取表清单文件信息
+        table_list_info = file_manager.get_table_list_file_info(task_id)
+        
+        response_data = {
+            "task_id": task_id,
+            "has_file": table_list_info.get("exists", False),
+            **table_list_info
+        }
+        
+        return jsonify(success_response(
+            response_text="获取表清单文件信息成功",
+            data=response_data
+        ))
+        
+    except Exception as e:
+        logger.error(f"获取表清单文件信息失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取表清单文件信息失败，请稍后重试"
         )), 500
 
 logger.info("正在启动Flask应用: http://localhost:8084")

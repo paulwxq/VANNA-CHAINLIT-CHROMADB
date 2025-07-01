@@ -120,6 +120,19 @@ SCHEMA_TOOLS_CONFIG = {
         
         # 文件修改配置
         "modify_original_file": False,       # 是否修改原始JSON文件（默认禁用）
+    },
+    
+    # 文件上传配置
+    "file_upload": {
+        "enabled": True,                     # 是否启用文件上传功能
+        "max_file_size_mb": 2,               # 最大文件大小（MB）
+        "allowed_extensions": ["txt"],       # 允许的文件扩展名（不带点）
+        "target_filename": "table_list.txt", # 上传后的标准文件名
+        "validate_content": True,            # 是否验证文件内容
+        "min_lines": 1,                      # 最少行数（排除空行和注释）
+        "max_lines": 1000,                   # 最大行数限制
+        "encoding": "utf-8",                 # 文件编码
+        "allow_overwrite": True,             # 是否允许覆盖已存在的文件
     }
 }
 

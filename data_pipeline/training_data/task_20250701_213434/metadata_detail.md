@@ -7,9 +7,9 @@
 - `id` (serial) - 主键ID [主键, 非空]
 - `topic_name` (varchar(100)) - 业务主题名称 [非空]
 - `description` (text) - 业务主题说明
-- `related_tables` (text[]) - 涉及的数据表 [示例: bss_section_route_area_link, bss_business_day_data]
-- `biz_entities` (text[]) - 主要业务实体名称 [示例: 路段, 企业, 日期]
-- `biz_metrics` (text[]) - 主要业务指标名称 [示例: 车流转化率, 支付渗透率变化, 单车道收益]
+- `related_tables` (text[]) - 涉及的数据表 [示例: bss_car_day_count, bss_business_day_data]
+- `biz_entities` (text[]) - 主要业务实体名称 [示例: 统计周期, 支付渠道, 支付类型]
+- `biz_metrics` (text[]) - 主要业务指标名称 [示例: 单位面积收益, 消费频次关联, 订单量对比]
 - `created_at` (timestamp) - 插入时间 [默认值: `CURRENT_TIMESTAMP`]
 
 字段补充说明：
