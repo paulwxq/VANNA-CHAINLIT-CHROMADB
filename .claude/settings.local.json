@@ -17,7 +17,8 @@
       "Bash(mv:*)",
       "Bash(rm:*)",
       "Bash(.venv/bin/python:*)",
-      "Bash(./.venv/Scripts/python.exe:*)"
+      "Bash(./.venv/Scripts/python.exe:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

@@ -123,6 +123,19 @@ class LogManager:
     
     def _configure_logger(self, logger: logging.Logger, module: str):
         """配置具体的logger"""
+        # 如果配置未初始化，使用默认的控制台日志配置
+        if self.config is None:
+            logger.setLevel(logging.INFO)
+            if not logger.handlers:
+                console_handler = logging.StreamHandler()
+                formatter = logging.Formatter(
+                    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                )
+                console_handler.setFormatter(formatter)
+                logger.addHandler(console_handler)
+                logger.propagate = False
+            return
+            
         module_config = self.config.get('modules', {}).get(module, self.config['default'])
         
         # 设置日志级别

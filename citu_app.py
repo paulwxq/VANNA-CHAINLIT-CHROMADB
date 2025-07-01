@@ -2755,5 +2755,478 @@ const chatSession = new ChatSession();
 chatSession.askQuestion("各年龄段客户的流失率如何？");
 """
 
+# ==================== Data Pipeline API ====================
+
+# 导入简化的Data Pipeline模块
+import asyncio
+import os
+from threading import Thread
+from flask import send_file
+
+from data_pipeline.api.simple_workflow import SimpleWorkflowManager
+from data_pipeline.api.simple_file_manager import SimpleFileManager
+
+# 创建简化的管理器
+data_pipeline_manager = None
+data_pipeline_file_manager = None
+
+def get_data_pipeline_manager():
+    """获取Data Pipeline管理器单例"""
+    global data_pipeline_manager
+    if data_pipeline_manager is None:
+        data_pipeline_manager = SimpleWorkflowManager()
+    return data_pipeline_manager
+
+def get_data_pipeline_file_manager():
+    """获取Data Pipeline文件管理器单例"""
+    global data_pipeline_file_manager
+    if data_pipeline_file_manager is None:
+        data_pipeline_file_manager = SimpleFileManager()
+    return data_pipeline_file_manager
+
+# ==================== 简化的Data Pipeline API端点 ====================
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks', methods=['POST'])
+def create_data_pipeline_task():
+    """创建数据管道任务"""
+    try:
+        req = request.get_json(force=True)
+        
+        # 验证必需参数 - 移除db_connection，改为使用app_config配置
+        required_params = ['table_list_file', 'business_context']
+        missing_params = [param for param in required_params if not req.get(param)]
+        
+        if missing_params:
+            return jsonify(bad_request_response(
+                response_text=f"缺少必需参数: {', '.join(missing_params)}",
+                missing_params=missing_params
+            )), 400
+        
+        # 创建任务（自动使用app_config中的数据库配置）
+        manager = get_data_pipeline_manager()
+        task_id = manager.create_task(
+            table_list_file=req.get('table_list_file'),
+            business_context=req.get('business_context'),
+            db_name=req.get('db_name'),  # 可选参数，用于指定特定数据库名称
+            enable_sql_validation=req.get('enable_sql_validation', True),
+            enable_llm_repair=req.get('enable_llm_repair', True),
+            modify_original_file=req.get('modify_original_file', True),
+            enable_training_data_load=req.get('enable_training_data_load', True)
+        )
+        
+        # 获取任务信息
+        task_info = manager.get_task_status(task_id)
+        
+        response_data = {
+            "task_id": task_id,
+            "status": task_info.get('status'),
+            "created_at": task_info.get('created_at').isoformat() if task_info.get('created_at') else None
+        }
+        
+        return jsonify(success_response(
+            response_text="任务创建成功",
+            data=response_data
+        )), 201
+        
+    except Exception as e:
+        logger.error(f"创建数据管道任务失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="创建任务失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/execute', methods=['POST'])
+def execute_data_pipeline_task(task_id):
+    """执行数据管道任务"""
+    try:
+        req = request.get_json(force=True) if request.is_json else {}
+        execution_mode = req.get('execution_mode', 'complete')
+        step_name = req.get('step_name')
+        
+        # 验证执行模式
+        if execution_mode not in ['complete', 'step']:
+            return jsonify(bad_request_response(
+                response_text="无效的执行模式，必须是 'complete' 或 'step'",
+                invalid_params=['execution_mode']
+            )), 400
+        
+        # 如果是步骤执行模式，验证步骤名称
+        if execution_mode == 'step':
+            if not step_name:
+                return jsonify(bad_request_response(
+                    response_text="步骤执行模式需要指定step_name",
+                    missing_params=['step_name']
+                )), 400
+            
+            valid_steps = ['ddl_generation', 'qa_generation', 'sql_validation', 'training_load']
+            if step_name not in valid_steps:
+                return jsonify(bad_request_response(
+                    response_text=f"无效的步骤名称，支持的步骤: {', '.join(valid_steps)}",
+                    invalid_params=['step_name']
+                )), 400
+        
+        # 检查任务是否存在
+        manager = get_data_pipeline_manager()
+        task_info = manager.get_task_status(task_id)
+        if not task_info:
+            return jsonify(not_found_response(
+                response_text=f"任务不存在: {task_id}"
+            )), 404
+        
+        # 使用subprocess启动独立进程执行任务
+        def run_task_subprocess():
+            try:
+                import subprocess
+                import sys
+                from pathlib import Path
+                
+                # 构建执行命令
+                python_executable = sys.executable
+                script_path = Path(__file__).parent / "data_pipeline" / "task_executor.py"
+                
+                cmd = [
+                    python_executable,
+                    str(script_path),
+                    "--task-id", task_id,
+                    "--execution-mode", execution_mode
+                ]
+                
+                if step_name:
+                    cmd.extend(["--step-name", step_name])
+                
+                logger.info(f"启动任务进程: {' '.join(cmd)}")
+                
+                # 启动后台进程（不等待完成）
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    cwd=Path(__file__).parent
+                )
+                
+                logger.info(f"任务进程已启动: PID={process.pid}, task_id={task_id}")
+                
+            except Exception as e:
+                logger.error(f"启动任务进程失败: {task_id}, 错误: {str(e)}")
+        
+        # 在新线程中启动subprocess（避免阻塞API响应）
+        thread = Thread(target=run_task_subprocess, daemon=True)
+        thread.start()
+        
+        response_data = {
+            "task_id": task_id,
+            "execution_mode": execution_mode,
+            "step_name": step_name if execution_mode == 'step' else None,
+            "message": "任务正在后台执行，请通过状态接口查询进度"
+        }
+        
+        return jsonify(success_response(
+            response_text="任务执行已启动",
+            data=response_data
+        )), 202
+        
+    except Exception as e:
+        logger.error(f"启动数据管道任务执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="启动任务执行失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>', methods=['GET'])
+def get_data_pipeline_task_status(task_id):
+    """
+    获取数据管道任务状态
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "获取任务状态成功",
+        "data": {
+            "task_id": "task_20250627_143052",
+            "status": "in_progress",
+            "step_status": {
+                "ddl_generation": "completed",
+                "qa_generation": "running",
+                "sql_validation": "pending",
+                "training_load": "pending"
+            },
+            "created_at": "2025-06-27T14:30:52",
+            "started_at": "2025-06-27T14:31:00",
+            "parameters": {...},
+            "current_execution": {...},
+            "total_executions": 2
+        }
+    }
+    """
+    try:
+        manager = get_data_pipeline_manager()
+        task_info = manager.get_task_status(task_id)
+        
+        if not task_info:
+            return jsonify(not_found_response(
+                response_text=f"任务不存在: {task_id}"
+            )), 404
+        
+        # 获取执行记录
+        executions = manager.get_task_executions(task_id)
+        current_execution = executions[0] if executions else None
+        
+        response_data = {
+            "task_id": task_info['id'],
+            "status": task_info['status'],
+            "step_status": task_info.get('step_status', {}),
+            "created_at": task_info['created_at'].isoformat() if task_info.get('created_at') else None,
+            "started_at": task_info['started_at'].isoformat() if task_info.get('started_at') else None,
+            "completed_at": task_info['completed_at'].isoformat() if task_info.get('completed_at') else None,
+            "parameters": task_info.get('parameters', {}),
+            "result": task_info.get('result'),
+            "error_message": task_info.get('error_message'),
+            "current_execution": {
+                "execution_id": current_execution['execution_id'],
+                "step": current_execution['execution_step'],
+                "status": current_execution['status'],
+                "started_at": current_execution['started_at'].isoformat() if current_execution.get('started_at') else None
+            } if current_execution else None,
+            "total_executions": len(executions)
+        }
+        
+        return jsonify(success_response(
+            response_text="获取任务状态成功",
+            data=response_data
+        ))
+        
+    except Exception as e:
+        logger.error(f"获取数据管道任务状态失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取任务状态失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/logs', methods=['GET'])
+def get_data_pipeline_task_logs(task_id):
+    """
+    获取数据管道任务日志
+    
+    查询参数:
+    - limit: 日志数量限制，默认100
+    - level: 日志级别过滤，可选
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "获取任务日志成功",
+        "data": {
+            "task_id": "task_20250627_143052",
+            "logs": [
+                {
+                    "timestamp": "2025-06-27T14:30:52",
+                    "level": "INFO",
+                    "message": "任务开始执行",
+                    "step_name": "ddl_generation",
+                    "execution_id": "task_20250627_143052_step_ddl_generation_exec_20250627_143100"
+                }
+            ],
+            "total": 15
+        }
+    }
+    """
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        level = request.args.get('level')
+        
+        # 限制最大查询数量
+        limit = min(limit, 1000)
+        
+        manager = get_data_pipeline_manager()
+        
+        # 验证任务是否存在
+        task_info = manager.get_task_status(task_id)
+        if not task_info:
+            return jsonify(not_found_response(
+                response_text=f"任务不存在: {task_id}"
+            )), 404
+        
+        # 获取日志
+        logs = manager.get_task_logs(task_id, limit=limit)
+        
+        # 过滤日志级别
+        if level:
+            logs = [log for log in logs if log.get('log_level') == level.upper()]
+        
+        # 格式化日志
+        formatted_logs = []
+        for log in logs:
+            formatted_logs.append({
+                "timestamp": log['timestamp'].isoformat() if log.get('timestamp') else None,
+                "level": log.get('log_level'),
+                "message": log.get('message'),
+                "step_name": log.get('step_name'),
+                "execution_id": log.get('execution_id'),
+                "module_name": log.get('module_name'),
+                "function_name": log.get('function_name'),
+                "extra_data": log.get('extra_data')
+            })
+        
+        response_data = {
+            "task_id": task_id,
+            "logs": formatted_logs,
+            "total": len(formatted_logs)
+        }
+        
+        return jsonify(success_response(
+            response_text="获取任务日志成功",
+            data=response_data
+        ))
+        
+    except Exception as e:
+        logger.error(f"获取数据管道任务日志失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取任务日志失败，请稍后重试"
+        )), 500
+
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks', methods=['GET'])
+def list_data_pipeline_tasks():
+    """获取数据管道任务列表"""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        status_filter = request.args.get('status')
+        
+        # 限制查询数量
+        limit = min(limit, 100)
+        
+        manager = get_data_pipeline_manager()
+        tasks = manager.get_tasks_list(
+            limit=limit,
+            offset=offset,
+            status_filter=status_filter
+        )
+        
+        # 格式化任务列表
+        formatted_tasks = []
+        for task in tasks:
+            formatted_tasks.append({
+                "task_id": task.get('id'),
+                "status": task.get('status'),
+                "step_status": task.get('step_status'),
+                "created_at": task['created_at'].isoformat() if task.get('created_at') else None,
+                "started_at": task['started_at'].isoformat() if task.get('started_at') else None,
+                "completed_at": task['completed_at'].isoformat() if task.get('completed_at') else None,
+                "created_by": task.get('created_by'),
+                "db_name": task.get('db_name'),
+                "business_context": task.get('business_context')
+            })
+        
+        response_data = {
+            "tasks": formatted_tasks,
+            "total": len(formatted_tasks),
+            "limit": limit,
+            "offset": offset
+        }
+        
+        return jsonify(success_response(
+            response_text="获取任务列表成功",
+            data=response_data
+        ))
+        
+    except Exception as e:
+        logger.error(f"获取数据管道任务列表失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取任务列表失败，请稍后重试"
+        )), 500
+
+# ==================== Data Pipeline 文件管理 API ====================
+
+from flask import send_file
+
+# 创建文件管理器
+data_pipeline_file_manager = None
+
+def get_data_pipeline_file_manager():
+    """获取Data Pipeline文件管理器单例"""
+    global data_pipeline_file_manager
+    if data_pipeline_file_manager is None:
+        data_pipeline_file_manager = SimpleFileManager()
+    return data_pipeline_file_manager
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/files', methods=['GET'])
+def get_data_pipeline_task_files(task_id):
+    """获取任务文件列表"""
+    try:
+        file_manager = get_data_pipeline_file_manager()
+        
+        # 获取任务文件
+        files = file_manager.get_task_files(task_id)
+        directory_info = file_manager.get_directory_info(task_id)
+        
+        # 格式化文件信息
+        formatted_files = []
+        for file_info in files:
+            formatted_files.append({
+                "file_name": file_info['file_name'],
+                "file_type": file_info['file_type'],
+                "file_size": file_info['file_size'],
+                "file_size_formatted": file_info['file_size_formatted'],
+                "created_at": file_info['created_at'].isoformat() if file_info.get('created_at') else None,
+                "modified_at": file_info['modified_at'].isoformat() if file_info.get('modified_at') else None,
+                "is_readable": file_info['is_readable']
+            })
+        
+        response_data = {
+            "task_id": task_id,
+            "files": formatted_files,
+            "directory_info": directory_info
+        }
+        
+        return jsonify(success_response(
+            response_text="获取任务文件列表成功",
+            data=response_data
+        ))
+        
+    except Exception as e:
+        logger.error(f"获取任务文件列表失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="获取任务文件列表失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/files/<file_name>', methods=['GET'])
+def download_data_pipeline_task_file(task_id, file_name):
+    """下载任务文件"""
+    try:
+        file_manager = get_data_pipeline_file_manager()
+        
+        # 验证文件存在且安全
+        if not file_manager.file_exists(task_id, file_name):
+            return jsonify(not_found_response(
+                response_text=f"文件不存在: {file_name}"
+            )), 404
+        
+        if not file_manager.is_file_safe(task_id, file_name):
+            return jsonify(bad_request_response(
+                response_text="非法的文件路径"
+            )), 400
+        
+        # 获取文件路径
+        file_path = file_manager.get_file_path(task_id, file_name)
+        
+        # 检查文件是否可读
+        if not os.access(file_path, os.R_OK):
+            return jsonify(bad_request_response(
+                response_text="文件不可读"
+            )), 400
+        
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=file_name
+        )
+        
+    except Exception as e:
+        logger.error(f"下载任务文件失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="下载文件失败，请稍后重试"
+        )), 500
+
 logger.info("正在启动Flask应用: http://localhost:8084")
 app.run(host="0.0.0.0", port=8084, debug=True)
