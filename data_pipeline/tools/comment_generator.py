@@ -13,6 +13,7 @@ class CommentGeneratorTool(BaseTool):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.business_context = kwargs.get('business_context', '')
+        self.db_connection = kwargs.get('db_connection')  # 支持传入数据库连接字符串
         self.business_dictionary = self._load_business_dictionary()
     
     async def execute(self, context: TableProcessingContext) -> ProcessingResult:
@@ -342,12 +343,25 @@ class CommentGeneratorTool(BaseTool):
     
     async def _validate_enum_suggestions(self, table_metadata, enum_suggestions: List[Dict]) -> List[Dict]:
         """验证枚举建议"""
-        from data_pipeline.tools.database_inspector import DatabaseInspectorTool
+        import asyncpg
         from data_pipeline.config import SCHEMA_TOOLS_CONFIG
         
         validated_enums = []
-        inspector = ToolRegistry.get_tool("database_inspector")
         sample_limit = SCHEMA_TOOLS_CONFIG["enum_detection_sample_limit"]
+        
+        # 获取数据库连接字符串 - 优先使用传入的连接字符串
+        db_connection = self.db_connection
+        
+        # 如果没有传入连接字符串，尝试从vanna实例获取
+        if not db_connection:
+            if hasattr(self.vn, 'connection_string'):
+                db_connection = self.vn.connection_string
+            elif hasattr(self.vn, '_connection_string'):
+                db_connection = self.vn._connection_string
+        
+        if not db_connection:
+            self.logger.warning("无法获取数据库连接字符串，跳过枚举验证")
+            return validated_enums
         
         for enum_info in enum_suggestions:
             field_name = enum_info['field_name']
@@ -363,7 +377,8 @@ class CommentGeneratorTool(BaseTool):
                 LIMIT {sample_limit}
                 """
                 
-                async with inspector.connection_pool.acquire() as conn:
+                conn = await asyncpg.connect(db_connection)
+                try:
                     rows = await conn.fetch(query)
                     
                     actual_values = [str(row['value']) for row in rows]
@@ -381,6 +396,8 @@ class CommentGeneratorTool(BaseTool):
                         self.logger.info(f"确认字段 {field_name} 为枚举类型，包含 {len(actual_values)} 个值")
                     else:
                         self.logger.info(f"字段 {field_name} 不同值过多({len(actual_values)})，不认为是枚举")
+                finally:
+                    await conn.close()
                         
             except Exception as e:
                 self.logger.warning(f"验证字段 {field_name} 的枚举建议失败: {e}")

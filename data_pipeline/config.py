@@ -54,7 +54,7 @@ SCHEMA_TOOLS_CONFIG = {
     
     # LLM配置
     "use_app_config_llm": True,                # 是否使用app_config中的LLM配置
-    "comment_generation_timeout": 30,          # LLM调用超时时间(秒)
+    "comment_generation_timeout": 120,          # LLM调用超时时间(秒)
     "max_llm_retries": 3,                      # LLM调用最大重试次数
     
     # 系统表过滤配置

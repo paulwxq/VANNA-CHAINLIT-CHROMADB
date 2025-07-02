@@ -51,27 +51,28 @@ class DataSamplerTool(BaseTool):
     
     async def _simple_sample(self, table_metadata: TableMetadata, limit: int) -> List[Dict[str, Any]]:
         """简单采样策略"""
-        from data_pipeline.tools.database_inspector import DatabaseInspectorTool
+        import asyncpg
         
-        # 复用数据库检查工具的连接
-        inspector = ToolRegistry.get_tool("database_inspector")
-        
+        # 直接使用数据库连接字符串创建连接
         query = f"SELECT * FROM {table_metadata.full_name} LIMIT {limit}"
         
-        async with inspector.connection_pool.acquire() as conn:
+        conn = await asyncpg.connect(self.db_connection)
+        try:
             rows = await conn.fetch(query)
             return [dict(row) for row in rows]
+        finally:
+            await conn.close()
     
     async def _smart_sample_large_table(self, table_metadata: TableMetadata, limit: int) -> List[Dict[str, Any]]:
         """智能采样策略（用于大表）"""
-        from data_pipeline.tools.database_inspector import DatabaseInspectorTool
+        import asyncpg
         
-        inspector = ToolRegistry.get_tool("database_inspector")
         samples_per_section = max(1, limit // 3)
         
         samples = []
         
-        async with inspector.connection_pool.acquire() as conn:
+        conn = await asyncpg.connect(self.db_connection)
+        try:
             # 1. 前N行采样
             front_query = f"SELECT * FROM {table_metadata.full_name} LIMIT {samples_per_section}"
             front_rows = await conn.fetch(front_query)
@@ -118,5 +119,7 @@ class DataSamplerTool(BaseTool):
                         samples.append(row_dict)
                 except Exception as e:
                     self.logger.warning(f"尾部采样失败: {e}")
+        finally:
+            await conn.close()
         
         return samples[:limit]  # 确保不超过限制

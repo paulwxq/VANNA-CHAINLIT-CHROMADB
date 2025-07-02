@@ -2802,6 +2802,7 @@ def create_data_pipeline_task():
             business_context=req.get('business_context'),
             db_name=req.get('db_name'),  # 可选参数，用于指定特定数据库名称
             db_connection=req.get('db_connection'),  # 可选参数，用于指定数据库连接字符串
+            task_name=req.get('task_name'),  # 可选参数，用于指定任务名称
             enable_sql_validation=req.get('enable_sql_validation', True),
             enable_llm_repair=req.get('enable_llm_repair', True),
             modify_original_file=req.get('modify_original_file', True),
@@ -2813,6 +2814,7 @@ def create_data_pipeline_task():
         
         response_data = {
             "task_id": task_id,
+            "task_name": task_info.get('task_name'),
             "status": task_info.get('status'),
             "created_at": task_info.get('created_at').isoformat() if task_info.get('created_at') else None
         }
@@ -2985,6 +2987,7 @@ def get_data_pipeline_task_status(task_id):
         
         response_data = {
             "task_id": task_info['task_id'],
+            "task_name": task_info.get('task_name'),
             "status": task_info['status'],
             "step_status": step_status_summary,
             "created_at": task_info['created_at'].isoformat() if task_info.get('created_at') else None,
@@ -3156,15 +3159,16 @@ def list_data_pipeline_tasks():
         formatted_tasks = []
         for task in tasks:
             formatted_tasks.append({
-                "task_id": task.get('id'),
+                "task_id": task.get('task_id'),
+                "task_name": task.get('task_name'),
                 "status": task.get('status'),
                 "step_status": task.get('step_status'),
                 "created_at": task['created_at'].isoformat() if task.get('created_at') else None,
                 "started_at": task['started_at'].isoformat() if task.get('started_at') else None,
                 "completed_at": task['completed_at'].isoformat() if task.get('completed_at') else None,
-                "created_by": task.get('created_by'),
+                "created_by": task.get('by_user'),
                 "db_name": task.get('db_name'),
-                "business_context": task.get('business_context')
+                "business_context": task.get('parameters', {}).get('business_context') if task.get('parameters') else None
             })
         
         response_data = {
@@ -3183,6 +3187,197 @@ def list_data_pipeline_tasks():
         logger.error(f"获取数据管道任务列表失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取任务列表失败，请稍后重试"
+        )), 500
+
+# ==================== 表检查API端点 ====================
+
+import asyncio
+from data_pipeline.api.table_inspector_api import TableInspectorAPI
+
+@app.flask_app.route('/api/v0/database/tables', methods=['POST'])
+def get_database_tables():
+    """
+    获取数据库表列表
+    
+    请求体:
+    {
+        "db_connection": "postgresql://postgres:postgres@192.168.67.1:5432/highway_db",  // 可选，不传则使用默认配置
+        "schema": "public,ods"  // 可选，支持多个schema用逗号分隔，默认为public
+    }
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "获取表列表成功",
+        "data": {
+            "tables": ["public.table1", "public.table2", "ods.table3"],
+            "total": 3,
+            "schemas": ["public", "ods"]
+        }
+    }
+    """
+    try:
+        req = request.get_json(force=True)
+        
+        # 处理数据库连接参数（可选）
+        db_connection = req.get('db_connection')
+        if not db_connection:
+            # 使用app_config的默认数据库配置
+            import app_config
+            db_params = app_config.APP_DB_CONFIG
+            db_connection = f"postgresql://{db_params['user']}:{db_params['password']}@{db_params['host']}:{db_params['port']}/{db_params['dbname']}"
+            logger.info("使用默认数据库配置获取表列表")
+        else:
+            logger.info("使用用户指定的数据库配置获取表列表")
+        
+        # 可选参数
+        schema = req.get('schema', '')
+        
+        # 创建表检查API实例
+        table_inspector = TableInspectorAPI()
+        
+        # 使用asyncio运行异步方法
+        async def get_tables():
+            return await table_inspector.get_tables_list(db_connection, schema)
+        
+        # 在新的事件循环中运行异步方法
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            tables = loop.run_until_complete(get_tables())
+        finally:
+            loop.close()
+        
+        # 解析schema信息
+        parsed_schemas = table_inspector._parse_schemas(schema)
+        
+        response_data = {
+            "tables": tables,
+            "total": len(tables),
+            "schemas": parsed_schemas,
+            "db_connection_info": {
+                "database": db_connection.split('/')[-1].split('?')[0] if '/' in db_connection else "unknown"
+            }
+        }
+        
+        return jsonify(success_response(
+            response_text="获取表列表成功",
+            data=response_data
+        )), 200
+        
+    except Exception as e:
+        logger.error(f"获取数据库表列表失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text=f"获取表列表失败: {str(e)}"
+        )), 500
+
+@app.flask_app.route('/api/v0/database/table/ddl', methods=['POST'])
+def get_table_ddl():
+    """
+    获取表的DDL语句或MD文档
+    
+    请求体:
+    {
+        "db_connection": "postgresql://postgres:postgres@192.168.67.1:5432/highway_db",  // 可选，不传则使用默认配置
+        "table": "public.test",
+        "business_context": "这是高速公路服务区的相关数据",  // 可选
+        "type": "ddl"  // 可选，支持ddl/md/both，默认为ddl
+    }
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "获取表DDL成功",
+        "data": {
+            "ddl": "create table public.test (...);",
+            "md": "## test表...",  // 仅当type为md或both时返回
+            "table_info": {
+                "table_name": "test",
+                "schema_name": "public",
+                "full_name": "public.test",
+                "comment": "测试表",
+                "field_count": 10,
+                "row_count": 1000
+            },
+            "fields": [...]
+        }
+    }
+    """
+    try:
+        req = request.get_json(force=True)
+        
+        # 处理参数（table仍为必需，db_connection可选）
+        table = req.get('table')
+        db_connection = req.get('db_connection')
+        
+        if not table:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：table",
+                missing_params=['table']
+            )), 400
+        
+        if not db_connection:
+            # 使用app_config的默认数据库配置
+            import app_config
+            db_params = app_config.APP_DB_CONFIG
+            db_connection = f"postgresql://{db_params['user']}:{db_params['password']}@{db_params['host']}:{db_params['port']}/{db_params['dbname']}"
+            logger.info("使用默认数据库配置获取表DDL")
+        else:
+            logger.info("使用用户指定的数据库配置获取表DDL")
+        
+        # 可选参数
+        business_context = req.get('business_context', '')
+        output_type = req.get('type', 'ddl')
+        
+        # 验证type参数
+        valid_types = ['ddl', 'md', 'both']
+        if output_type not in valid_types:
+            return jsonify(bad_request_response(
+                response_text=f"无效的type参数: {output_type}，支持的值: {valid_types}",
+                invalid_params=['type']
+            )), 400
+        
+        # 创建表检查API实例
+        table_inspector = TableInspectorAPI()
+        
+        # 使用asyncio运行异步方法
+        async def get_ddl():
+            return await table_inspector.get_table_ddl(
+                db_connection=db_connection,
+                table=table,
+                business_context=business_context,
+                output_type=output_type
+            )
+        
+        # 在新的事件循环中运行异步方法
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(get_ddl())
+        finally:
+            loop.close()
+        
+        response_data = {
+            **result,
+            "generation_info": {
+                "business_context": business_context,
+                "output_type": output_type,
+                "has_llm_comments": bool(business_context),
+                "database": db_connection.split('/')[-1].split('?')[0] if '/' in db_connection else "unknown"
+            }
+        }
+        
+        return jsonify(success_response(
+            response_text=f"获取表{output_type.upper()}成功",
+            data=response_data
+        )), 200
+        
+    except Exception as e:
+        logger.error(f"获取表DDL失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text=f"获取表{output_type.upper() if 'output_type' in locals() else 'DDL'}失败: {str(e)}"
         )), 500
 
 # ==================== Data Pipeline 文件管理 API ====================
@@ -3423,6 +3618,115 @@ def get_table_list_info(task_id):
         logger.error(f"获取表清单文件信息失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取表清单文件信息失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/table-list', methods=['POST'])
+def create_table_list_from_names(task_id):
+    """
+    通过POST方式提交表名列表并创建table_list.txt文件
+    
+    请求体:
+    {
+        "tables": ["table1", "schema.table2", "table3"]
+    }
+    或者:
+    {
+        "tables": "table1,schema.table2,table3"
+    }
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "表清单已成功创建",
+        "data": {
+            "task_id": "task_20250701_123456",
+            "filename": "table_list.txt",
+            "table_count": 3,
+            "file_size": 45,
+            "file_size_formatted": "45 B",
+            "created_time": "2025-07-01T12:34:56"
+        }
+    }
+    """
+    try:
+        # 验证任务是否存在
+        manager = get_data_pipeline_manager()
+        task_info = manager.get_task_status(task_id)
+        if not task_info:
+            return jsonify(not_found_response(
+                response_text=f"任务不存在: {task_id}"
+            )), 404
+        
+        # 获取请求数据
+        req = request.get_json(force=True)
+        tables_param = req.get('tables')
+        
+        if not tables_param:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：tables",
+                missing_params=['tables']
+            )), 400
+        
+        # 处理不同格式的表名参数
+        try:
+            if isinstance(tables_param, str):
+                # 逗号分隔的字符串格式
+                table_names = [name.strip() for name in tables_param.split(',') if name.strip()]
+            elif isinstance(tables_param, list):
+                # 数组格式
+                table_names = [str(name).strip() for name in tables_param if str(name).strip()]
+            else:
+                return jsonify(bad_request_response(
+                    response_text="tables参数格式错误，应为字符串（逗号分隔）或数组"
+                )), 400
+            
+            if not table_names:
+                return jsonify(bad_request_response(
+                    response_text="表名列表不能为空"
+                )), 400
+                
+        except Exception as e:
+            return jsonify(bad_request_response(
+                response_text=f"解析tables参数失败: {str(e)}"
+            )), 400
+        
+        try:
+            # 使用文件管理器创建表清单文件
+            file_manager = get_data_pipeline_file_manager()
+            result = file_manager.create_table_list_from_names(task_id, table_names)
+            
+            response_data = {
+                "task_id": task_id,
+                "filename": result["filename"],
+                "table_count": result["table_count"],
+                "unique_table_count": result["unique_table_count"],
+                "file_size": result["file_size"],
+                "file_size_formatted": result["file_size_formatted"],
+                "created_time": result["created_time"].isoformat() if result.get("created_time") else None,
+                "original_count": len(table_names) if isinstance(table_names, list) else len(tables_param.split(','))
+            }
+            
+            return jsonify(success_response(
+                response_text=f"表清单已成功创建，包含 {result['table_count']} 个表",
+                data=response_data
+            )), 200
+            
+        except ValueError as e:
+            # 表名验证错误（如格式错误、数量限制等）
+            return jsonify(bad_request_response(
+                response_text=str(e)
+            )), 400
+        except Exception as e:
+            logger.error(f"创建表清单文件失败: {str(e)}")
+            return jsonify(internal_error_response(
+                response_text="创建表清单文件失败，请稍后重试"
+            )), 500
+        
+    except Exception as e:
+        logger.error(f"处理表清单创建请求失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="处理请求失败，请稍后重试"
         )), 500
 
 logger.info("正在启动Flask应用: http://localhost:8084")

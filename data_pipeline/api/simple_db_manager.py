@@ -58,6 +58,7 @@ class SimpleTaskManager:
                    business_context: str = None,
                    db_name: str = None,
                    db_connection: str = None,
+                   task_name: str = None,
                    **kwargs) -> str:
         """创建新任务"""
         task_id = self.generate_task_id()
@@ -102,11 +103,12 @@ class SimpleTaskManager:
                 # 创建任务记录
                 cursor.execute("""
                     INSERT INTO data_pipeline_tasks (
-                        task_id, task_type, status, parameters, created_type, 
+                        task_id, task_name, task_type, status, parameters, created_type, 
                         by_user, db_name, output_directory
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     task_id, 
+                    task_name,
                     'data_workflow', 
                     'pending', 
                     Json(parameters),
@@ -301,8 +303,6 @@ class SimpleTaskManager:
             self.logger.error(f"获取步骤状态失败: {e}")
             raise
     
-
-    
     def get_tasks_list(self, limit: int = 50, offset: int = 0, status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
         """获取任务列表"""
         try:
@@ -312,15 +312,42 @@ class SimpleTaskManager:
                 params = []
                 
                 if status_filter:
-                    where_clause = "WHERE status = %s"
+                    where_clause = "WHERE t.status = %s"
                     params.append(status_filter)
                 
                 params.extend([limit, offset])
                 
+                # 联表查询获取步骤状态汇总（排除result字段）
                 cursor.execute(f"""
-                    SELECT * FROM data_pipeline_tasks 
+                    SELECT 
+                        t.task_id,
+                        t.task_name,
+                        t.task_type,
+                        t.status,
+                        t.parameters,
+                        t.error_message,
+                        t.created_at,
+                        t.started_at,
+                        t.completed_at,
+                        t.created_type,
+                        t.by_user,
+                        t.output_directory,
+                        t.db_name,
+                        CASE 
+                            WHEN COUNT(s.step_name) = 0 THEN NULL
+                            WHEN COUNT(s.step_name) FILTER (WHERE s.step_status = 'failed') > 0 THEN 'failed'
+                            WHEN COUNT(s.step_name) FILTER (WHERE s.step_status = 'running') > 0 THEN 'running'
+                            WHEN COUNT(s.step_name) FILTER (WHERE s.step_status = 'completed') = COUNT(s.step_name) THEN 'all_completed'
+                            WHEN COUNT(s.step_name) FILTER (WHERE s.step_status = 'completed') > 0 THEN 'partial_completed'
+                            ELSE 'pending'
+                        END as step_status
+                    FROM data_pipeline_tasks t
+                    LEFT JOIN data_pipeline_task_steps s ON t.task_id = s.task_id
                     {where_clause}
-                    ORDER BY created_at DESC 
+                    GROUP BY t.task_id, t.task_name, t.task_type, t.status, t.parameters, t.error_message, 
+                             t.created_at, t.started_at, t.completed_at, t.created_type, t.by_user, 
+                             t.output_directory, t.db_name
+                    ORDER BY t.created_at DESC 
                     LIMIT %s OFFSET %s
                 """, params)
                 

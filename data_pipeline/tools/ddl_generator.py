@@ -22,33 +22,49 @@ class DDLGeneratorTool(BaseTool):
             # 生成DDL内容
             ddl_content = self._generate_ddl_content(table_metadata)
             
-            # 确定文件名和路径
-            filename = context.file_manager.get_safe_filename(
-                table_metadata.schema_name,
-                table_metadata.table_name,
-                SCHEMA_TOOLS_CONFIG["ddl_file_suffix"]
-            )
-            
-            # 确定子目录
-            subdirectory = "ddl" if SCHEMA_TOOLS_CONFIG["create_subdirectories"] else None
-            filepath = context.file_manager.get_full_path(filename, subdirectory)
-            
-            # 写入文件
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(ddl_content)
-            
-            self.logger.info(f"DDL文件已生成: {filepath}")
-            
-            return ProcessingResult(
-                success=True,
-                data={
-                    'filename': filename,
-                    'filepath': filepath,
-                    'content_length': len(ddl_content),
-                    'ddl_content': ddl_content  # 保存内容供后续工具使用
-                },
-                metadata={'tool': self.tool_name}
-            )
+            # 如果有file_manager，则写入文件（正常的data_pipeline流程）
+            if context.file_manager:
+                # 确定文件名和路径
+                filename = context.file_manager.get_safe_filename(
+                    table_metadata.schema_name,
+                    table_metadata.table_name,
+                    SCHEMA_TOOLS_CONFIG["ddl_file_suffix"]
+                )
+                
+                # 确定子目录
+                subdirectory = "ddl" if SCHEMA_TOOLS_CONFIG["create_subdirectories"] else None
+                filepath = context.file_manager.get_full_path(filename, subdirectory)
+                
+                # 写入文件
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(ddl_content)
+                
+                self.logger.info(f"DDL文件已生成: {filepath}")
+                
+                return ProcessingResult(
+                    success=True,
+                    data={
+                        'filename': filename,
+                        'filepath': filepath,
+                        'content_length': len(ddl_content),
+                        'ddl_content': ddl_content  # 保存内容供后续工具使用
+                    },
+                    metadata={'tool': self.tool_name}
+                )
+            else:
+                # 如果没有file_manager，只返回DDL内容（API调用场景）
+                self.logger.info("DDL内容已生成（API调用模式，不写入文件）")
+                
+                return ProcessingResult(
+                    success=True,
+                    data={
+                        'filename': f"{table_metadata.schema_name}_{table_metadata.table_name}.ddl",
+                        'filepath': None,  # 不写入文件
+                        'content_length': len(ddl_content),
+                        'ddl_content': ddl_content  # 保存内容供后续工具使用
+                    },
+                    metadata={'tool': self.tool_name}
+                )
             
         except Exception as e:
             self.logger.exception(f"DDL生成失败")

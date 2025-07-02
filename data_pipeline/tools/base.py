@@ -8,7 +8,6 @@ from data_pipeline.utils.data_structures import ProcessingResult, TableProcessin
 class ToolRegistry:
     """工具注册管理器"""
     _tools: Dict[str, Type['BaseTool']] = {}
-    _instances: Dict[str, 'BaseTool'] = {}
     
     @classmethod
     def register(cls, name: str):
@@ -22,33 +21,26 @@ class ToolRegistry:
     
     @classmethod
     def get_tool(cls, name: str, **kwargs) -> 'BaseTool':
-        """获取工具实例，支持单例模式"""
-        if name not in cls._instances:
-            if name not in cls._tools:
-                raise ValueError(f"工具 '{name}' 未注册")
-            
-            tool_class = cls._tools[name]
-            
-            # 自动注入vanna实例到需要LLM的工具
-            if hasattr(tool_class, 'needs_llm') and tool_class.needs_llm:
-                from core.vanna_llm_factory import create_vanna_instance
-                kwargs['vn'] = create_vanna_instance()
-                logger = logging.getLogger("ToolRegistry")
-                logger.debug(f"为工具 {name} 注入LLM实例")
-            
-            cls._instances[name] = tool_class(**kwargs)
+        """获取工具实例，每次返回新实例确保参数正确传递"""
+        if name not in cls._tools:
+            raise ValueError(f"工具 '{name}' 未注册")
         
-        return cls._instances[name]
+        tool_class = cls._tools[name]
+        
+        # 自动注入vanna实例到需要LLM的工具
+        if hasattr(tool_class, 'needs_llm') and tool_class.needs_llm:
+            from core.vanna_llm_factory import create_vanna_instance
+            kwargs['vn'] = create_vanna_instance()
+            logger = logging.getLogger("ToolRegistry")
+            logger.debug(f"为工具 {name} 注入LLM实例")
+        
+        # 直接返回新实例，不使用单例模式
+        return tool_class(**kwargs)
     
     @classmethod
     def list_tools(cls) -> List[str]:
         """列出所有已注册的工具"""
         return list(cls._tools.keys())
-    
-    @classmethod
-    def clear_instances(cls):
-        """清除所有工具实例（用于测试）"""
-        cls._instances.clear()
 
 class BaseTool(ABC):
     """工具基类"""

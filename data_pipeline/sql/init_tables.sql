@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS data_pipeline_tasks (
     task_id VARCHAR(32) PRIMARY KEY,               -- 'task_20250627_143052'
     
     -- 任务基本信息
+    task_name VARCHAR(255),                        -- 任务自定义名称（可选）
     task_type VARCHAR(50) NOT NULL DEFAULT 'data_workflow',
     status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending/in_progress/partial_completed/completed/failed
     
@@ -89,6 +90,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON data_pipeline_tasks(created_a
 CREATE INDEX IF NOT EXISTS idx_tasks_db_name ON data_pipeline_tasks(db_name);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_type ON data_pipeline_tasks(created_type);
 CREATE INDEX IF NOT EXISTS idx_tasks_task_type ON data_pipeline_tasks(task_type);
+CREATE INDEX IF NOT EXISTS idx_tasks_task_name ON data_pipeline_tasks(task_name);
 
 -- 步骤状态表索引
 CREATE INDEX IF NOT EXISTS idx_steps_task_id ON data_pipeline_task_steps(task_id);
@@ -189,6 +191,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE VIEW v_task_step_overview AS
 SELECT 
     t.task_id,
+    t.task_name,
     t.task_type,
     t.status as task_status,
     t.created_at,

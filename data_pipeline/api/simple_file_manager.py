@@ -514,3 +514,159 @@ class SimpleFileManager:
                 "exists": False,
                 "error": str(e)
             }
+    
+    def create_table_list_from_names(self, task_id: str, table_names: List[str]) -> Dict[str, Any]:
+        """
+        从表名列表创建table_list.txt文件
+        
+        Args:
+            task_id: 任务ID
+            table_names: 表名列表
+        
+        Returns:
+            Dict: 创建结果，包含filename、table_count、file_size等信息
+        
+        Raises:
+            ValueError: 表名验证失败（表名格式错误、空列表等）
+            IOError: 文件操作失败
+        """
+        try:
+            # 获取配置
+            from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+            upload_config = SCHEMA_TOOLS_CONFIG.get("file_upload", {})
+            target_filename = upload_config.get("target_filename", "table_list.txt")
+            max_lines = upload_config.get("max_lines", 1000)
+            min_lines = upload_config.get("min_lines", 1)
+            
+            # 验证输入
+            if not table_names:
+                raise ValueError("表名列表不能为空")
+            
+            if not isinstance(table_names, list):
+                raise ValueError("表名必须是列表格式")
+            
+            # 处理和验证表名
+            processed_tables = self._process_table_names(table_names)
+            
+            # 验证表名数量
+            if len(processed_tables) < min_lines:
+                raise ValueError(f"表名数量不能少于 {min_lines} 个")
+            
+            if len(processed_tables) > max_lines:
+                raise ValueError(f"表名数量不能超过 {max_lines} 个")
+            
+            # 确保任务目录存在
+            task_dir = self.get_task_directory(task_id)
+            if not task_dir.exists():
+                task_dir.mkdir(parents=True, exist_ok=True)
+                self.logger.info(f"创建任务目录: {task_dir}")
+            
+            # 确定目标文件路径
+            target_file_path = task_dir / target_filename
+            
+            # 生成文件内容
+            file_content = self._generate_table_list_content(processed_tables)
+            
+            # 写入文件（覆盖模式）
+            with open(target_file_path, 'w', encoding='utf-8') as f:
+                f.write(file_content)
+            
+            # 验证文件是否成功写入
+            if not target_file_path.exists():
+                raise IOError("文件创建失败")
+            
+            # 获取文件信息
+            file_stat = target_file_path.stat()
+            created_time = datetime.fromtimestamp(file_stat.st_mtime)
+            
+            self.logger.info(f"成功创建表清单文件到任务 {task_id}: {target_file_path} ({len(processed_tables)} 个表)")
+            
+            return {
+                "filename": target_filename,
+                "table_count": len(processed_tables),
+                "unique_table_count": len(set(processed_tables)),
+                "file_size": file_stat.st_size,
+                "file_size_formatted": self._format_file_size(file_stat.st_size),
+                "created_time": created_time,
+                "target_path": str(target_file_path)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"创建表清单文件失败: {e}")
+            raise
+    
+    def _process_table_names(self, table_names: List[str]) -> List[str]:
+        """
+        处理表名列表：验证格式、去重、排序
+        
+        Args:
+            table_names: 原始表名列表
+            
+        Returns:
+            List[str]: 处理后的表名列表
+            
+        Raises:
+            ValueError: 表名格式验证失败
+        """
+        processed_tables = []
+        invalid_tables = []
+        
+        for table_name in table_names:
+            # 去除空白
+            table_name = table_name.strip()
+            
+            # 跳过空字符串
+            if not table_name:
+                continue
+            
+            # 跳过注释行
+            if table_name.startswith('#') or table_name.startswith('--'):
+                continue
+            
+            # 验证表名格式
+            if self._is_valid_table_name(table_name):
+                processed_tables.append(table_name)
+            else:
+                invalid_tables.append(table_name)
+        
+        # 如果有无效表名，抛出异常
+        if invalid_tables:
+            raise ValueError(f"包含无效的表名格式: {', '.join(invalid_tables[:5])}")
+        
+        # 去重并保持顺序
+        seen = set()
+        unique_tables = []
+        for table in processed_tables:
+            if table not in seen:
+                seen.add(table)
+                unique_tables.append(table)
+        
+        return unique_tables
+    
+    def _generate_table_list_content(self, table_names: List[str]) -> str:
+        """
+        生成table_list.txt文件内容
+        
+        Args:
+            table_names: 表名列表
+            
+        Returns:
+            str: 文件内容
+        """
+        lines = []
+        
+        # 添加文件头注释
+        lines.append("# 表清单文件")
+        lines.append(f"# 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append(f"# 表数量: {len(table_names)}")
+        lines.append("")
+        
+        # 添加表名
+        for table_name in table_names:
+            lines.append(table_name)
+        
+        # 确保文件以换行符结束
+        if lines and not lines[-1] == "":
+            lines.append("")
+        
+        return "\n".join(lines)
