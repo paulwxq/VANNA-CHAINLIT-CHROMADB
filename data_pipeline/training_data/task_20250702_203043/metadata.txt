@@ -1,0 +1,62 @@
+-- Schema Tools生成的主题元数据
+-- 业务背景: 高速公路服务区管理系统
+-- 生成时间: 2025-07-02 20:49:19
+-- 数据库: highway_db
+
+-- 创建表（如果不存在）
+CREATE TABLE IF NOT EXISTS metadata (
+    id SERIAL PRIMARY KEY,    -- 主键
+    topic_name VARCHAR(100) NOT NULL,  -- 业务主题名称
+    description TEXT,                  -- 业务主体说明
+    related_tables TEXT[],			  -- 相关表名
+    biz_entities TEXT[],               -- 主要业务实体名称
+    biz_metrics TEXT[],                -- 主要业务指标名称
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    -- 插入时间
+);
+
+-- 插入主题数据
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '日营收分析',
+  '分析各服务区每日营业收入、订单数量及支付方式构成，评估运营效率与支付偏好',
+  'bss_business_day_data,bss_service_area',
+  '服务区,支付方式,统计日期',
+  '日营收总额,订单数量趋势,支付方式占比'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '车流特征分析',
+  '基于车辆类型与时段分布数据，识别服务区车流规律及高峰时段特征',
+  'bss_car_day_count,bss_service_area',
+  '服务区,车辆类型,统计日期',
+  '车流总量趋势,车型占比分布,高峰时段识别'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '区域营收对比',
+  '对比不同路段关联服务区的营收能力，评估区域经济活跃度与消费差异',
+  'bss_business_day_data,bss_section_route_area_link,bss_section_route',
+  '路段路线,服务区,统计周期',
+  '路段营收排名,单位车流营收,环比增长率'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '公司运营评估',
+  '统计各高速公路分公司下属服务区的运营指标，考核企业管理效能',
+  'bss_business_day_data,bss_service_area,bss_company',
+  '所属公司,服务区类型,运营状态',
+  '公司营收占比,单区均效对比,服务开放率'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '档口效能监测',
+  '追踪各服务区档口销售表现与客户触达能力，优化商业布局策略',
+  'bss_business_day_data,bss_service_area_mapper',
+  '档口名称,数据来源系统,服务编码',
+  '客单价分析,复购率计算,渠道转化率'
+);
+

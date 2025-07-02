@@ -654,9 +654,93 @@ create table public.bss_company (
 );
 ```
 
+#### 4.4.上传训练数据
+
+如果有需要，可以把自动生成的训练数据下载到本地，进行修改，然后上传。或者，直接上传本地准备好的训练数据集。
+
+API POST /api/v0/data_pipeline/tasks/<task_id>/files
+
+POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250702_213000/files
+
+预期返回结果：
+
+```json
+{
+    "code": 200,
+    "data": {
+        "response": "文件上传成功",
+        "success": true,
+        "task_id": "task_20250702_213000",
+        "uploaded_file": {
+            "filename": "tables.txt",
+            "overwrite_mode": "backup",
+            "size": 284,
+            "size_formatted": "284.0 B",
+            "uploaded_at": "2025-07-02T21:42:13.627532"
+        }
+    },
+    "message": "操作成功",
+    "success": true
+}
+```
+
+备份模式下，有同名文件的返回结果：
+
+```json
+{
+    "code": 200,
+    "data": {
+        "backup_info": {
+            "backup_created_at": "2025-07-02T21:43:06.048935",
+            "backup_filename": "tables.txt_bak1",
+            "backup_version": 1,
+            "had_existing_file": true
+        },
+        "response": "文件上传成功",
+        "success": true,
+        "task_id": "task_20250702_213000",
+        "uploaded_file": {
+            "filename": "tables.txt",
+            "overwrite_mode": "backup",
+            "size": 284,
+            "size_formatted": "284.0 B",
+            "uploaded_at": "2025-07-02T21:43:06.050035"
+        }
+    },
+    "message": "操作成功",
+    "success": true
+}
+```
+
+**overwrite_mode参数**：
+
+- `file` (file, required): 要上传的文件
+- `overwrite_mode` (string, optional): 重名处理模式，可选值：`backup`（默认）、`replace`、`skip`
+
+**其它使用示例：**
+
+```shell
+# 基本上传（默认备份模式）
+curl -X POST \
+  http://localhost:8084/api/v0/data_pipeline/tasks/task_20250702_123456/files \
+  -F "file=@test.ddl"
+
+# 上传DDL文件（备份模式）
+curl -X POST \
+  http://localhost:8084/api/v0/data_pipeline/tasks/task_20250702_213000/files \
+  -F "file=@test.ddl" \
+  -F "overwrite_mode=backup"
+
+# 上传文件（替换模式）
+curl -X POST \
+  http://localhost:8084/api/v0/data_pipeline/tasks/task_20250702_213000/files \
+  -F "file=@config.json" \
+  -F "overwrite_mode=replace"
+```
 
 
-#### 4.4.查看历史任务列表(管理员)
+
+#### 4.5.查看历史任务列表(管理员)
 
 **API**: `GET /api/v0/data_pipeline/tasks`
 

@@ -34,7 +34,7 @@ class ToolRegistry:
             logger = logging.getLogger("ToolRegistry")
             logger.debug(f"为工具 {name} 注入LLM实例")
         
-        # 直接返回新实例，不使用单例模式
+        # 每次返回新实例，避免单例模式导致的数据库连接混乱
         return tool_class(**kwargs)
     
     @classmethod
@@ -121,7 +121,14 @@ class PipelineExecutor:
         
         for step_name in steps:
             try:
-                tool = ToolRegistry.get_tool(step_name)
+                # 为工具传递数据库连接参数（从上下文中获取）
+                tool_kwargs = {}
+                if hasattr(context, 'db_connection') and context.db_connection:
+                    tool_kwargs['db_connection'] = context.db_connection
+                if hasattr(context, 'business_context') and context.business_context:
+                    tool_kwargs['business_context'] = context.business_context
+                
+                tool = ToolRegistry.get_tool(step_name, **tool_kwargs)
                 
                 # 验证输入
                 if not tool.validate_input(context):

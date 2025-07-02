@@ -3729,5 +3729,119 @@ def create_table_list_from_names(task_id):
             response_text="处理请求失败，请稍后重试"
         )), 500
 
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/files', methods=['POST'])
+def upload_file_to_task(task_id):
+    """
+    上传文件到指定任务目录
+    
+    表单参数:
+    - file: 要上传的文件（multipart/form-data）
+    - overwrite_mode: 重名处理模式 (backup, replace, skip)，默认为backup
+    
+    支持的文件类型：
+    - .ddl: DDL文件
+    - .md: Markdown文档
+    - .txt: 文本文件
+    - .json: JSON文件
+    - .sql: SQL文件
+    - .csv: CSV文件
+    
+    重名处理模式：
+    - backup: 备份原文件（默认）
+    - replace: 直接覆盖
+    - skip: 跳过上传
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "文件上传成功",
+        "data": {
+            "task_id": "task_20250701_123456",
+            "uploaded_file": {
+                "filename": "test.ddl",
+                "size": 1024,
+                "size_formatted": "1.0 KB",
+                "uploaded_at": "2025-07-01T12:34:56",
+                "overwrite_mode": "backup"
+            },
+            "backup_info": {  // 仅当overwrite_mode为backup且文件已存在时返回
+                "had_existing_file": true,
+                "backup_filename": "test.ddl_bak1",
+                "backup_version": 1,
+                "backup_created_at": "2025-07-01T12:34:56"
+            }
+        }
+    }
+    """
+    try:
+        # 验证任务是否存在
+        manager = get_data_pipeline_manager()
+        task_info = manager.get_task_status(task_id)
+        if not task_info:
+            return jsonify(not_found_response(
+                response_text=f"任务不存在: {task_id}"
+            )), 404
+        
+        # 检查是否有文件上传
+        if 'file' not in request.files:
+            return jsonify(bad_request_response(
+                response_text="请选择要上传的文件",
+                missing_params=['file']
+            )), 400
+        
+        file = request.files['file']
+        
+        # 验证文件名
+        if file.filename == '':
+            return jsonify(bad_request_response(
+                response_text="请选择有效的文件"
+            )), 400
+        
+        # 获取重名处理模式
+        overwrite_mode = request.form.get('overwrite_mode', 'backup')
+        
+        # 验证重名处理模式
+        valid_modes = ['backup', 'replace', 'skip']
+        if overwrite_mode not in valid_modes:
+            return jsonify(bad_request_response(
+                response_text=f"无效的overwrite_mode参数: {overwrite_mode}，支持的值: {valid_modes}",
+                invalid_params=['overwrite_mode']
+            )), 400
+        
+        try:
+            # 使用文件管理器上传文件
+            file_manager = get_data_pipeline_file_manager()
+            result = file_manager.upload_file_to_task(task_id, file, file.filename, overwrite_mode)
+            
+            # 检查是否跳过上传
+            if result.get('skipped'):
+                return jsonify(success_response(
+                    response_text=result.get('message', '文件已存在，跳过上传'),
+                    data=result
+                )), 200
+            
+            return jsonify(success_response(
+                response_text="文件上传成功",
+                data=result
+            )), 200
+            
+        except ValueError as e:
+            # 文件验证错误（如文件太大、空文件、不支持的类型等）
+            return jsonify(bad_request_response(
+                response_text=str(e)
+            )), 400
+        except Exception as e:
+            logger.error(f"上传文件失败: {str(e)}")
+            return jsonify(internal_error_response(
+                response_text="文件上传失败，请稍后重试"
+            )), 500
+        
+    except Exception as e:
+        logger.error(f"处理文件上传请求失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="处理上传请求失败，请稍后重试"
+        )), 500
+
 logger.info("正在启动Flask应用: http://localhost:8084")
 app.run(host="0.0.0.0", port=8084, debug=True)

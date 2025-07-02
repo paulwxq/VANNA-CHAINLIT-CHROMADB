@@ -119,7 +119,12 @@ class SchemaTrainingDataAgent:
         if not self.config["check_permissions"]:
             return
         
-        inspector = ToolRegistry.get_tool("database_inspector")
+        inspector = ToolRegistry.get_tool("database_inspector", db_connection=self.db_connection)
+        
+        # 确保连接池已创建
+        if not inspector.connection_pool:
+            await inspector._create_connection_pool()
+        
         checker = DatabasePermissionChecker(inspector)
         
         permissions = await checker.check_permissions()
@@ -217,6 +222,7 @@ class SchemaTrainingDataAgent:
                 pipeline=self.pipeline,
                 vn=None,  # 将在工具中注入
                 file_manager=self.file_manager,
+                db_connection=self.db_connection,  # 添加数据库连接参数
                 start_time=start_time
             )
             

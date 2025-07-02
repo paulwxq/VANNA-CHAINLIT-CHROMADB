@@ -125,6 +125,7 @@ class TableProcessingContext:
     pipeline: str
     vn: Any  # vanna实例
     file_manager: Any
+    db_connection: Optional[str] = None  # 数据库连接字符串
     current_step: str = "initialized"
     step_results: Dict[str, ProcessingResult] = field(default_factory=dict)
     start_time: Optional[float] = None

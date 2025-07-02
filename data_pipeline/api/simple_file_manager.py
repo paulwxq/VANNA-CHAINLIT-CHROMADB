@@ -670,3 +670,232 @@ class SimpleFileManager:
             lines.append("")
         
         return "\n".join(lines)
+    
+    # ==================== 文件上传功能 ====================
+    
+    # 支持的文件类型
+    ALLOWED_EXTENSIONS = {'.ddl', '.md', '.txt', '.json', '.sql', '.csv'}
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    
+    def upload_file_to_task(self, task_id: str, file_stream, filename: str, overwrite_mode: str = "backup") -> Dict[str, Any]:
+        """
+        上传文件到指定任务目录
+        
+        Args:
+            task_id: 任务ID
+            file_stream: 文件流对象
+            filename: 文件名
+            overwrite_mode: 重名处理模式 ("backup", "replace", "skip")
+        
+        Returns:
+            Dict: 上传结果
+        """
+        try:
+            # 1. 验证任务存在
+            task_dir = self.get_task_directory(task_id)
+            if not task_dir.exists():
+                # 创建任务目录
+                task_dir.mkdir(parents=True, exist_ok=True)
+                self.logger.info(f"创建任务目录: {task_dir}")
+            
+            # 2. 验证文件
+            validation_result = self.validate_file_upload(filename, file_stream)
+            if not validation_result["valid"]:
+                raise ValueError(validation_result["error"])
+            
+            # 3. 检查目标文件路径
+            target_file_path = task_dir / filename
+            
+            # 4. 处理重名文件
+            backup_info = None
+            if target_file_path.exists():
+                if overwrite_mode == "skip":
+                    return {
+                        "success": True,
+                        "skipped": True,
+                        "message": f"文件已存在，跳过上传: {filename}",
+                        "task_id": task_id,
+                        "uploaded_file": {
+                            "filename": filename,
+                            "existed": True,
+                            "action": "skipped"
+                        }
+                    }
+                elif overwrite_mode == "backup":
+                    backup_info = self.create_backup_file(target_file_path)
+                # replace 模式不需要特殊处理，直接覆盖
+            
+            # 5. 保存新文件
+            file_content = file_stream.read()
+            with open(target_file_path, 'wb') as f:
+                f.write(file_content)
+            
+            # 6. 获取文件信息
+            file_stat = target_file_path.stat()
+            upload_time = datetime.fromtimestamp(file_stat.st_mtime)
+            
+            self.logger.info(f"文件上传成功: {task_id}/{filename}")
+            
+            # 7. 构建响应
+            result = {
+                "success": True,
+                "task_id": task_id,
+                "uploaded_file": {
+                    "filename": filename,
+                    "size": file_stat.st_size,
+                    "size_formatted": self._format_file_size(file_stat.st_size),
+                    "uploaded_at": upload_time.isoformat(),
+                    "overwrite_mode": overwrite_mode
+                }
+            }
+            
+            if backup_info:
+                result["backup_info"] = backup_info
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"文件上传失败: {e}")
+            raise
+    
+    def validate_file_upload(self, filename: str, file_stream) -> Dict[str, Any]:
+        """
+        验证上传文件的合法性
+        
+        Args:
+            filename: 文件名
+            file_stream: 文件流
+        
+        Returns:
+            Dict: 验证结果 {"valid": bool, "error": str}
+        """
+        try:
+            # 1. 检查文件名安全性
+            if not self._is_safe_filename(filename):
+                return {
+                    "valid": False,
+                    "error": f"文件名包含不安全字符: {filename}"
+                }
+            
+            # 2. 检查文件扩展名
+            file_ext = Path(filename).suffix.lower()
+            if file_ext not in self.ALLOWED_EXTENSIONS:
+                return {
+                    "valid": False,
+                    "error": f"不支持的文件类型: {file_ext}，允许的类型: {', '.join(self.ALLOWED_EXTENSIONS)}"
+                }
+            
+            # 3. 检查文件大小
+            if hasattr(file_stream, 'seek') and hasattr(file_stream, 'tell'):
+                # 获取文件大小
+                current_pos = file_stream.tell()
+                file_stream.seek(0, 2)  # 移动到文件末尾
+                file_size = file_stream.tell()
+                file_stream.seek(current_pos)  # 恢复原位置
+                
+                if file_size > self.MAX_FILE_SIZE:
+                    return {
+                        "valid": False,
+                        "error": f"文件大小超出限制: {self._format_file_size(file_size)}，最大允许: {self._format_file_size(self.MAX_FILE_SIZE)}"
+                    }
+                
+                if file_size == 0:
+                    return {
+                        "valid": False,
+                        "error": "文件为空"
+                    }
+            
+            return {"valid": True}
+            
+        except Exception as e:
+            return {
+                "valid": False,
+                "error": f"文件验证失败: {str(e)}"
+            }
+    
+    def _is_safe_filename(self, filename: str) -> bool:
+        """检查文件名是否安全"""
+        import re
+        
+        # 禁止的字符和模式
+        dangerous_patterns = [
+            r'\.\.',  # 路径遍历
+            r'[<>:"|?*]',  # Windows 禁止字符
+            r'[\x00-\x1f]',  # 控制字符
+        ]
+        
+        # 禁止的文件名
+        dangerous_names = [
+            'CON', 'PRN', 'AUX', 'NUL',
+            'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
+            'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'
+        ]
+        
+        # 检查危险模式
+        for pattern in dangerous_patterns:
+            if re.search(pattern, filename):
+                return False
+        
+        # 检查危险文件名
+        name_without_ext = Path(filename).stem.upper()
+        if name_without_ext in dangerous_names:
+            return False
+        
+        # 检查长度
+        if len(filename) > 255:
+            return False
+        
+        return True
+    
+    def find_next_backup_version(self, file_path: Path) -> int:
+        """
+        查找下一个可用的备份版本号
+        
+        Args:
+            file_path: 原文件路径
+        
+        Returns:
+            int: 下一个可用的版本号
+        """
+        version = 1
+        while True:
+            backup_path = Path(str(file_path) + f"_bak{version}")
+            if not backup_path.exists():
+                return version
+            version += 1
+            # 防止无限循环
+            if version > 1000:
+                raise ValueError("备份版本号超出限制")
+    
+    def create_backup_file(self, original_path: Path) -> Dict[str, Any]:
+        """
+        创建备份文件
+        
+        Args:
+            original_path: 原文件路径
+        
+        Returns:
+            Dict: 备份信息
+        """
+        try:
+            # 找到下一个可用的版本号
+            version = self.find_next_backup_version(original_path)
+            backup_path = Path(str(original_path) + f"_bak{version}")
+            
+            # 创建备份
+            shutil.copy2(original_path, backup_path)
+            
+            backup_time = datetime.now()
+            
+            self.logger.info(f"创建备份文件: {backup_path}")
+            
+            return {
+                "had_existing_file": True,
+                "backup_filename": backup_path.name,
+                "backup_version": version,
+                "backup_created_at": backup_time.isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"创建备份文件失败: {e}")
+            raise
