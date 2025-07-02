@@ -3168,7 +3168,10 @@ def list_data_pipeline_tasks():
                 "completed_at": task['completed_at'].isoformat() if task.get('completed_at') else None,
                 "created_by": task.get('by_user'),
                 "db_name": task.get('db_name'),
-                "business_context": task.get('parameters', {}).get('business_context') if task.get('parameters') else None
+                "business_context": task.get('parameters', {}).get('business_context') if task.get('parameters') else None,
+                # 新增字段
+                "directory_exists": task.get('directory_exists', True),  # 默认为True，兼容旧数据
+                "updated_at": task['updated_at'].isoformat() if task.get('updated_at') else None
             })
         
         response_data = {
@@ -3843,5 +3846,198 @@ def upload_file_to_task(task_id):
             response_text="处理上传请求失败，请稍后重试"
         )), 500
 
-logger.info("正在启动Flask应用: http://localhost:8084")
+# ==================== 任务目录删除API ====================
+
+import shutil
+from pathlib import Path
+from datetime import datetime
+import psycopg2
+from app_config import PGVECTOR_CONFIG
+
+def delete_task_directory_simple(task_id, delete_database_records=False):
+    """
+    简单的任务目录删除功能
+    - 删除 data_pipeline/training_data/{task_id} 目录
+    - 更新数据库中的 directory_exists 字段
+    - 可选：删除数据库记录
+    """
+    try:
+        # 1. 删除目录
+        project_root = Path(__file__).parent.absolute()
+        task_dir = project_root / "data_pipeline" / "training_data" / task_id
+        
+        deleted_files_count = 0
+        deleted_size = 0
+        
+        if task_dir.exists():
+            # 计算删除前的统计信息
+            for file_path in task_dir.rglob('*'):
+                if file_path.is_file():
+                    deleted_files_count += 1
+                    deleted_size += file_path.stat().st_size
+            
+            # 删除目录
+            shutil.rmtree(task_dir)
+            directory_deleted = True
+        else:
+            directory_deleted = False
+        
+        # 2. 更新数据库
+        database_records_deleted = False
+        
+        try:
+            conn = psycopg2.connect(**PGVECTOR_CONFIG)
+            cur = conn.cursor()
+            
+            if delete_database_records:
+                # 删除任务步骤记录
+                cur.execute("DELETE FROM data_pipeline_task_steps WHERE task_id = %s", (task_id,))
+                # 删除任务主记录
+                cur.execute("DELETE FROM data_pipeline_tasks WHERE task_id = %s", (task_id,))
+                database_records_deleted = True
+            else:
+                # 只更新目录状态
+                cur.execute("""
+                    UPDATE data_pipeline_tasks 
+                    SET directory_exists = FALSE, updated_at = CURRENT_TIMESTAMP 
+                    WHERE task_id = %s
+                """, (task_id,))
+            
+            conn.commit()
+            cur.close()
+            conn.close()
+            
+        except Exception as db_error:
+            logger.error(f"数据库操作失败: {db_error}")
+            # 数据库失败不影响文件删除的结果
+        
+        # 3. 格式化文件大小
+        def format_size(size_bytes):
+            if size_bytes < 1024:
+                return f"{size_bytes} B"
+            elif size_bytes < 1024**2:
+                return f"{size_bytes/1024:.1f} KB"
+            elif size_bytes < 1024**3:
+                return f"{size_bytes/(1024**2):.1f} MB"
+            else:
+                return f"{size_bytes/(1024**3):.1f} GB"
+        
+        return {
+            "success": True,
+            "task_id": task_id,
+            "directory_deleted": directory_deleted,
+            "database_records_deleted": database_records_deleted,
+            "deleted_files_count": deleted_files_count,
+            "deleted_size": format_size(deleted_size),
+            "deleted_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"删除任务目录失败: {task_id}, 错误: {str(e)}")
+        return {
+            "success": False,
+            "task_id": task_id,
+            "error": str(e),
+            "error_code": "DELETE_FAILED"
+        }
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks', methods=['DELETE'])
+def delete_tasks():
+    """删除任务目录（支持单个和批量）"""
+    try:
+        # 获取请求参数
+        req = request.get_json(force=True)
+        
+        # 验证必需参数
+        task_ids = req.get('task_ids')
+        confirm = req.get('confirm')
+        
+        if not task_ids:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数: task_ids",
+                missing_params=['task_ids']
+            )), 400
+        
+        if not confirm:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数: confirm",
+                missing_params=['confirm']
+            )), 400
+        
+        if confirm != True:
+            return jsonify(bad_request_response(
+                response_text="confirm参数必须为true以确认删除操作"
+            )), 400
+        
+        if not isinstance(task_ids, list) or len(task_ids) == 0:
+            return jsonify(bad_request_response(
+                response_text="task_ids必须是非空的任务ID列表"
+            )), 400
+        
+        # 获取可选参数
+        delete_database_records = req.get('delete_database_records', False)
+        continue_on_error = req.get('continue_on_error', True)
+        
+        # 执行批量删除操作
+        deleted_tasks = []
+        failed_tasks = []
+        total_size_freed = 0
+        
+        for task_id in task_ids:
+            result = delete_task_directory_simple(task_id, delete_database_records)
+            
+            if result["success"]:
+                deleted_tasks.append(result)
+                # 累计释放的空间大小（这里简化处理，实际应该解析size字符串）
+            else:
+                failed_tasks.append({
+                    "task_id": task_id,
+                    "error": result["error"],
+                    "error_code": result.get("error_code", "UNKNOWN")
+                })
+                
+                if not continue_on_error:
+                    break
+        
+        # 构建响应
+        summary = {
+            "total_requested": len(task_ids),
+            "successfully_deleted": len(deleted_tasks),
+            "failed": len(failed_tasks)
+        }
+        
+        batch_result = {
+            "deleted_tasks": deleted_tasks,
+            "failed_tasks": failed_tasks,
+            "summary": summary,
+            "deleted_at": datetime.now().isoformat()
+        }
+        
+        if len(task_ids) == 1:
+            # 单个删除
+            if summary["failed"] == 0:
+                message = "任务目录删除成功"
+            else:
+                message = "任务目录删除失败"
+        else:
+            # 批量删除
+            if summary["failed"] == 0:
+                message = "批量删除完成"
+            elif summary["successfully_deleted"] == 0:
+                message = "批量删除失败"
+            else:
+                message = "批量删除部分完成"
+        
+        return jsonify(success_response(
+            response_text=message,
+            data=batch_result
+        )), 200
+        
+    except Exception as e:
+        logger.error(f"删除任务失败: 错误: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="删除任务失败，请稍后重试"
+        )), 500
+
+logger.info("启动Flask应用: http://localhost:8084")
 app.run(host="0.0.0.0", port=8084, debug=True)

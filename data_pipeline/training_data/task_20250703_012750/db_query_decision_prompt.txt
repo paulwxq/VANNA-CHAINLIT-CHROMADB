@@ -1,0 +1,15 @@
+{
+  "数据库业务范围": "当前数据库存储的是高速公路服务区运营管理的相关数据，主要涉及服务区业务流水、车辆流量统计、公司组织架构及路线关联信息，包含以下业务数据：",
+  "核心业务实体": [
+    "服务区：描述物理服务区域信息，主要字段：service_name(服务区名称)、service_no(服务区编码)、service_area_type(服务区类型)、service_state(运营状态)",
+    "车辆统计：记录车辆类型及流量数据，主要字段：car_type(车辆类别)、customer_count(车辆数量)、count_date(统计日期)",
+    "公司：管理分公司组织架构，主要字段：company_name(公司名称)、company_no(公司编码)",
+    "路线：关联路段与服务区关系，主要字段：section_name(路段名称)、route_name(路线名称)、service_area_id(服务区ID)"
+  ],
+  "关键业务指标": [
+    "支付分析：基于wx(微信金额)、zfb(支付宝金额)、rmb(现金金额)、pay_sum(总支付金额)的渠道占比分析",
+    "运营效率：基于order_sum(订单总数)、customer_count(车流量)的车流转化率计算",
+    "区域对比：通过company_no(公司编码)、service_area_id(服务区ID)进行多维度营收对比",
+    "时段趋势：利用oper_date(统计日期)、count_date(统计日期)分析业务波动趋势"
+  ]
+}

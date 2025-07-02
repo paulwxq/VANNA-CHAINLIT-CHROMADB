@@ -259,12 +259,26 @@ class SchemaWorkflowOrchestrator:
         step_start_time = time.time()
         
         try:
-            # 获取步骤2生成的文件
+            # 首先尝试从workflow_state获取文件（完整工作流模式）
             qs_artifacts = self.workflow_state["artifacts"].get("question_sql_generation", {})
             qs_file = qs_artifacts.get("output_file")
             
+            # 如果workflow_state中没有文件信息，则在任务目录中查找（分步执行模式）
             if not qs_file or not Path(qs_file).exists():
-                raise FileNotFoundError(f"找不到Question-SQL文件: {qs_file}")
+                self.logger.info("🔍 从workflow_state未找到文件，在任务目录中查找Question-SQL文件...")
+                
+                # 在输出目录中查找匹配的文件
+                possible_files = list(self.output_dir.glob("*_pair.json"))
+                
+                if not possible_files:
+                    raise FileNotFoundError(
+                        f"在任务目录 {self.output_dir} 中找不到Question-SQL文件（*_pair.json）。"
+                        f"请确保已执行qa_generation步骤并生成了Question-SQL对文件。"
+                    )
+                
+                # 选择最新的文件（按修改时间排序）
+                qs_file = str(max(possible_files, key=lambda f: f.stat().st_mtime))
+                self.logger.info(f"🎯 找到Question-SQL文件: {qs_file}")
             
             self.logger.info(f"📄 验证文件: {qs_file}")
             

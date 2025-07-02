@@ -1,0 +1,13 @@
+=== 数据库业务范围 ===
+当前数据库存储的是高速公路服务区运营管理的相关数据，主要涉及经营统计、车流分析、服务区基础信息及路段关联，包含以下业务数据：
+核心业务实体：
+- 服务区：记录服务区基础信息及运营状态，主要字段：service_area_name、service_area_no、company_id、service_state
+- 档口：标识服务区经营单元信息，主要字段：branch_no、branch_name
+- 公司：存储管理分公司信息，主要字段：company_name、company_no
+- 车辆类型：分类车辆统计维度，主要字段：car_type
+- 支付渠道：区分不同支付方式，主要字段：wx、zfb、rmb、xs、jd
+关键业务指标：
+- 营收贡献：通过支付金额(wx/zfb/rmb/xs/jd)和订单数量(wx_order/zf_order/rmb_order/xs_order/jd_order)计算各渠道营收占比
+- 车流量分析：基于customer_count字段统计各服务区不同车型的车流量分布
+- 数据质量：通过source_type、source_system_type字段监控数据采集完整性和更新及时性
+- 运营效率：结合order_sum和pay_sum字段评估单位时间内的交易频次和金额波动

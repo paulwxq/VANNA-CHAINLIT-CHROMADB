@@ -55,24 +55,24 @@ class SQLValidator:
         self.logger = logging.getLogger("SQLValidator")
         
     async def _get_connection_pool(self):
-        """获取或复用现有连接池"""
+        """获取或创建连接池"""
         if not self.connection_pool:
-            if self.config['reuse_connection_pool'] and self.db_connection:
-                # 复用现有的DatabaseInspector连接池
-                from data_pipeline.tools.base import ToolRegistry
-                
-                db_tool = ToolRegistry.get_tool("database_inspector", 
-                                               db_connection=self.db_connection)
-                
-                # 如果连接池不存在，则创建
-                if not db_tool.connection_pool:
-                    await db_tool._create_connection_pool()
-                
-                # 复用连接池
-                self.connection_pool = db_tool.connection_pool
-                self.logger.info("复用现有数据库连接池进行SQL验证")
+            if self.db_connection:
+                # 直接创建自己的连接池，避免复用问题
+                import asyncpg
+                try:
+                    self.connection_pool = await asyncpg.create_pool(
+                        self.db_connection,
+                        min_size=1,
+                        max_size=5,
+                        command_timeout=30
+                    )
+                    self.logger.info("SQL验证器连接池创建成功")
+                except Exception as e:
+                    self.logger.error(f"创建SQL验证器连接池失败: {e}")
+                    raise
             else:
-                raise ValueError("需要提供数据库连接字符串或启用连接池复用")
+                raise ValueError("需要提供数据库连接字符串")
         
         return self.connection_pool
     

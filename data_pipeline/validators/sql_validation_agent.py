@@ -92,6 +92,17 @@ class SQLValidationAgent:
             
             # 3. 执行验证
             self.logger.info("🔍 开始SQL验证...")
+            
+            # 先测试数据库连接
+            try:
+                pool = await self.validator._get_connection_pool()
+                async with pool.acquire() as conn:
+                    await conn.fetchval("SELECT 1")
+                self.logger.info("✅ 数据库连接测试成功")
+            except Exception as e:
+                self.logger.error(f"❌ 数据库连接失败: {e}")
+                raise RuntimeError(f"无法连接到数据库，SQL验证中止: {str(e)}")
+            
             validation_results = await self._validate_sqls_with_batching(sqls)
             
             # 4. 计算统计信息
@@ -127,6 +138,14 @@ class SQLValidationAgent:
         except Exception as e:
             self.logger.exception("❌ SQL验证流程失败")
             raise
+        finally:
+            # 清理连接池
+            if hasattr(self.validator, 'connection_pool') and self.validator.connection_pool:
+                try:
+                    await self.validator.connection_pool.close()
+                    self.logger.info("SQL验证器连接池已关闭")
+                except Exception as e:
+                    self.logger.error(f"关闭连接池失败: {e}")
     
     async def _load_questions_sqls(self) -> List[Dict[str, str]]:
         """读取Question-SQL对"""
@@ -165,6 +184,7 @@ class SQLValidationAgent:
         """使用批处理方式验证SQL"""
         batch_size = self.config['batch_size']
         all_results = []
+        connection_error_count = 0
         
         # 分批处理
         for i in range(0, len(sqls), batch_size):
@@ -177,9 +197,19 @@ class SQLValidationAgent:
             batch_results = await self.validator.validate_sqls_batch(batch)
             all_results.extend(batch_results)
             
+            # 检查是否有连接相关的错误
+            for result in batch_results:
+                if not result.valid and "连接" in result.error_message:
+                    connection_error_count += 1
+            
             # 显示批次进度
             valid_count = sum(1 for r in batch_results if r.valid)
             self.logger.info(f"✅ 批次 {batch_num} 完成: {valid_count}/{len(batch)} 有效")
+            
+            # 如果所有SQL都因为连接问题失败，抛出错误
+            if connection_error_count >= len(batch):
+                self.logger.error(f"❌ 批次 {batch_num} 中所有SQL都因数据库连接问题失败")
+                raise RuntimeError("数据库连接异常，无法继续验证")
         
         return all_results
     

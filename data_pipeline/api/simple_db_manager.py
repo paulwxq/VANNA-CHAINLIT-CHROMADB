@@ -317,7 +317,7 @@ class SimpleTaskManager:
                 
                 params.extend([limit, offset])
                 
-                # 联表查询获取步骤状态汇总（排除result字段）
+                # 联表查询获取步骤状态汇总（包含新增字段）
                 cursor.execute(f"""
                     SELECT 
                         t.task_id,
@@ -333,6 +333,8 @@ class SimpleTaskManager:
                         t.by_user,
                         t.output_directory,
                         t.db_name,
+                        COALESCE(t.directory_exists, TRUE) as directory_exists,
+                        t.updated_at,
                         CASE 
                             WHEN COUNT(s.step_name) = 0 THEN NULL
                             WHEN COUNT(s.step_name) FILTER (WHERE s.step_status = 'failed') > 0 THEN 'failed'
@@ -346,7 +348,7 @@ class SimpleTaskManager:
                     {where_clause}
                     GROUP BY t.task_id, t.task_name, t.task_type, t.status, t.parameters, t.error_message, 
                              t.created_at, t.started_at, t.completed_at, t.created_type, t.by_user, 
-                             t.output_directory, t.db_name
+                             t.output_directory, t.db_name, t.directory_exists, t.updated_at
                     ORDER BY t.created_at DESC 
                     LIMIT %s OFFSET %s
                 """, params)
