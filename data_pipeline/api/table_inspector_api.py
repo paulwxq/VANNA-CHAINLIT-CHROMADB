@@ -18,7 +18,7 @@ class TableInspectorAPI:
         self.logger = logging.getLogger("TableInspectorAPI")
         self.db_inspector = None
     
-    async def get_tables_list(self, db_connection: str, schema: Optional[str] = None) -> List[str]:
+    async def get_tables_list(self, db_connection: str, schema: Optional[str] = None, table_name_pattern: Optional[str] = None) -> List[str]:
         """
         获取数据库表列表
         
@@ -26,6 +26,11 @@ class TableInspectorAPI:
             db_connection: 完整的PostgreSQL连接字符串
             schema: 可选的schema参数，支持多个schema用逗号分隔
                    如果为None或空字符串，则只返回public schema的表
+            table_name_pattern: 可选的表名模式匹配，支持通配符
+                               - ods_* : 以"ods_"开头的表
+                               - *_dim : 以"_dim"结尾的表
+                               - *fact* : 包含"fact"的表
+                               - ods_% : 直接使用SQL LIKE语法
         
         Returns:
             表名列表，格式为 schema.tablename
@@ -41,7 +46,7 @@ class TableInspectorAPI:
             target_schemas = self._parse_schemas(schema)
             
             # 查询表列表
-            tables = await self._query_tables(target_schemas)
+            tables = await self._query_tables(target_schemas, table_name_pattern)
             
             return tables
             
@@ -76,12 +81,17 @@ class TableInspectorAPI:
         
         return schemas
     
-    async def _query_tables(self, schemas: List[str]) -> List[str]:
+    async def _query_tables(self, schemas: List[str], table_name_pattern: Optional[str] = None) -> List[str]:
         """
         查询指定schema中的表
         
         Args:
             schemas: schema列表
+            table_name_pattern: 可选的表名模式匹配，支持通配符
+                               - ods_* : 以"ods_"开头的表
+                               - *_dim : 以"_dim"结尾的表
+                               - *fact* : 包含"fact"的表
+                               - ods_% : 直接使用SQL LIKE语法
         
         Returns:
             表名列表，格式为 schema.tablename
@@ -90,15 +100,29 @@ class TableInspectorAPI:
         
         async with self.db_inspector.connection_pool.acquire() as conn:
             for schema in schemas:
-                # 查询指定schema中的表
-                query = """
-                SELECT schemaname, tablename 
-                FROM pg_tables 
-                WHERE schemaname = $1
-                ORDER BY tablename
-                """
-                
-                rows = await conn.fetch(query, schema)
+                # 构建查询语句
+                if table_name_pattern:
+                    # 转换通配符模式为SQL LIKE语法
+                    sql_pattern = self._convert_wildcard_to_sql_like(table_name_pattern)
+                    
+                    query = """
+                    SELECT schemaname, tablename 
+                    FROM pg_tables 
+                    WHERE schemaname = $1 AND tablename LIKE $2
+                    ORDER BY tablename
+                    """
+                    
+                    rows = await conn.fetch(query, schema, sql_pattern)
+                else:
+                    # 没有表名模式，查询所有表
+                    query = """
+                    SELECT schemaname, tablename 
+                    FROM pg_tables 
+                    WHERE schemaname = $1
+                    ORDER BY tablename
+                    """
+                    
+                    rows = await conn.fetch(query, schema)
                 
                 # 格式化表名为 schema.tablename
                 for row in rows:
@@ -110,7 +134,8 @@ class TableInspectorAPI:
         # 按名称排序
         tables.sort()
         
-        self.logger.info(f"查询到 {len(tables)} 个表，schemas: {schemas}")
+        pattern_info = f"，表名模式: {table_name_pattern}" if table_name_pattern else ""
+        self.logger.info(f"查询到 {len(tables)} 个表，schemas: {schemas}{pattern_info}")
         
         return tables
     
@@ -312,4 +337,34 @@ class TableInspectorAPI:
             'host': host,
             'port': int(port),
             'dbname': dbname
-        } 
+        }
+
+    def _convert_wildcard_to_sql_like(self, pattern: str) -> str:
+        """
+        将通配符模式转换为SQL LIKE语法
+        
+        Args:
+            pattern: 通配符模式
+                    - ods_* : 以"ods_"开头的表
+                    - *_dim : 以"_dim"结尾的表
+                    - *fact* : 包含"fact"的表
+                    - ods_% : 直接使用SQL LIKE语法（不转换）
+        
+        Returns:
+            SQL LIKE语法的模式字符串
+        """
+        if not pattern:
+            return "%"
+            
+        # 如果已经是SQL LIKE语法（包含%），直接返回
+        if "%" in pattern:
+            return pattern
+            
+        # 转换通配符*为%
+        sql_pattern = pattern.replace("*", "%")
+        
+        # 记录转换日志
+        if pattern != sql_pattern:
+            self.logger.debug(f"通配符模式转换: {pattern} -> {sql_pattern}")
+        
+        return sql_pattern 

@@ -34,7 +34,7 @@
 | 方法 | 端点 | 描述 |
 |------|------|------|
 | `POST` | `/api/v0/data_pipeline/tasks` | 创建训练任务 |
-| `POST` | `/api/v0/database/tables` | 查询数据库表列表 |
+| `POST` | `/api/v0/database/tables` | 查询业务数据库表名列表 |
 | `POST` | `/api/v0/data_pipeline/tasks/{task_id}/table-list` | 在线提交表名列表 |
 | `POST` | `/api/v0/data_pipeline/tasks/{task_id}/upload-table-list` | 上传表清单文件 |
 
@@ -140,16 +140,6 @@ POST:  `http://localhost:8084/api/v0/data_pipeline/tasks/task_20250703_000820/ex
 #### 依赖关系
 - **前置条件**: 任务已创建，表清单文件已上传
 - **后续步骤**: 为 `qa_generation` 提供基础数据
-
-#### 查看执行状态
-
-GET `/api/v0/data_pipeline/tasks/{task_id}/status`
-
-
-
-```json
-
-```
 
 ### 步骤2: Question-SQL对生成 (`qa_generation`)
 
@@ -358,9 +348,9 @@ POST `http://localhost:8084/api/v0/data_pipeline/tasks/task_20250703_000820/exec
 
 GET `http://localhost:8084/api/v0/data_pipeline/tasks/task_20250703_000820`
 
-开始执行："step_status": { "ddl_generation": "running",
+开始执行："step_status": { "ddl_generation": "running", ...
 
-结束执行："step_status": { "ddl_generation": "completed",
+结束执行："step_status": { "ddl_generation": "completed", ...
 
 **成功执行返回结果**
 

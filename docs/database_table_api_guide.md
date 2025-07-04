@@ -6,15 +6,15 @@
 
 | API端点 | 功能 | 必需参数 | 可选参数 |
 |---------|------|----------|----------|
-| `POST /api/v0/database/tables` | 获取数据库表列表 | 无 | `db_connection`, `schema` |
+| `POST /api/v0/database/tables` | 获取数据库表列表（支持模糊搜索） | 无 | `db_connection`, `schema`, `table_name_pattern` |
 | `POST /api/v0/database/table/ddl` | 获取表DDL和结构分析 | `table` | `db_connection`, `business_context`, `type` |
 
 ## 1. 获取数据库表列表
 
 ### 接口信息
 - **URL**: `POST /api/v0/database/tables`
-- **功能**: 获取指定数据库中的表列表
-- **特点**: 纯数据库查询，不涉及AI功能
+- **功能**: 获取指定数据库中的表列表，支持表名模糊搜索
+- **特点**: 纯数据库查询，不涉及AI功能，支持高效的数据库层面过滤
 
 ### 请求参数
 
@@ -22,6 +22,35 @@
 |--------|------|------|------|------|
 | `db_connection` | string | 否 | PostgreSQL连接字符串<br/>不传则使用默认配置 | `"postgresql://user:pass@host:port/db"` |
 | `schema` | string | 否 | Schema名称，支持逗号分隔多个<br/>默认为"public" | `"public,ods,dw"` |
+| `table_name_pattern` | string | 否 | 表名模糊搜索模式<br/>支持通配符和SQL LIKE语法 | `"ods_*"`, `"*_dim"`, `"*fact*"` |
+
+### 表名模糊搜索模式说明
+
+| 模式 | 说明 | 匹配示例 |
+|------|------|----------|
+| `ods_*` | 以"ods_"开头的表 | `ods_user`, `ods_order`, `ods_product` |
+| `*_dim` | 以"_dim"结尾的表 | `user_dim`, `time_dim`, `product_dim` |
+| `*fact*` | 包含"fact"的表 | `sales_fact`, `order_fact_table` |
+| `ods_%` | 直接使用SQL LIKE语法 | 与 `ods_*` 相同 |
+
+### 模糊搜索使用场景
+
+1. **数据仓库分层查询**：快速找到特定层级的表
+   - `ods_*` - 查找所有ODS层表
+   - `dwd_*` - 查找所有DWD层表  
+   - `dws_*` - 查找所有DWS层表
+
+2. **维度表查询**：找到所有维度表
+   - `*_dim` - 查找所有维度表
+   - `dim_*` - 查找以dim开头的维度表
+
+3. **事实表查询**：找到所有事实表
+   - `*fact*` - 查找包含fact的表
+   - `fact_*` - 查找以fact开头的表
+
+4. **业务主题查询**：按业务主题过滤表
+   - `user_*` - 查找用户相关的表
+   - `order_*` - 查找订单相关的表
 
 ### 请求示例
 
@@ -48,8 +77,26 @@
 {}
 ```
 
+#### 使用表名模糊搜索
+```json
+{
+    "schema": "public,ods",
+    "table_name_pattern": "ods_*"
+}
+```
+
+#### 复杂搜索示例
+```json
+{
+    "db_connection": "postgresql://postgres:postgres@192.168.67.1:5432/bank_db",
+    "schema": "public,ods,dw",
+    "table_name_pattern": "*_dim"
+}
+```
+
 ### 响应示例
 
+#### 基础查询响应
 ```json
 {
     "code": 200,
@@ -72,6 +119,31 @@
             "public.bss_service_area_mapper"
         ],
         "total": 8
+    },
+    "message": "操作成功",
+    "success": true
+}
+```
+
+#### 模糊搜索响应示例
+```json
+{
+    "code": 200,
+    "data": {
+        "db_connection_info": {
+            "database": "highway_db"
+        },
+        "response": "获取表列表成功",
+        "schemas": [
+            "ods"
+        ],
+        "tables": [
+            "ods.ods_user",
+            "ods.ods_order",
+            "ods.ods_product"
+        ],
+        "total": 3,
+        "table_name_pattern": "ods_*"
     },
     "message": "操作成功",
     "success": true
@@ -527,8 +599,9 @@
 ### 性能考虑
 
 1. **表列表查询**: 速度较快，适合频繁调用
-2. **DDL分析**: 涉及AI处理，响应时间较长（5-30秒）
-3. **大表处理**: 系统会自动进行智能采样，避免性能问题
+2. **表名模糊搜索**: 在数据库层面进行过滤，性能优异，适合大量表的数据库
+3. **DDL分析**: 涉及AI处理，响应时间较长（5-30秒）
+4. **大表处理**: 系统会自动进行智能采样，避免性能问题
 
 ### 安全考虑
 
@@ -542,6 +615,7 @@
 2. **外部调用**: 明确传入 `db_connection` 参数
 3. **文档生成**: 传入详细的 `business_context` 以获得更好的AI注释
 4. **批量处理**: 先调用表列表API获取所有表，再逐个分析
+5. **模糊搜索**: 对于大量表的数据库，使用 `table_name_pattern` 进行精准过滤
 
 ## 示例代码
 
@@ -551,9 +625,11 @@
 import requests
 
 # 获取表列表
-def get_tables(schema="public"):
+def get_tables(schema="public", table_name_pattern=None):
     url = "http://localhost:8084/api/v0/database/tables"
     data = {"schema": schema}
+    if table_name_pattern:
+        data["table_name_pattern"] = table_name_pattern
     response = requests.post(url, json=data)
     return response.json()
 
@@ -572,6 +648,7 @@ def get_table_ddl(table, business_context=None, output_type="ddl"):
 
 # 使用示例
 tables = get_tables("public")
+ods_tables = get_tables("public,ods", "ods_*")  # 模糊搜索ODS表
 ddl = get_table_ddl("public.bank_churners", "银行客户信息", "md")
 ```
 
@@ -579,11 +656,16 @@ ddl = get_table_ddl("public.bank_churners", "银行客户信息", "md")
 
 ```javascript
 // 获取表列表
-async function getTables(schema = 'public') {
+async function getTables(schema = 'public', tableNamePattern = null) {
+    const data = { schema };
+    if (tableNamePattern) {
+        data.table_name_pattern = tableNamePattern;
+    }
+    
     const response = await fetch('/api/v0/database/tables', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schema })
+        body: JSON.stringify(data)
     });
     return await response.json();
 }
@@ -609,6 +691,7 @@ async function getTableDDL(table, businessContext = null, type = 'ddl') {
 - **v1.0** (2025-07-02): 初始版本，支持基础的表查询和DDL生成
 - **v1.1** (2025-07-02): 新增AI智能注释功能，支持枚举字段识别
 - **v1.2** (2025-07-02): `db_connection` 参数改为可选，支持使用默认配置
+- **v1.3** (2025-07-03): 新增表名模糊搜索功能，支持通配符和SQL LIKE语法
 
 ---
 

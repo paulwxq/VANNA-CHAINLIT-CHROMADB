@@ -52,6 +52,7 @@
 #### 1.1 参数示例
 
 **参数样例1**：
+
 ```json
 {
     "task_name": "服务区初始化数据加载",
@@ -150,13 +151,15 @@
 
 **请求地址**: `http://localhost:8084/api/v0/database/tables`
 
-**参数**（都是可选参数）：
+**参数**（都是可选参数）：`db_connection / schema / table_name_pattern` 
+
 > 如果要查询的数据库没有在app_config.py中配置，或者不是查询业务数据的表，那么需要提供db_connection字符串。
 
 ```json
 {
     "db_connection": "postgresql://postgres:postgres@192.168.67.1:5432/highway_db",
-    "schema": "public,ods,dw"
+    "schema": "public,ods,dw",
+    "table_name_pattern": "*_area*"
 }
 ```
 
@@ -173,21 +176,17 @@
         },
         "response": "获取表列表成功",
         "schemas": [
-            "public"
+            "public",
+            "ods",
+            "dw"
         ],
+        "table_name_pattern": "*_area*",
         "tables": [
-            "public.bss_branch",
-            "public.bss_business_day_data",
-            "public.bss_car_day_count",
-            "public.bss_company",
-            "public.bss_section_route",
             "public.bss_section_route_area_link",
             "public.bss_service_area",
-            "public.bss_service_area_mapper",
-            "public.highway_metadata",
-            "public.qa_feedback"
+            "public.bss_service_area_mapper"
         ],
-        "total": 10
+        "total": 3
     },
     "message": "操作成功",
     "success": true

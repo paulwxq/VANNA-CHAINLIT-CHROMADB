@@ -6,7 +6,7 @@
 
 ### 1. 获取表列表
 - **路径**: `POST /api/v0/database/tables`
-- **功能**: 获取数据库中的表列表
+- **功能**: 获取数据库中的表列表，支持表名模糊搜索
 
 ### 2. 获取表DDL/文档
 - **路径**: `POST /api/v0/database/table/ddl`
@@ -16,6 +16,7 @@
 
 ### 请求示例
 
+#### 基础查询
 ```bash
 curl -X POST http://localhost:8084/api/v0/database/tables \
   -H "Content-Type: application/json" \
@@ -25,15 +26,28 @@ curl -X POST http://localhost:8084/api/v0/database/tables \
   }'
 ```
 
+#### 表名模糊搜索
+```bash
+curl -X POST http://localhost:8084/api/v0/database/tables \
+  -H "Content-Type: application/json" \
+  -d '{
+    "db_connection": "postgresql://postgres:postgres@192.168.67.1:5432/highway_db",
+    "schema": "public,ods",
+    "table_name_pattern": "ods_*"
+  }'
+```
+
 ### 参数说明
 
 | 参数 | 类型 | 必需 | 说明 |
 |------|------|------|------|
 | db_connection | string | ✅ | 完整的PostgreSQL连接字符串 |
 | schema | string | ❌ | 查询的schema，支持多个用逗号分隔，默认为public |
+| table_name_pattern | string | ❌ | 表名模糊搜索模式，支持通配符：`ods_*`、`*_dim`、`*fact*` |
 
 ### 响应示例
 
+#### 基础查询响应
 ```json
 {
   "success": true,
@@ -47,6 +61,28 @@ curl -X POST http://localhost:8084/api/v0/database/tables \
     ],
     "total": 3,
     "schemas": ["public", "ods"],
+    "db_connection_info": {
+      "database": "highway_db"
+    }
+  }
+}
+```
+
+#### 模糊搜索响应
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "获取表列表成功",
+  "data": {
+    "tables": [
+      "ods.ods_user",
+      "ods.ods_order",
+      "ods.ods_product"
+    ],
+    "total": 3,
+    "schemas": ["ods"],
+    "table_name_pattern": "ods_*",
     "db_connection_info": {
       "database": "highway_db"
     }
@@ -147,6 +183,12 @@ curl -X POST http://localhost:8084/api/v0/database/table/ddl \
 
 ## 🚀 特性说明
 
+### 表名模糊搜索（新增功能）
+- 支持通配符模式：`ods_*`、`*_dim`、`*fact*`
+- 支持SQL LIKE语法：`ods_%`、`%_dim`
+- 数据库层面高效过滤，适用于大量表的场景
+- 自动转换通配符为SQL LIKE语法
+
 ### 智能注释生成
 - 当提供`business_context`时，系统会调用LLM生成智能注释
 - LLM会结合表结构、样例数据和业务上下文生成准确的中文注释
@@ -171,6 +213,7 @@ python test_table_inspector_api.py
 
 测试脚本包含：
 - 表列表API的各种参数组合测试
+- 表名模糊搜索功能测试
 - DDL/MD生成API的功能测试
 - 错误处理测试
 - 性能基准测试
@@ -181,6 +224,7 @@ python test_table_inspector_api.py
 2. **LLM调用**: 当提供`business_context`时会调用LLM，响应时间较长
 3. **权限要求**: 需要数据库的读取权限
 4. **超时设置**: DDL生成包含LLM调用，建议设置60秒以上超时
+5. **表名模糊搜索**: 支持 `*` 通配符和 `%` SQL语法，区分大小写
 
 ## 🔗 集成示例
 
@@ -193,6 +237,17 @@ const tables = await fetch('/api/v0/database/tables', {
   body: JSON.stringify({
     db_connection: 'postgresql://user:pass@host:5432/db',
     schema: 'public'
+  })
+}).then(r => r.json());
+
+// 获取表列表（使用模糊搜索）
+const filteredTables = await fetch('/api/v0/database/tables', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    db_connection: 'postgresql://user:pass@host:5432/db',
+    schema: 'public,ods',
+    table_name_pattern: 'ods_*'
   })
 }).then(r => r.json());
 
@@ -220,6 +275,15 @@ response = requests.post('http://localhost:8084/api/v0/database/tables',
     'schema': 'public'
   })
 tables = response.json()
+
+# 获取表列表（使用模糊搜索）
+response = requests.post('http://localhost:8084/api/v0/database/tables', 
+  json={
+    'db_connection': 'postgresql://user:pass@host:5432/db',
+    'schema': 'public,ods',
+    'table_name_pattern': 'ods_*'
+  })
+ods_tables = response.json()
 
 # 获取表DDL  
 response = requests.post('http://localhost:8084/api/v0/database/table/ddl',

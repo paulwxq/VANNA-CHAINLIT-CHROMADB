@@ -3205,7 +3205,8 @@ def get_database_tables():
     请求体:
     {
         "db_connection": "postgresql://postgres:postgres@192.168.67.1:5432/highway_db",  // 可选，不传则使用默认配置
-        "schema": "public,ods"  // 可选，支持多个schema用逗号分隔，默认为public
+        "schema": "public,ods",  // 可选，支持多个schema用逗号分隔，默认为public
+        "table_name_pattern": "ods_*"  // 可选，表名模式匹配，支持通配符：ods_*、*_dim、*fact*、ods_%
     }
     
     响应:
@@ -3216,7 +3217,8 @@ def get_database_tables():
         "data": {
             "tables": ["public.table1", "public.table2", "ods.table3"],
             "total": 3,
-            "schemas": ["public", "ods"]
+            "schemas": ["public", "ods"],
+            "table_name_pattern": "ods_*"
         }
     }
     """
@@ -3236,13 +3238,14 @@ def get_database_tables():
         
         # 可选参数
         schema = req.get('schema', '')
+        table_name_pattern = req.get('table_name_pattern')
         
         # 创建表检查API实例
         table_inspector = TableInspectorAPI()
         
         # 使用asyncio运行异步方法
         async def get_tables():
-            return await table_inspector.get_tables_list(db_connection, schema)
+            return await table_inspector.get_tables_list(db_connection, schema, table_name_pattern)
         
         # 在新的事件循环中运行异步方法
         try:
@@ -3263,6 +3266,10 @@ def get_database_tables():
                 "database": db_connection.split('/')[-1].split('?')[0] if '/' in db_connection else "unknown"
             }
         }
+        
+        # 如果使用了表名模式，添加到响应中
+        if table_name_pattern:
+            response_data["table_name_pattern"] = table_name_pattern
         
         return jsonify(success_response(
             response_text="获取表列表成功",

@@ -133,3 +133,17 @@ wsproto==1.2.0
 yarl==1.20.0
 zipp==3.21.0
 zstandard==0.23.0
+attrs==25.3.0
+backoff==2.2.1
+bcrypt==4.3.0
+bidict==0.23.1
+blinker==1.9.0
+build==1.2.2.post1
+cachetools==5.5.2
+certifi==2025.4.26
+chainlit==2.5.5
+charset-normalizer==3.4.2
+chevron==0.14.0
+chroma-hnswlib==0.7.6
+chromadb==0.6.3
+click==8.1.8
