@@ -451,7 +451,74 @@ class SimpleWorkflowExecutor:
             except Exception as e:
                 self.logger.error(f"重定向orchestrator日志失败: {e}")
     
-
+    def query_logs_advanced(self,
+                           page: int = 1,
+                           page_size: int = 50,
+                           level: str = None,
+                           start_time: str = None,
+                           end_time: str = None,
+                           keyword: str = None,
+                           logger_name: str = None,
+                           step_name: str = None,
+                           sort_by: str = "timestamp",
+                           sort_order: str = "desc") -> dict:
+        """
+        高级日志查询（工作流层）
+        
+        Args:
+            page: 页码，必须大于0，默认1
+            page_size: 每页大小，1-500之间，默认50
+            level: 可选，日志级别筛选
+            start_time: 可选，开始时间范围
+            end_time: 可选，结束时间范围
+            keyword: 可选，关键字搜索
+            logger_name: 可选，日志记录器名称
+            step_name: 可选，执行步骤名称
+            sort_by: 可选，排序字段
+            sort_order: 可选，排序方向
+            
+        Returns:
+            日志查询结果
+        """
+        try:
+            # 调用数据库层方法
+            result = self.task_manager.query_logs_advanced(
+                task_id=self.task_id,
+                page=page,
+                page_size=page_size,
+                level=level,
+                start_time=start_time,
+                end_time=end_time,
+                keyword=keyword,
+                logger_name=logger_name,
+                step_name=step_name,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+            
+            # 记录查询操作
+            self.logger.info(f"日志查询完成: {self.task_id}, 页码: {page}, 结果数: {len(result.get('logs', []))}")
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"日志查询失败: {e}")
+            return {
+                "logs": [],
+                "pagination": {
+                    "page": page,
+                    "page_size": page_size,
+                    "total": 0,
+                    "total_pages": 0,
+                    "has_next": False,
+                    "has_prev": False
+                },
+                "log_file_info": {
+                    "exists": False,
+                    "error": str(e)
+                },
+                "query_time": "0.000s"
+            }
     
     def cleanup(self):
         """清理资源"""
@@ -540,6 +607,18 @@ class SimpleWorkflowManager:
     def get_tasks_list(self, **kwargs) -> List[Dict[str, Any]]:
         """获取任务列表"""
         return self.task_manager.get_tasks_list(**kwargs)
+    
+    def query_tasks_advanced(self, **kwargs) -> dict:
+        """
+        高级任务查询，支持复杂筛选、排序、分页
+        
+        Args:
+            **kwargs: 传递给数据库层的查询参数
+        
+        Returns:
+            包含任务列表和分页信息的字典
+        """
+        return self.task_manager.query_tasks_advanced(**kwargs)
     
     def cleanup(self):
         """清理资源"""

@@ -19,13 +19,10 @@ import sqlparse  # 用于SQL语法检查
 from common.redis_conversation_manager import RedisConversationManager  # 添加Redis对话管理器导入
 
 from common.qa_feedback_manager import QAFeedbackManager
-from common.result import success_response, bad_request_response, not_found_response, internal_error_response
-
-
 from common.result import (  # 统一导入所有需要的响应函数
-    bad_request_response, service_unavailable_response, 
+    success_response, bad_request_response, not_found_response, internal_error_response,
+    error_response, service_unavailable_response, 
     agent_success_response, agent_error_response,
-    internal_error_response, success_response,
     validation_failed_response
 )
 from app_config import (  # 添加Redis相关配置导入
@@ -2527,17 +2524,48 @@ def training_data_create():
         # 获取创建后的总记录数
         current_total = get_total_training_count()
         
-        return jsonify(success_response(
-            response_text="训练数据创建完成",
-            data={
-                "total_requested": len(data_list),
-                "successfully_created": successful_count,
-                "failed_count": len(data_list) - successful_count,
-                "results": results,
-                "summary": type_summary,
-                "current_total_count": current_total
-            }
-        ))
+        # 根据实际执行结果决定响应状态
+        failed_count = len(data_list) - successful_count
+        
+        if failed_count == 0:
+            # 全部成功
+            return jsonify(success_response(
+                response_text="训练数据创建完成",
+                data={
+                    "total_requested": len(data_list),
+                    "successfully_created": successful_count,
+                    "failed_count": failed_count,
+                    "results": results,
+                    "summary": type_summary,
+                    "current_total_count": current_total
+                }
+            ))
+        elif successful_count == 0:
+            # 全部失败
+            return jsonify(error_response(
+                response_text="训练数据创建失败",
+                data={
+                    "total_requested": len(data_list),
+                    "successfully_created": successful_count,
+                    "failed_count": failed_count,
+                    "results": results,
+                    "summary": type_summary,
+                    "current_total_count": current_total
+                }
+            )), 400
+        else:
+            # 部分成功，部分失败
+            return jsonify(error_response(
+                response_text=f"训练数据创建部分成功，成功{successful_count}条，失败{failed_count}条",
+                data={
+                    "total_requested": len(data_list),
+                    "successfully_created": successful_count,
+                    "failed_count": failed_count,
+                    "results": results,
+                    "summary": type_summary,
+                    "current_total_count": current_total
+                }
+            )), 207
         
     except Exception as e:
         logger.error(f"training_data_create执行失败: {str(e)}")
@@ -2598,18 +2626,51 @@ def training_data_delete():
         # 获取删除后的总记录数
         current_total = get_total_training_count()
         
-        return jsonify(success_response(
-            response_text="训练数据删除完成",
-            data={
-                "total_requested": len(ids),
-                "successfully_deleted": len(deleted_ids),
-                "failed_count": len(failed_ids),
-                "deleted_ids": deleted_ids,
-                "failed_ids": failed_ids,
-                "failed_details": failed_details,
-                "current_total_count": current_total
-            }
-        ))
+        # 根据实际执行结果决定响应状态
+        failed_count = len(failed_ids)
+        
+        if failed_count == 0:
+            # 全部成功
+            return jsonify(success_response(
+                response_text="训练数据删除完成",
+                data={
+                    "total_requested": len(ids),
+                    "successfully_deleted": len(deleted_ids),
+                    "failed_count": failed_count,
+                    "deleted_ids": deleted_ids,
+                    "failed_ids": failed_ids,
+                    "failed_details": failed_details,
+                    "current_total_count": current_total
+                }
+            ))
+        elif len(deleted_ids) == 0:
+            # 全部失败
+            return jsonify(error_response(
+                response_text="训练数据删除失败",
+                data={
+                    "total_requested": len(ids),
+                    "successfully_deleted": len(deleted_ids),
+                    "failed_count": failed_count,
+                    "deleted_ids": deleted_ids,
+                    "failed_ids": failed_ids,
+                    "failed_details": failed_details,
+                    "current_total_count": current_total
+                }
+            )), 400
+        else:
+            # 部分成功，部分失败
+            return jsonify(error_response(
+                response_text=f"训练数据删除部分成功，成功{len(deleted_ids)}条，失败{failed_count}条",
+                data={
+                    "total_requested": len(ids),
+                    "successfully_deleted": len(deleted_ids),
+                    "failed_count": failed_count,
+                    "deleted_ids": deleted_ids,
+                    "failed_ids": failed_ids,
+                    "failed_details": failed_details,
+                    "current_total_count": current_total
+                }
+            )), 207
         
     except Exception as e:
         logger.error(f"training_data_delete执行失败: {str(e)}")
@@ -3190,6 +3251,189 @@ def list_data_pipeline_tasks():
         logger.error(f"获取数据管道任务列表失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="获取任务列表失败，请稍后重试"
+        )), 500
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/query', methods=['POST'])
+def query_data_pipeline_tasks():
+    """
+    高级查询数据管道任务列表
+    
+    支持复杂筛选、排序、分页功能
+    
+    请求体:
+    {
+        "page": 1,                          // 页码，必须大于0，默认1
+        "page_size": 20,                    // 每页大小，1-100之间，默认20
+        "status": "completed",              // 可选，任务状态筛选："pending"|"running"|"completed"|"failed"|"cancelled"
+        "task_name": "highway",             // 可选，任务名称模糊搜索，最大100字符
+        "created_by": "user123",            // 可选，创建者精确匹配
+        "db_name": "highway_db",            // 可选，数据库名称精确匹配
+        "created_time_start": "2025-01-01T00:00:00",  // 可选，创建时间范围开始
+        "created_time_end": "2025-12-31T23:59:59",    // 可选，创建时间范围结束
+        "started_time_start": "2025-01-01T00:00:00",  // 可选，开始时间范围开始
+        "started_time_end": "2025-12-31T23:59:59",    // 可选，开始时间范围结束
+        "completed_time_start": "2025-01-01T00:00:00", // 可选，完成时间范围开始
+        "completed_time_end": "2025-12-31T23:59:59",   // 可选，完成时间范围结束
+        "sort_by": "created_at",            // 可选，排序字段："created_at"|"started_at"|"completed_at"|"task_name"|"status"，默认"created_at"
+        "sort_order": "desc"                // 可选，排序方向："asc"|"desc"，默认"desc"
+    }
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "查询任务列表成功",
+        "data": {
+            "tasks": [...],
+            "pagination": {
+                "page": 1,
+                "page_size": 20,
+                "total": 150,
+                "total_pages": 8,
+                "has_next": true,
+                "has_prev": false
+            },
+            "filters_applied": {...},
+            "sort_applied": {...},
+            "query_time": "0.045s"
+        }
+    }
+    """
+    try:
+        # 获取请求数据
+        req = request.get_json(force=True) if request.is_json else {}
+        
+        # 解析参数，设置默认值
+        page = req.get('page', 1)
+        page_size = req.get('page_size', 20)
+        status = req.get('status')
+        task_name = req.get('task_name')
+        created_by = req.get('created_by')
+        db_name = req.get('db_name')
+        created_time_start = req.get('created_time_start')
+        created_time_end = req.get('created_time_end')
+        started_time_start = req.get('started_time_start')
+        started_time_end = req.get('started_time_end')
+        completed_time_start = req.get('completed_time_start')
+        completed_time_end = req.get('completed_time_end')
+        sort_by = req.get('sort_by', 'created_at')
+        sort_order = req.get('sort_order', 'desc')
+        
+        # 参数验证
+        # 验证分页参数
+        if page < 1:
+            return jsonify(bad_request_response(
+                response_text="页码必须大于0",
+                invalid_params=['page']
+            )), 400
+        
+        if page_size < 1 or page_size > 100:
+            return jsonify(bad_request_response(
+                response_text="每页大小必须在1-100之间",
+                invalid_params=['page_size']
+            )), 400
+        
+        # 验证任务名称长度
+        if task_name and len(task_name) > 100:
+            return jsonify(bad_request_response(
+                response_text="任务名称搜索关键词最大长度为100字符",
+                invalid_params=['task_name']
+            )), 400
+        
+        # 验证排序参数
+        allowed_sort_fields = ['created_at', 'started_at', 'completed_at', 'task_name', 'status']
+        if sort_by not in allowed_sort_fields:
+            return jsonify(bad_request_response(
+                response_text=f"不支持的排序字段: {sort_by}，支持的字段: {', '.join(allowed_sort_fields)}",
+                invalid_params=['sort_by']
+            )), 400
+        
+        if sort_order.lower() not in ['asc', 'desc']:
+            return jsonify(bad_request_response(
+                response_text="排序方向必须是 'asc' 或 'desc'",
+                invalid_params=['sort_order']
+            )), 400
+        
+        # 验证状态筛选
+        if status:
+            allowed_statuses = ['pending', 'running', 'completed', 'failed', 'cancelled']
+            if status not in allowed_statuses:
+                return jsonify(bad_request_response(
+                    response_text=f"不支持的状态值: {status}，支持的状态: {', '.join(allowed_statuses)}",
+                    invalid_params=['status']
+                )), 400
+        
+        # 调用管理器执行查询
+        manager = get_data_pipeline_manager()
+        result = manager.query_tasks_advanced(
+            page=page,
+            page_size=page_size,
+            status=status,
+            task_name=task_name,
+            created_by=created_by,
+            db_name=db_name,
+            created_time_start=created_time_start,
+            created_time_end=created_time_end,
+            started_time_start=started_time_start,
+            started_time_end=started_time_end,
+            completed_time_start=completed_time_start,
+            completed_time_end=completed_time_end,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+        
+        # 格式化任务列表
+        formatted_tasks = []
+        for task in result['tasks']:
+            formatted_tasks.append({
+                "task_id": task.get('task_id'),
+                "task_name": task.get('task_name'),
+                "status": task.get('status'),
+                "step_status": task.get('step_status'),
+                "created_at": task['created_at'].isoformat() if task.get('created_at') else None,
+                "started_at": task['started_at'].isoformat() if task.get('started_at') else None,
+                "completed_at": task['completed_at'].isoformat() if task.get('completed_at') else None,
+                "created_by": task.get('by_user'),
+                "db_name": task.get('db_name'),
+                "business_context": task.get('parameters', {}).get('business_context') if task.get('parameters') else None,
+                "directory_exists": task.get('directory_exists', True),
+                "updated_at": task['updated_at'].isoformat() if task.get('updated_at') else None
+            })
+        
+        # 构建响应数据
+        response_data = {
+            "tasks": formatted_tasks,
+            "pagination": result['pagination'],
+            "filters_applied": {
+                k: v for k, v in {
+                    "status": status,
+                    "task_name": task_name,
+                    "created_by": created_by,
+                    "db_name": db_name,
+                    "created_time_start": created_time_start,
+                    "created_time_end": created_time_end,
+                    "started_time_start": started_time_start,
+                    "started_time_end": started_time_end,
+                    "completed_time_start": completed_time_start,
+                    "completed_time_end": completed_time_end
+                }.items() if v
+            },
+            "sort_applied": {
+                "sort_by": sort_by,
+                "sort_order": sort_order
+            },
+            "query_time": result.get('query_time', '0.000s')
+        }
+        
+        return jsonify(success_response(
+            response_text="查询任务列表成功",
+            data=response_data
+        ))
+        
+    except Exception as e:
+        logger.error(f"查询数据管道任务列表失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="查询任务列表失败，请稍后重试"
         )), 500
 
 # ==================== 表检查API端点 ====================
@@ -4046,5 +4290,191 @@ def delete_tasks():
             response_text="删除任务失败，请稍后重试"
         )), 500
 
-logger.info("启动Flask应用: http://localhost:8084")
-app.run(host="0.0.0.0", port=8084, debug=True)
+
+@app.flask_app.route('/api/v0/data_pipeline/tasks/<task_id>/logs/query', methods=['POST'])
+def query_data_pipeline_task_logs(task_id):
+    """
+    高级查询数据管道任务日志
+    
+    支持复杂筛选、排序、分页功能
+    
+    请求体:
+    {
+        "page": 1,                          // 页码，必须大于0，默认1
+        "page_size": 50,                    // 每页大小，1-500之间，默认50
+        "level": "ERROR",                   // 可选，日志级别筛选："DEBUG"|"INFO"|"WARNING"|"ERROR"|"CRITICAL"
+        "start_time": "2025-01-01 00:00:00", // 可选，开始时间范围 (YYYY-MM-DD HH:MM:SS)
+        "end_time": "2025-01-02 23:59:59",   // 可选，结束时间范围 (YYYY-MM-DD HH:MM:SS)
+        "keyword": "failed",                 // 可选，关键字搜索（消息内容模糊匹配）
+        "logger_name": "DDLGenerator",       // 可选，日志记录器名称精确匹配
+        "step_name": "ddl_generation",       // 可选，执行步骤名称精确匹配
+        "sort_by": "timestamp",              // 可选，排序字段："timestamp"|"level"|"logger"|"step"|"line_number"，默认"timestamp"
+        "sort_order": "desc"                 // 可选，排序方向："asc"|"desc"，默认"desc"
+    }
+    
+    响应:
+    {
+        "success": true,
+        "code": 200,
+        "message": "查询任务日志成功",
+        "data": {
+            "logs": [
+                {
+                    "timestamp": "2025-07-01 14:30:52",
+                    "level": "INFO",
+                    "logger": "SimpleWorkflowExecutor",
+                    "step": "ddl_generation",
+                    "message": "开始DDL生成",
+                    "line_number": 15
+                }
+            ],
+            "pagination": {
+                "page": 1,
+                "page_size": 50,
+                "total": 1000,
+                "total_pages": 20,
+                "has_next": true,
+                "has_prev": false
+            },
+            "log_file_info": {
+                "exists": true,
+                "file_path": "/path/to/log/file",
+                "file_size": 1024000,
+                "file_size_formatted": "1.0 MB",
+                "last_modified": "2025-07-01T14:30:52",
+                "total_lines": 5000
+            },
+            "query_time": "0.123s"
+        }
+    }
+    """
+    try:
+        # 验证任务是否存在
+        manager = get_data_pipeline_manager()
+        task_info = manager.get_task_status(task_id)
+        if not task_info:
+            return jsonify(not_found_response(
+                response_text=f"任务不存在: {task_id}"
+            )), 404
+        
+        # 解析请求数据
+        request_data = request.get_json() or {}
+        
+        # 参数验证
+        def _is_valid_time_format(time_str):
+            """验证时间格式是否有效"""
+            if not time_str:
+                return True
+            
+            # 支持的时间格式
+            time_formats = [
+                '%Y-%m-%d %H:%M:%S',     # 2025-01-01 00:00:00
+                '%Y-%m-%d',              # 2025-01-01
+                '%Y-%m-%dT%H:%M:%S',     # 2025-01-01T00:00:00
+                '%Y-%m-%dT%H:%M:%S.%f',  # 2025-01-01T00:00:00.123456
+            ]
+            
+            for fmt in time_formats:
+                try:
+                    from datetime import datetime
+                    datetime.strptime(time_str, fmt)
+                    return True
+                except ValueError:
+                    continue
+            return False
+        
+        # 提取和验证参数
+        page = request_data.get('page', 1)
+        page_size = request_data.get('page_size', 50)
+        level = request_data.get('level')
+        start_time = request_data.get('start_time')
+        end_time = request_data.get('end_time')
+        keyword = request_data.get('keyword')
+        logger_name = request_data.get('logger_name')
+        step_name = request_data.get('step_name')
+        sort_by = request_data.get('sort_by', 'timestamp')
+        sort_order = request_data.get('sort_order', 'desc')
+        
+        # 参数验证
+        if not isinstance(page, int) or page < 1:
+            return jsonify(bad_request_response(
+                response_text="页码必须是大于0的整数"
+            )), 400
+        
+        if not isinstance(page_size, int) or page_size < 1 or page_size > 500:
+            return jsonify(bad_request_response(
+                response_text="每页大小必须是1-500之间的整数"
+            )), 400
+        
+        # 验证日志级别
+        if level and level.upper() not in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+            return jsonify(bad_request_response(
+                response_text="日志级别必须是DEBUG、INFO、WARNING、ERROR、CRITICAL之一"
+            )), 400
+        
+        # 验证时间格式
+        if not _is_valid_time_format(start_time):
+            return jsonify(bad_request_response(
+                response_text="开始时间格式无效，支持格式：YYYY-MM-DD HH:MM:SS 或 YYYY-MM-DD"
+            )), 400
+        
+        if not _is_valid_time_format(end_time):
+            return jsonify(bad_request_response(
+                response_text="结束时间格式无效，支持格式：YYYY-MM-DD HH:MM:SS 或 YYYY-MM-DD"
+            )), 400
+        
+        # 验证关键字长度
+        if keyword and len(keyword) > 200:
+            return jsonify(bad_request_response(
+                response_text="关键字长度不能超过200个字符"
+            )), 400
+        
+        # 验证排序字段
+        allowed_sort_fields = ['timestamp', 'level', 'logger', 'step', 'line_number']
+        if sort_by not in allowed_sort_fields:
+            return jsonify(bad_request_response(
+                response_text=f"排序字段必须是以下之一: {', '.join(allowed_sort_fields)}"
+            )), 400
+        
+        # 验证排序方向
+        if sort_order.lower() not in ['asc', 'desc']:
+            return jsonify(bad_request_response(
+                response_text="排序方向必须是asc或desc"
+            )), 400
+        
+        # 创建工作流执行器并查询日志
+        from data_pipeline.api.simple_workflow import SimpleWorkflowExecutor
+        executor = SimpleWorkflowExecutor(task_id)
+        
+        try:
+            result = executor.query_logs_advanced(
+                page=page,
+                page_size=page_size,
+                level=level,
+                start_time=start_time,
+                end_time=end_time,
+                keyword=keyword,
+                logger_name=logger_name,
+                step_name=step_name,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+            
+            return jsonify(success_response(
+                response_text="查询任务日志成功",
+                data=result
+            ))
+            
+        finally:
+            executor.cleanup()
+        
+    except Exception as e:
+        logger.error(f"查询数据管道任务日志失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="查询任务日志失败，请稍后重试"
+        )), 500
+
+
+if __name__ == '__main__':
+    logger.info("启动Flask应用: http://localhost:8084")
+    app.run(host="0.0.0.0", port=8084, debug=True)
