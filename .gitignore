@@ -32,5 +32,9 @@ node_modules/
 # 忽略所有一级UUID目录
 /[0-9a-fA-F]*-[0-9a-fA-F]*-[0-9a-fA-F]*-[0-9a-fA-F]*-[0-9a-fA-F]*/
 
-
-test/
+# 忽略 test 目录中的临时文件和缓存，但跟踪所有代码文件
+test/__pycache__/
+test/.pytest_cache/
+test/.ipynb_checkpoints/
+test/*.pyc
+test/*.pyo
