@@ -30,7 +30,7 @@ API_DEEPSEEK_CONFIG = {
     "n_results": 6,
     "language": "Chinese",
     "stream": True,  # 是否使用流式模式
-    "enable_thinking": True  # 自定义，是否支持流模式
+    "enable_thinking": False  # 自定义，是否支持流模式
 }
 
 # Qwen模型配置
