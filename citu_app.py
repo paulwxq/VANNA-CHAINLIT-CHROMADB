@@ -4130,8 +4130,10 @@ def delete_task_directory_simple(task_id, delete_database_records=False):
             # 删除目录
             shutil.rmtree(task_dir)
             directory_deleted = True
+            operation_message = "目录删除成功"
         else:
             directory_deleted = False
+            operation_message = "目录不存在，无需删除"
         
         # 2. 更新数据库
         database_records_deleted = False
@@ -4180,7 +4182,8 @@ def delete_task_directory_simple(task_id, delete_database_records=False):
             "database_records_deleted": database_records_deleted,
             "deleted_files_count": deleted_files_count,
             "deleted_size": format_size(deleted_size),
-            "deleted_at": datetime.now().isoformat()
+            "deleted_at": datetime.now().isoformat(),
+            "operation_message": operation_message  # 新增：具体的操作消息
         }
         
     except Exception as e:
@@ -4189,19 +4192,45 @@ def delete_task_directory_simple(task_id, delete_database_records=False):
             "success": False,
             "task_id": task_id,
             "error": str(e),
-            "error_code": "DELETE_FAILED"
+            "error_code": "DELETE_FAILED",
+            "operation_message": f"删除操作失败: {str(e)}"  # 新增：失败消息
         }
 
 @app.flask_app.route('/api/v0/data_pipeline/tasks', methods=['DELETE'])
 def delete_tasks():
     """删除任务目录（支持单个和批量）"""
     try:
-        # 获取请求参数
-        req = request.get_json(force=True)
+        # 智能获取参数：支持JSON body和URL查询参数两种方式
+        def get_request_parameter(param_name, array_param_name=None):
+            """从JSON body或URL查询参数中获取参数值"""
+            # 1. 优先从JSON body获取
+            if request.is_json:
+                try:
+                    json_data = request.get_json()
+                    if json_data and param_name in json_data:
+                        return json_data[param_name]
+                except:
+                    pass
+            
+            # 2. 从URL查询参数获取
+            if param_name in request.args:
+                value = request.args.get(param_name)
+                # 处理布尔值
+                if value.lower() in ('true', '1', 'yes'):
+                    return True
+                elif value.lower() in ('false', '0', 'no'):
+                    return False
+                return value
+            
+            # 3. 处理数组参数（如 task_ids[]）
+            if array_param_name and array_param_name in request.args:
+                return request.args.getlist(array_param_name)
+            
+            return None
         
-        # 验证必需参数
-        task_ids = req.get('task_ids')
-        confirm = req.get('confirm')
+        # 获取参数
+        task_ids = get_request_parameter('task_ids', 'task_ids[]')
+        confirm = get_request_parameter('confirm')
         
         if not task_ids:
             return jsonify(bad_request_response(
@@ -4226,8 +4255,10 @@ def delete_tasks():
             )), 400
         
         # 获取可选参数
-        delete_database_records = req.get('delete_database_records', False)
-        continue_on_error = req.get('continue_on_error', True)
+        delete_database_records = get_request_parameter('delete_database_records') or False
+        continue_on_error = get_request_parameter('continue_on_error')
+        if continue_on_error is None:
+            continue_on_error = True
         
         # 执行批量删除操作
         deleted_tasks = []
@@ -4264,20 +4295,36 @@ def delete_tasks():
             "deleted_at": datetime.now().isoformat()
         }
         
+        # 构建智能响应消息
         if len(task_ids) == 1:
-            # 单个删除
+            # 单个删除：使用具体的操作消息
             if summary["failed"] == 0:
-                message = "任务目录删除成功"
+                # 从deleted_tasks中获取具体的操作消息
+                operation_msg = deleted_tasks[0].get('operation_message', '任务处理完成')
+                message = operation_msg
             else:
-                message = "任务目录删除失败"
+                # 从failed_tasks中获取错误消息
+                error_msg = failed_tasks[0].get('error', '删除失败')
+                message = f"任务删除失败: {error_msg}"
         else:
-            # 批量删除
+            # 批量删除：统计各种操作结果
+            directory_deleted_count = sum(1 for task in deleted_tasks if task.get('directory_deleted', False))
+            directory_not_exist_count = sum(1 for task in deleted_tasks if not task.get('directory_deleted', False))
+            
             if summary["failed"] == 0:
-                message = "批量删除完成"
+                # 全部成功
+                if directory_deleted_count > 0 and directory_not_exist_count > 0:
+                    message = f"批量操作完成：{directory_deleted_count}个目录已删除，{directory_not_exist_count}个目录不存在"
+                elif directory_deleted_count > 0:
+                    message = f"批量删除完成：成功删除{directory_deleted_count}个目录"
+                elif directory_not_exist_count > 0:
+                    message = f"批量操作完成：{directory_not_exist_count}个目录不存在，无需删除"
+                else:
+                    message = "批量操作完成"
             elif summary["successfully_deleted"] == 0:
-                message = "批量删除失败"
+                message = f"批量删除失败：{summary['failed']}个任务处理失败"
             else:
-                message = "批量删除部分完成"
+                message = f"批量删除部分完成：成功{summary['successfully_deleted']}个，失败{summary['failed']}个"
         
         return jsonify(success_response(
             response_text=message,
