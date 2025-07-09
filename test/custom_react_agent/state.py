@@ -13,7 +13,9 @@ class AgentState(TypedDict):
         messages: 对话消息列表，使用 add_messages 聚合。
         user_id: 当前用户ID。
         thread_id: 当前会话的线程ID。
+        suggested_next_step: 用于引导LLM下一步行动的建议指令。
     """
     messages: Annotated[List[BaseMessage], add_messages]
     user_id: str
-    thread_id: str 
+    thread_id: str
+    suggested_next_step: Optional[str] 

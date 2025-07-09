@@ -5,50 +5,70 @@ import re
 import json
 import logging
 from langchain_core.tools import tool
+from pydantic.v1 import BaseModel, Field
+from typing import List, Dict, Any
 import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# --- 工具函数 ---
+# --- Pydantic Schema for Tool Arguments ---
 
-@tool
-def generate_sql(question: str) -> str:
+class GenerateSqlArgs(BaseModel):
+    """Input schema for the generate_sql tool."""
+    question: str = Field(description="The user's question to be converted to SQL.")
+    history_messages: List[Dict[str, Any]] = Field(
+        default=[],
+        description="The conversation history messages for context."
+    )
+
+# --- Tool Functions ---
+
+@tool(args_schema=GenerateSqlArgs)
+def generate_sql(question: str, history_messages: List[Dict[str, Any]] = None) -> str:
     """
-    根据用户问题生成SQL查询语句。
-
-    Args:
-        question: 用户的原始问题。
-
-    Returns:
-        生成的SQL语句或错误信息。
+    Generates an SQL query based on the user's question and the conversation history.
     """
-    logger.info(f"🔧 [Tool] generate_sql - 问题: '{question}'")
+    logger.info(f"🔧 [Tool] generate_sql - Question: '{question}'")
+    
+    if history_messages is None:
+        history_messages = []
+    
+    logger.info(f"   History contains {len(history_messages)} messages.")
+
+    # Combine history and the current question to form a rich prompt
+    history_str = "\n".join([f"{msg['type']}: {msg.get('content', '') or ''}" for msg in history_messages])
+    enriched_question = f"""Based on the following conversation history:
+---
+{history_str}
+---
+
+Please provide an SQL query that answers this specific question: {question}"""
 
     try:
         from common.vanna_instance import get_vanna_instance
         vn = get_vanna_instance()
-        sql = vn.generate_sql(question)
+        sql = vn.generate_sql(enriched_question)
 
         if not sql or sql.strip() == "":
             if hasattr(vn, 'last_llm_explanation') and vn.last_llm_explanation:
                 error_info = vn.last_llm_explanation
-                logger.warning(f"   Vanna返回了错误解释: {error_info}")
-                return f"数据库查询失败，具体原因：{error_info}"
+                logger.warning(f"   Vanna returned an explanation instead of SQL: {error_info}")
+                return f"Database query failed. Reason: {error_info}"
             else:
-                logger.warning("   Vanna未能生成SQL且无解释。")
-                return "无法生成SQL：问题可能不适合数据库查询"
+                logger.warning("   Vanna failed to generate SQL and provided no explanation.")
+                return "Could not generate SQL: The question may not be suitable for a database query."
 
         sql_upper = sql.upper().strip()
         if not any(keyword in sql_upper for keyword in ['SELECT', 'WITH']):
-            logger.warning(f"   Vanna返回了疑似错误信息而非SQL: {sql}")
-            return f"数据库查询失败，具体原因：{sql}"
+            logger.warning(f"   Vanna returned a message that does not appear to be a valid SQL query: {sql}")
+            return f"Database query failed. Reason: {sql}"
 
-        logger.info(f"   ✅ 成功生成SQL: {sql}")
+        logger.info(f"   ✅ SQL Generated Successfully: {sql}")
         return sql
 
     except Exception as e:
-        logger.error(f"   SQL生成过程中发生异常: {e}", exc_info=True)
-        return f"SQL生成失败: {str(e)}"
+        logger.error(f"   An exception occurred during SQL generation: {e}", exc_info=True)
+        return f"SQL generation failed: {str(e)}"
 
 @tool
 def valid_sql(sql: str) -> str:
