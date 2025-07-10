@@ -37,7 +37,7 @@ def generate_sql(question: str, history_messages: List[Dict[str, Any]] = None) -
 
     # Combine history and the current question to form a rich prompt
     history_str = "\n".join([f"{msg['type']}: {msg.get('content', '') or ''}" for msg in history_messages])
-    enriched_question = f"""Based on the following conversation history:
+    enriched_question = f"""\nBased on the following conversation history:
 ---
 {history_str}
 ---
@@ -121,6 +121,10 @@ def run_sql(sql: str) -> str:
         vn = get_vanna_instance()
         df = vn.run_sql(sql)
 
+        print("-------------run_sql() df -------------------")
+        print(df)
+        print("--------------------------------")
+
         if df is None:
             logger.warning("   SQL执行成功，但查询结果为空。")
             result = {"status": "success", "data": [], "message": "查询无结果"}
@@ -134,6 +138,8 @@ def run_sql(sql: str) -> str:
         logger.error(f"   SQL执行过程中发生异常: {e}", exc_info=True)
         error_result = {"status": "error", "error_message": str(e)}
         return json.dumps(error_result, ensure_ascii=False)
+    
+
 
 # 将所有工具函数收集到一个列表中，方便Agent导入和使用
 sql_tools = [generate_sql, valid_sql, run_sql] 

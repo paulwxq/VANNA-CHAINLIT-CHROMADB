@@ -5,15 +5,22 @@ import asyncio
 import logging
 import sys
 import os
+import json
 
 # 动态地将项目根目录添加到 sys.path，以支持跨模块导入
 # 这使得脚本更加健壮，无论从哪里执行
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, PROJECT_ROOT)
 
-# 从新模块导入 Agent 和配置 (使用相对导入)
-from .agent import CustomReactAgent
-from . import config
+# 从新模块导入 Agent 和配置
+try:
+    # 相对导入（当作为模块导入时）
+    from .agent import CustomReactAgent
+    from . import config
+except ImportError:
+    # 绝对导入（当直接运行时）
+    from test.custom_react_agent.agent import CustomReactAgent
+    from test.custom_react_agent import config
 
 # 配置日志
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT)
@@ -82,7 +89,17 @@ class CustomAgentShell:
             result = await self.agent.chat(user_input, self.user_id, self.thread_id)
             
             if result.get("success"):
-                print(f"🤖 Agent: {result.get('answer')}")
+                answer = result.get('answer', '')
+                # 去除 [Formatted Output] 标记，只显示真正的回答
+                if answer.startswith("[Formatted Output]\n"):
+                    answer = answer.replace("[Formatted Output]\n", "")
+                
+                print(f"🤖 Agent: {answer}")
+                
+                # 如果包含 SQL 数据，也显示出来
+                if 'sql_data' in result:
+                    print(f"📊 SQL 查询结果: {result['sql_data']}")
+                    
                 # 更新 thread_id 以便在同一会话中继续
                 self.thread_id = result.get("thread_id")
             else:
