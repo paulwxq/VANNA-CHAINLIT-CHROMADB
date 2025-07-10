@@ -8,7 +8,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from contextlib import AsyncExitStack
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, ToolMessage, BaseMessage, SystemMessage, AIMessage
+from langchain_core.messages import HumanMessage, ToolMessage, BaseMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from redis.asyncio import Redis
@@ -149,54 +149,11 @@ class CustomReactAgent:
         # 只返回消息，不承担其他职责
         return {"messages": [response]}
     
-    def _print_state_info(self, state: AgentState, node_name: str) -> None:
-        """
-        打印 state 的全部信息，用于调试
-        """
-        logger.info(" =" * 20)
-        logger.info(f"📋 [State Debug] {node_name} - 当前状态信息:")
-        
-        # 🎯 打印 state 中的所有字段
-        logger.info("   State中的所有字段:")
-        for key, value in state.items():
-            if key == "messages":
-                logger.info(f"     {key}: {len(value)} 条消息")
-            else:
-                logger.info(f"     {key}: {value}")
-        
-        # 原有的详细消息信息
-        logger.info(f"   用户ID: {state.get('user_id', 'N/A')}")
-        logger.info(f"   线程ID: {state.get('thread_id', 'N/A')}")
-        logger.info(f"   建议下一步: {state.get('suggested_next_step', 'N/A')}")
-        
-        messages = state.get("messages", [])
-        logger.info(f"   消息历史数量: {len(messages)}")
-        
-        if messages:
-            logger.info("   最近的消息:")
-            for i, msg in enumerate(messages[-10:], start=max(0, len(messages)-10)):  # 显示最后3条消息
-                msg_type = type(msg).__name__
-                content_preview = str(msg.content)[:100] + "..." if len(str(msg.content)) > 100 else str(msg.content)
-                logger.info(f"     [{i}] {msg_type}: {content_preview}")
-                
-                # 如果是 AIMessage 且有工具调用，显示工具调用信息
-                if hasattr(msg, 'tool_calls') and msg.tool_calls:
-                    for tool_call in msg.tool_calls:
-                        tool_name = tool_call.get('name', 'Unknown')
-                        tool_args = tool_call.get('args', {})
-                        logger.info(f"         工具调用: {tool_name}")
-                        logger.info(f"         参数: {str(tool_args)[:200]}...")
-        
-        logger.info(" =" * 20)
-
     def _prepare_tool_input_node(self, state: AgentState) -> Dict[str, Any]:
         """
         信息组装节点：为需要上下文的工具注入历史消息。
         """
         logger.info(f"🛠️ [Node] prepare_tool_input - Thread: {state['thread_id']}")
-        
-        # 🎯 打印 state 全部信息
-        # self._print_state_info(state, "prepare_tool_input")
         
         last_message = state["messages"][-1]
         if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
@@ -210,29 +167,16 @@ class CustomReactAgent:
                 # 复制一份以避免修改原始 tool_call
                 modified_args = tool_call["args"].copy()
                 
-                # 🎯 改进的消息过滤逻辑：只保留有用的对话上下文
-                clean_history = []
+                # 将消息对象列表转换为可序列化的字典列表
+                serializable_history = []
                 for msg in state["messages"]:
-                    if isinstance(msg, HumanMessage):
-                        # 保留所有用户消息
-                        clean_history.append({
-                            "type": "human",
-                            "content": msg.content
-                        })
-                    elif isinstance(msg, AIMessage):
-                        # 只保留最终的、面向用户的回答（包含"[Formatted Output]"的消息）
-                        if msg.content and "[Formatted Output]" in msg.content:
-                            # 去掉 "[Formatted Output]" 标记，只保留真正的回答
-                            clean_content = msg.content.replace("[Formatted Output]\n", "")
-                            clean_history.append({
-                                "type": "ai",
-                                "content": clean_content
-                            })
-                        # 跳过包含工具调用的 AIMessage（中间步骤）
-                    # 跳过所有 ToolMessage（工具执行结果）
+                    serializable_history.append({
+                        "type": msg.type,
+                        "content": msg.content
+                    })
                 
-                modified_args["history_messages"] = clean_history
-                logger.info(f"   注入了 {len(clean_history)} 条过滤后的历史消息")
+                modified_args["history_messages"] = serializable_history
+                logger.info(f"   注入了 {len(serializable_history)} 条历史消息")
                 
                 new_tool_calls.append({
                     "name": tool_call["name"],
@@ -250,9 +194,6 @@ class CustomReactAgent:
         """在工具执行后，更新 suggested_next_step 并清理参数。"""
         logger.info(f"📝 [Node] update_state_after_tool - Thread: {state['thread_id']}")
         
-        # 🎯 打印 state 全部信息
-        # self._print_state_info(state, "update_state_after_tool")
-        
         last_tool_message = state['messages'][-1]
         tool_name = last_tool_message.name
         tool_output = last_tool_message.content
@@ -265,7 +206,7 @@ class CustomReactAgent:
                 next_step = 'valid_sql'
             
             # 🎯 清理 generate_sql 的 history_messages 参数，设置为空字符串
-            # self._clear_history_messages_parameter(state['messages'])
+            self._clear_history_messages_parameter(state['messages'])
         
         elif tool_name == 'valid_sql':
             if "失败" in tool_output:
