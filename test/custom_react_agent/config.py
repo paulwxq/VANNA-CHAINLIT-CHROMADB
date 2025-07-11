@@ -23,4 +23,9 @@ LOG_LEVEL = logging.INFO
 LOG_FORMAT = '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
 
 # --- Agent 配置 ---
-DEFAULT_USER_ID = "default-user" 
+DEFAULT_USER_ID = "default-user"
+
+# --- 网络重试配置 ---
+MAX_RETRIES = 3                    # 最大重试次数
+RETRY_BASE_DELAY = 2               # 重试基础延迟（秒）
+NETWORK_TIMEOUT = 30               # 网络超时时间（秒） 

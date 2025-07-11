@@ -285,7 +285,7 @@ def chat_endpoint():
             "error": "系统异常，请稍后重试"
         }), 500
 
-@app.route('/api/users/<user_id>/conversations', methods=['GET'])
+@app.route('/api/v0/react/users/<user_id>/conversations', methods=['GET'])
 def get_user_conversations(user_id: str):
     """获取用户的聊天记录列表"""
     global _agent_instance
@@ -329,7 +329,7 @@ def get_user_conversations(user_id: str):
             "timestamp": datetime.now().isoformat()
         }), 500
 
-@app.route('/api/users/<user_id>/conversations/<thread_id>', methods=['GET'])
+@app.route('/api/v0/react/users/<user_id>/conversations/<thread_id>', methods=['GET'])
 def get_user_conversation_detail(user_id: str, thread_id: str):
     """获取特定对话的详细历史"""
     global _agent_instance
@@ -622,7 +622,7 @@ def test_redis_connection():
             "timestamp": datetime.now().isoformat()
         }), 500
 
-@app.route('/api/test/users/<user_id>/conversations', methods=['GET'])
+@app.route('/api/v0/react/direct/users/<user_id>/conversations', methods=['GET'])
 def test_get_user_conversations_simple(user_id: str):
     """测试简单Redis查询获取用户对话列表"""
     try:
@@ -653,6 +653,252 @@ def test_get_user_conversations_simple(user_id: str):
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }), 500
+    
+
+# 在 api.py 文件顶部的导入部分添加：
+from enhanced_redis_api import get_conversation_detail_from_redis
+
+# 在 api.py 文件中添加以下新路由：
+
+@app.route('/api/v0/react/direct/conversations/<thread_id>', methods=['GET'])
+def get_conversation_detail_api(thread_id: str):
+    """
+    获取特定对话的详细信息 - 支持include_tools开关参数
+    
+    Query Parameters:
+        - include_tools: bool, 是否包含工具调用信息，默认false
+                        true: 返回完整对话（human/ai/tool/system）
+                        false: 只返回human/ai消息，清理工具调用信息
+        - user_id: str, 可选的用户ID验证
+        
+    Examples:
+        GET /api/conversations/wang:20250709195048728?include_tools=true   # 完整模式
+        GET /api/conversations/wang:20250709195048728?include_tools=false  # 简化模式（默认）
+        GET /api/conversations/wang:20250709195048728                      # 简化模式（默认）
+    """
+    try:
+        # 获取查询参数
+        include_tools = request.args.get('include_tools', 'false').lower() == 'true'
+        user_id = request.args.get('user_id')
+        
+        # 验证thread_id格式
+        if ':' not in thread_id:
+            return jsonify({
+                "success": False,
+                "error": "Invalid thread_id format. Expected format: user_id:timestamp",
+                "timestamp": datetime.now().isoformat()
+            }), 400
+        
+        # 如果提供了user_id，验证thread_id是否属于该用户
+        thread_user_id = thread_id.split(':')[0]
+        if user_id and thread_user_id != user_id:
+            return jsonify({
+                "success": False,
+                "error": f"Thread ID {thread_id} does not belong to user {user_id}",
+                "timestamp": datetime.now().isoformat()
+            }), 400
+        
+        logger.info(f"📖 获取对话详情 - Thread: {thread_id}, Include Tools: {include_tools}")
+        
+        # 从Redis获取对话详情（使用我们的新函数）
+        result = get_conversation_detail_from_redis(thread_id, include_tools)
+        
+        if not result['success']:
+            logger.warning(f"⚠️ 获取对话详情失败: {result['error']}")
+            return jsonify({
+                "success": False,
+                "error": result['error'],
+                "timestamp": datetime.now().isoformat()
+            }), 404
+        
+        # 添加API元数据
+        result['data']['api_metadata'] = {
+            "timestamp": datetime.now().isoformat(),
+            "api_version": "v1",
+            "endpoint": "get_conversation_detail",
+            "query_params": {
+                "include_tools": include_tools,
+                "user_id": user_id
+            }
+        }
+        
+        mode_desc = "完整模式" if include_tools else "简化模式"
+        logger.info(f"✅ 成功获取对话详情 - Messages: {result['data']['message_count']}, Mode: {mode_desc}")
+        
+        return jsonify({
+            "success": True,
+            "data": result['data'],
+            "timestamp": datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        logger.error(f"❌ 获取对话详情异常: {e}")
+        logger.error(f"❌ 详细错误信息: {traceback.format_exc()}")
+        
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+@app.route('/api/v0/react/direct/conversations/<thread_id>/compare', methods=['GET'])
+def compare_conversation_modes_api(thread_id: str):
+    """
+    比较完整模式和简化模式的对话内容
+    用于调试和理解两种模式的差异
+    
+    Examples:
+        GET /api/conversations/wang:20250709195048728/compare
+    """
+    try:
+        logger.info(f"🔍 比较对话模式 - Thread: {thread_id}")
+        
+        # 获取完整模式
+        full_result = get_conversation_detail_from_redis(thread_id, include_tools=True)
+        
+        # 获取简化模式
+        simple_result = get_conversation_detail_from_redis(thread_id, include_tools=False)
+        
+        if not (full_result['success'] and simple_result['success']):
+            return jsonify({
+                "success": False,
+                "error": "无法获取对话数据进行比较",
+                "timestamp": datetime.now().isoformat()
+            }), 404
+        
+        # 构建比较结果
+        comparison = {
+            "thread_id": thread_id,
+            "full_mode": {
+                "message_count": full_result['data']['message_count'],
+                "stats": full_result['data']['stats'],
+                "sample_messages": full_result['data']['messages'][:3]  # 只显示前3条作为示例
+            },
+            "simple_mode": {
+                "message_count": simple_result['data']['message_count'],
+                "stats": simple_result['data']['stats'],
+                "sample_messages": simple_result['data']['messages'][:3]  # 只显示前3条作为示例
+            },
+            "comparison_summary": {
+                "message_count_difference": full_result['data']['message_count'] - simple_result['data']['message_count'],
+                "tools_filtered_out": full_result['data']['stats'].get('tool_messages', 0),
+                "ai_messages_with_tools": full_result['data']['stats'].get('messages_with_tools', 0),
+                "filtering_effectiveness": "有效" if (full_result['data']['message_count'] - simple_result['data']['message_count']) > 0 else "无差异"
+            },
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "note": "sample_messages 只显示前3条消息作为示例，完整消息请使用相应的详情API"
+            }
+        }
+        
+        logger.info(f"✅ 模式比较完成 - 完整: {comparison['full_mode']['message_count']}, 简化: {comparison['simple_mode']['message_count']}")
+        
+        return jsonify({
+            "success": True,
+            "data": comparison,
+            "timestamp": datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ 对话模式比较失败: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+@app.route('/api/v0/react/direct/conversations/<thread_id>/summary', methods=['GET'])
+def get_conversation_summary_api(thread_id: str):
+    """
+    获取对话摘要信息（只包含基本统计，不返回具体消息）
+    
+    Query Parameters:
+        - include_tools: bool, 影响统计信息的计算方式
+        
+    Examples:
+        GET /api/conversations/wang:20250709195048728/summary?include_tools=true
+    """
+    try:
+        include_tools = request.args.get('include_tools', 'false').lower() == 'true'
+        
+        # 验证thread_id格式
+        if ':' not in thread_id:
+            return jsonify({
+                "success": False,
+                "error": "Invalid thread_id format. Expected format: user_id:timestamp",
+                "timestamp": datetime.now().isoformat()
+            }), 400
+        
+        logger.info(f"📊 获取对话摘要 - Thread: {thread_id}, Include Tools: {include_tools}")
+        
+        # 获取完整对话信息
+        result = get_conversation_detail_from_redis(thread_id, include_tools)
+        
+        if not result['success']:
+            return jsonify({
+                "success": False,
+                "error": result['error'],
+                "timestamp": datetime.now().isoformat()
+            }), 404
+        
+        # 只返回摘要信息，不包含具体消息
+        data = result['data']
+        summary = {
+            "thread_id": data['thread_id'],
+            "user_id": data['user_id'],
+            "include_tools": data['include_tools'],
+            "message_count": data['message_count'],
+            "stats": data['stats'],
+            "metadata": data['metadata'],
+            "first_message_preview": None,
+            "last_message_preview": None,
+            "conversation_preview": None
+        }
+        
+        # 添加消息预览
+        messages = data.get('messages', [])
+        if messages:
+            # 第一条human消息预览
+            for msg in messages:
+                if msg['type'] == 'human':
+                    content = str(msg['content'])
+                    summary['first_message_preview'] = content[:100] + "..." if len(content) > 100 else content
+                    break
+            
+            # 最后一条ai消息预览
+            for msg in reversed(messages):
+                if msg['type'] == 'ai' and msg.get('content', '').strip():
+                    content = str(msg['content'])
+                    summary['last_message_preview'] = content[:100] + "..." if len(content) > 100 else content
+                    break
+            
+            # 生成对话预览（第一条human消息）
+            summary['conversation_preview'] = summary['first_message_preview']
+        
+        # 添加API元数据
+        summary['api_metadata'] = {
+            "timestamp": datetime.now().isoformat(),
+            "api_version": "v1",
+            "endpoint": "get_conversation_summary"
+        }
+        
+        logger.info(f"✅ 成功获取对话摘要")
+        
+        return jsonify({
+            "success": True,
+            "data": summary,
+            "timestamp": datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ 获取对话摘要失败: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
 
 # 为了支持独立运行
 if __name__ == "__main__":

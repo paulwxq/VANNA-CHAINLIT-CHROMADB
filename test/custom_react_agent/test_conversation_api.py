@@ -78,7 +78,7 @@ def test_get_user_conversations(user_id: str, limit: int = 5):
     print(f"\n📋 测试获取用户 {user_id} 的对话列表 (limit={limit})...")
     
     try:
-        response = requests.get(f"{API_BASE}/api/users/{user_id}/conversations?limit={limit}")
+        response = requests.get(f"{API_BASE}/api/v0/react/users/{user_id}/conversations?limit={limit}")
         
         print(f"   状态码: {response.status_code}")
         
@@ -125,7 +125,7 @@ def test_get_conversation_detail(user_id: str, thread_id: str):
     print(f"\n📖 测试获取对话详情: {thread_id}...")
     
     try:
-        response = requests.get(f"{API_BASE}/api/users/{user_id}/conversations/{thread_id}")
+        response = requests.get(f"{API_BASE}/api/v0/react/users/{user_id}/conversations/{thread_id}")
         
         print(f"   状态码: {response.status_code}")
         
@@ -179,17 +179,17 @@ def test_invalid_cases(user_id: str):
     
     # 测试1: 不存在的用户
     print("   测试不存在的用户...")
-    response = requests.get(f"{API_BASE}/api/users/nonexistent_user/conversations")
+    response = requests.get(f"{API_BASE}/api/v0/react/users/nonexistent_user/conversations")
     print(f"   状态码: {response.status_code} (应该是200，返回空列表)")
     
     # 测试2: 不匹配的thread_id
     print("   测试不匹配的thread_id...")
-    response = requests.get(f"{API_BASE}/api/users/{user_id}/conversations/wronguser:20250115103000001")
+    response = requests.get(f"{API_BASE}/api/v0/react/users/{user_id}/conversations/wronguser:20250115103000001")
     print(f"   状态码: {response.status_code} (应该是400)")
     
     # 测试3: 超出限制的limit参数
     print("   测试超出限制的limit参数...")
-    response = requests.get(f"{API_BASE}/api/users/{user_id}/conversations?limit=100")
+    response = requests.get(f"{API_BASE}/api/v0/react/users/{user_id}/conversations?limit=100")
     if response.status_code == 200:
         result = response.json()
         actual_limit = result.get("data", {}).get("limit", 0)

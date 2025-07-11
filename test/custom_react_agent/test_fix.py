@@ -17,7 +17,7 @@ def test_fixed_api():
     # 1. 测试对话列表
     print("\n1. 对话列表API...")
     try:
-        response = requests.get('http://localhost:8000/api/users/doudou/conversations')
+        response = requests.get('http://localhost:8000/api/v0/react/users/doudou/conversations')
         print(f"   状态: {response.status_code}")
         
         if response.status_code == 200:

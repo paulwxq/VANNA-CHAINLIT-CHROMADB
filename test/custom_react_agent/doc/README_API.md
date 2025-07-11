@@ -58,7 +58,7 @@ python api.py
 ```
 
 ### 3. 获取用户对话列表 ⭐ 新增
-**GET** `/api/users/{user_id}/conversations`
+**GET** `/api/v0/react/users/{user_id}/conversations`
 
 获取指定用户的最近聊天记录列表
 
@@ -70,7 +70,7 @@ python api.py
 
 **请求示例:**
 ```bash
-curl "http://localhost:8000/api/users/doudou/conversations?limit=5"
+curl "http://localhost:8000/api/v0/react/users/doudou/conversations?limit=5"
 ```
 
 **响应示例:**
@@ -109,7 +109,7 @@ curl "http://localhost:8000/api/users/doudou/conversations?limit=5"
 ```
 
 ### 4. 获取对话详情 ⭐ 新增
-**GET** `/api/users/{user_id}/conversations/{thread_id}`
+**GET** `/api/v0/react/users/{user_id}/conversations/{thread_id}`
 
 获取特定对话的详细历史记录
 
@@ -119,7 +119,7 @@ curl "http://localhost:8000/api/users/doudou/conversations?limit=5"
 
 **请求示例:**
 ```bash
-curl "http://localhost:8000/api/users/doudou/conversations/doudou:20250115103000001"
+curl "http://localhost:8000/api/v0/react/users/doudou/conversations/doudou:20250115103000001"
 ```
 
 **响应示例:**
@@ -191,10 +191,10 @@ curl -X POST http://localhost:8000/api/chat \
   -d '{"question": "请问哪个高速服务区的档口数量最多？", "user_id": "doudou"}'
 
 # 2. 查看对话列表  
-curl "http://localhost:8000/api/users/doudou/conversations?limit=5"
+curl "http://localhost:8000/api/v0/react/users/doudou/conversations?limit=5"
 
 # 3. 查看特定对话详情
-curl "http://localhost:8000/api/users/doudou/conversations/doudou:20250115103000001"
+curl "http://localhost:8000/api/v0/react/users/doudou/conversations/doudou:20250115103000001"
 ```
 
 ## 📝 注意事项

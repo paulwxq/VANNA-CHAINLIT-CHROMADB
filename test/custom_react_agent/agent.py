@@ -61,6 +61,8 @@ class CustomReactAgent:
             base_url=config.QWEN_BASE_URL,
             model=config.QWEN_MODEL,
             temperature=0.1,
+            timeout=config.NETWORK_TIMEOUT,  # 添加超时配置
+            max_retries=config.MAX_RETRIES,  # 添加重试配置
             extra_body={
                 "enable_thinking": False,
                 "misc": {
@@ -148,11 +150,47 @@ class CustomReactAgent:
             instruction = f"提示：建议下一步使用工具 '{state['suggested_next_step']}'。"
             messages_for_llm.append(SystemMessage(content=instruction))
 
-        response = self.llm_with_tools.invoke(messages_for_llm)
-        logger.info(f"   LLM Response: {response.pretty_print()}")
-        
-        # 只返回消息，不承担其他职责
-        return {"messages": [response]}
+        # 添加重试机制处理网络连接问题
+        import time
+        max_retries = config.MAX_RETRIES
+        for attempt in range(max_retries):
+            try:
+                response = self.llm_with_tools.invoke(messages_for_llm)
+                logger.info(f"   LLM Response: {response.pretty_print()}")
+                # 只返回消息，不承担其他职责
+                return {"messages": [response]}
+                
+            except Exception as e:
+                error_msg = str(e)
+                logger.warning(f"   ⚠️ LLM调用失败 (尝试 {attempt + 1}/{max_retries}): {error_msg}")
+                
+                # 检查是否是网络连接错误
+                if any(keyword in error_msg for keyword in [
+                    "Connection error", "APIConnectionError", "ConnectError", 
+                    "timeout", "远程主机强迫关闭", "网络连接"
+                ]):
+                    if attempt < max_retries - 1:
+                        wait_time = config.RETRY_BASE_DELAY ** attempt  # 指数退避：2, 4, 8秒
+                        logger.info(f"   🔄 网络错误，{wait_time}秒后重试...")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        # 所有重试都失败了，返回一个降级的回答
+                        logger.error(f"   ❌ 网络连接持续失败，返回降级回答")
+                        
+                        # 检查是否有SQL执行结果可以利用
+                        sql_data = self._extract_latest_sql_data(state["messages"])
+                        if sql_data:
+                            fallback_content = "抱歉，由于网络连接问题，无法生成完整的文字总结。不过查询已成功执行，结果如下：\n\n" + sql_data
+                        else:
+                            fallback_content = "抱歉，由于网络连接问题，无法完成此次请求。请稍后重试或检查网络连接。"
+                            
+                        fallback_response = AIMessage(content=fallback_content)
+                        return {"messages": [fallback_response]}
+                else:
+                    # 非网络错误，直接抛出
+                    logger.error(f"   ❌ LLM调用出现非网络错误: {error_msg}")
+                    raise e
     
     def _print_state_info(self, state: AgentState, node_name: str) -> None:
         """

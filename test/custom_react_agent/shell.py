@@ -103,7 +103,27 @@ class CustomAgentShell:
                 # 更新 thread_id 以便在同一会话中继续
                 self.thread_id = result.get("thread_id")
             else:
-                print(f"❌ 发生错误: {result.get('error')}")
+                error_msg = result.get('error', '未知错误')
+                print(f"❌ 发生错误: {error_msg}")
+                
+                # 提供针对性的建议
+                if "Connection error" in error_msg or "网络" in error_msg:
+                    print("💡 建议:")
+                    print("   - 检查网络连接是否正常")
+                    print("   - 稍后重试该问题")
+                    print("   - 如果问题持续，可以尝试重新启动程序")
+                elif "timeout" in error_msg.lower():
+                    print("💡 建议:")
+                    print("   - 当前网络较慢，建议稍后重试")
+                    print("   - 尝试简化问题复杂度")
+                else:
+                    print("💡 建议:")
+                    print("   - 请检查问题格式是否正确")
+                    print("   - 尝试重新描述您的问题")
+                
+                # 保持thread_id，用户可以继续对话
+                if not self.thread_id and result.get("thread_id"):
+                    self.thread_id = result.get("thread_id")
 
     async def _show_current_history(self):
         """显示当前会话的历史记录。"""

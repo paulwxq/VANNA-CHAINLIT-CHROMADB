@@ -25,10 +25,10 @@ curl -X POST http://localhost:8000/api/chat \
 ### 4. 查看对话历史 ⭐ 新功能
 ```bash
 # 查看用户的对话列表
-curl "http://localhost:8000/api/users/doudou/conversations?limit=5"
+curl "http://localhost:8000/api/v0/react/users/doudou/conversations?limit=5"
 
 # 查看特定对话的详细内容
-curl "http://localhost:8000/api/users/doudou/conversations/doudou:20250115103000001"
+curl "http://localhost:8000/api/v0/react/users/doudou/conversations/doudou:20250115103000001"
 ```
 
 ## 📋 基本API用法
@@ -54,13 +54,13 @@ curl -X POST http://localhost:8000/api/chat \
 ### 对话历史管理 ⭐ 新功能
 ```bash
 # 获取用户对话列表
-curl "http://localhost:8000/api/users/alice/conversations"
+curl "http://localhost:8000/api/v0/react/users/alice/conversations"
 
 # 限制返回数量
-curl "http://localhost:8000/api/users/alice/conversations?limit=10"
+curl "http://localhost:8000/api/v0/react/users/alice/conversations?limit=10"
 
 # 获取特定对话详情
-curl "http://localhost:8000/api/users/alice/conversations/alice:20250115103000001"
+curl "http://localhost:8000/api/v0/react/users/alice/conversations/alice:20250115103000001"
 ```
 
 ## 💻 Python 客户端示例
@@ -92,7 +92,7 @@ import requests
 
 def get_user_conversations(user_id, limit=10):
     """获取用户对话列表"""
-    url = f"http://localhost:8000/api/users/{user_id}/conversations"
+    url = f"http://localhost:8000/api/v0/react/users/{user_id}/conversations"
     params = {"limit": limit}
     
     response = requests.get(url, params=params)
@@ -100,7 +100,7 @@ def get_user_conversations(user_id, limit=10):
 
 def get_conversation_detail(user_id, thread_id):
     """获取对话详情"""
-    url = f"http://localhost:8000/api/users/{user_id}/conversations/{thread_id}"
+    url = f"http://localhost:8000/api/v0/react/users/{user_id}/conversations/{thread_id}"
     
     response = requests.get(url)
     return response.json()
@@ -142,14 +142,14 @@ console.log("回答:", result.data.response);
 ```javascript
 async function getUserConversations(userId, limit = 10) {
     const response = await fetch(
-        `http://localhost:8000/api/users/${userId}/conversations?limit=${limit}`
+        `http://localhost:8000/api/v0/react/users/${userId}/conversations?limit=${limit}`
     );
     return await response.json();
 }
 
 async function getConversationDetail(userId, threadId) {
     const response = await fetch(
-        `http://localhost:8000/api/users/${userId}/conversations/${threadId}`
+        `http://localhost:8000/api/v0/react/users/${userId}/conversations/${threadId}`
     );
     return await response.json();
 }
