@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 from flask import Flask, request, jsonify
+import redis.asyncio as redis
 
 try:
     # 尝试相对导入（当作为模块导入时）
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 # 全局Agent实例
 _agent_instance: Optional[CustomReactAgent] = None
+_redis_client: Optional[redis.Redis] = None
 
 def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """验证请求数据"""
@@ -51,23 +53,28 @@ def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 async def initialize_agent():
-    """初始化Agent"""
-    global _agent_instance
+    """异步初始化Agent"""
+    global _agent_instance, _redis_client
     
     if _agent_instance is None:
-        logger.info("🚀 正在初始化 Custom React Agent...")
+        logger.info("🚀 正在异步初始化 Custom React Agent...")
         try:
             # 设置环境变量（checkpointer内部需要）
             os.environ['REDIS_URL'] = 'redis://localhost:6379'
             
+            # 初始化共享的Redis客户端
+            _redis_client = redis.from_url('redis://localhost:6379', decode_responses=True)
+            await _redis_client.ping()
+            logger.info("✅ Redis客户端连接成功")
+            
             _agent_instance = await CustomReactAgent.create()
-            logger.info("✅ Agent 初始化完成")
+            logger.info("✅ Agent 异步初始化完成")
         except Exception as e:
-            logger.error(f"❌ Agent 初始化失败: {e}")
+            logger.error(f"❌ Agent 异步初始化失败: {e}")
             raise
 
 async def ensure_agent_ready():
-    """确保Agent实例可用"""
+    """异步确保Agent实例可用"""
     global _agent_instance
     
     if _agent_instance is None:
@@ -85,74 +92,29 @@ async def ensure_agent_ready():
         await initialize_agent()
         return True
 
-def run_async_safely(async_func, *args, **kwargs):
-    """安全地运行异步函数，处理事件循环问题"""
-    try:
-        # 检查是否已有事件循环
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # 如果事件循环在运行，创建新的事件循环
-            new_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(new_loop)
-            try:
-                return new_loop.run_until_complete(async_func(*args, **kwargs))
-            finally:
-                new_loop.close()
-        else:
-            # 如果事件循环没有运行，直接使用
-            return loop.run_until_complete(async_func(*args, **kwargs))
-    except RuntimeError:
-        # 如果没有事件循环，创建新的
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(async_func(*args, **kwargs))
-        finally:
-            loop.close()
-
-def ensure_agent_ready_sync():
-    """同步版本的ensure_agent_ready，用于Flask路由"""
-    global _agent_instance
-    
-    if _agent_instance is None:
-        try:
-            # 使用新的事件循环初始化
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(initialize_agent())
-            finally:
-                loop.close()
-        except Exception as e:
-            logger.error(f"初始化Agent失败: {e}")
-            return False
-    
-    return _agent_instance is not None
+# 删除复杂的事件循环管理函数 - 不再需要
 
 async def cleanup_agent():
-    """清理Agent资源"""
-    global _agent_instance
+    """异步清理Agent资源"""
+    global _agent_instance, _redis_client
     
     if _agent_instance:
         await _agent_instance.close()
-        logger.info("✅ Agent 资源已清理")
+        logger.info("✅ Agent 资源已异步清理")
         _agent_instance = None
+    
+    if _redis_client:
+        await _redis_client.aclose()
+        logger.info("✅ Redis客户端已异步关闭")
+        _redis_client = None
 
 # 创建Flask应用
 app = Flask(__name__)
 
-# 注册清理函数
+# 简化的退出处理
 def cleanup_on_exit():
     """程序退出时的清理函数"""
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(cleanup_agent())
-        finally:
-            loop.close()
-    except Exception as e:
-        logger.error(f"清理资源时发生错误: {e}")
+    logger.info("程序退出，资源清理将在异步上下文中进行")
 
 atexit.register(cleanup_on_exit)
 
@@ -176,27 +138,18 @@ def health_check():
         return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
 @app.route("/api/chat", methods=["POST"])
-def chat_endpoint():
-    """智能问答接口"""
+async def chat_endpoint():
+    """异步智能问答接口"""
     global _agent_instance
     
     # 确保Agent已初始化
-    if not _agent_instance:
-        try:
-            # 尝试初始化Agent（使用新的事件循环）
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(initialize_agent())
-            finally:
-                loop.close()
-        except Exception as e:
-            return jsonify({
-                "code": 503,
-                "message": "服务未就绪",
-                "success": False,
-                "error": "Agent 初始化失败"
-            }), 503
+    if not await ensure_agent_ready():
+        return jsonify({
+            "code": 503,
+            "message": "服务未就绪",
+            "success": False,
+            "error": "Agent 初始化失败"
+        }), 503
     
     try:
         # 获取请求数据
@@ -214,18 +167,12 @@ def chat_endpoint():
         
         logger.info(f"📨 收到请求 - User: {validated_data['user_id']}, Question: {validated_data['question'][:50]}...")
         
-        # 调用Agent处理（使用新的事件循环）
-        try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
-            agent_result = loop.run_until_complete(_agent_instance.chat(
-                message=validated_data['question'],
-                user_id=validated_data['user_id'],
-                thread_id=validated_data['thread_id']
-            ))
-        finally:
-            loop.close()
+        # 直接调用异步方法，不需要事件循环包装
+        agent_result = await _agent_instance.chat(
+            message=validated_data['question'],
+            user_id=validated_data['user_id'],
+            thread_id=validated_data['thread_id']
+        )
         
         if not agent_result.get("success", False):
             # Agent处理失败
@@ -240,7 +187,7 @@ def chat_endpoint():
                 "data": {
                     "react_agent_meta": {
                         "thread_id": agent_result.get("thread_id"),
-                        "agent_version": "custom_react_v1",
+                        "agent_version": "custom_react_v1_async",
                         "execution_path": ["error"]
                     },
                     "timestamp": datetime.now().isoformat()
@@ -286,8 +233,8 @@ def chat_endpoint():
         }), 500
 
 @app.route('/api/v0/react/users/<user_id>/conversations', methods=['GET'])
-def get_user_conversations(user_id: str):
-    """获取用户的聊天记录列表"""
+async def get_user_conversations(user_id: str):
+    """异步获取用户的聊天记录列表"""
     global _agent_instance
     
     try:
@@ -297,18 +244,18 @@ def get_user_conversations(user_id: str):
         # 限制limit的范围
         limit = max(1, min(limit, 50))  # 限制在1-50之间
         
-        logger.info(f"📋 获取用户 {user_id} 的对话列表，限制 {limit} 条")
+        logger.info(f"📋 异步获取用户 {user_id} 的对话列表，限制 {limit} 条")
         
         # 确保Agent可用
-        if not ensure_agent_ready_sync():
+        if not await ensure_agent_ready():
             return jsonify({
                 "success": False,
                 "error": "Agent 未就绪",
                 "timestamp": datetime.now().isoformat()
             }), 503
         
-        # 获取对话列表
-        conversations = run_async_safely(_agent_instance.get_user_recent_conversations, user_id, limit)
+        # 直接调用异步方法
+        conversations = await _agent_instance.get_user_recent_conversations(user_id, limit)
         
         return jsonify({
             "success": True,
@@ -322,7 +269,7 @@ def get_user_conversations(user_id: str):
         }), 200
         
     except Exception as e:
-        logger.error(f"❌ 获取用户 {user_id} 对话列表失败: {e}")
+        logger.error(f"❌ 异步获取用户 {user_id} 对话列表失败: {e}")
         return jsonify({
             "success": False,
             "error": str(e),
@@ -330,8 +277,8 @@ def get_user_conversations(user_id: str):
         }), 500
 
 @app.route('/api/v0/react/users/<user_id>/conversations/<thread_id>', methods=['GET'])
-def get_user_conversation_detail(user_id: str, thread_id: str):
-    """获取特定对话的详细历史"""
+async def get_user_conversation_detail(user_id: str, thread_id: str):
+    """异步获取特定对话的详细历史"""
     global _agent_instance
     
     try:
@@ -343,19 +290,19 @@ def get_user_conversation_detail(user_id: str, thread_id: str):
                 "timestamp": datetime.now().isoformat()
             }), 400
         
-        logger.info(f"📖 获取用户 {user_id} 的对话 {thread_id} 详情")
+        logger.info(f"📖 异步获取用户 {user_id} 的对话 {thread_id} 详情")
         
         # 确保Agent可用
-        if not ensure_agent_ready_sync():
+        if not await ensure_agent_ready():
             return jsonify({
                 "success": False,
                 "error": "Agent 未就绪",
                 "timestamp": datetime.now().isoformat()
             }), 503
         
-        # 获取对话历史
-        history = run_async_safely(_agent_instance.get_conversation_history, thread_id)
-        logger.info(f"✅ 成功获取对话历史，消息数量: {len(history)}")
+        # 直接调用异步方法
+        history = await _agent_instance.get_conversation_history(thread_id)
+        logger.info(f"✅ 异步成功获取对话历史，消息数量: {len(history)}")
         
         if not history:
             return jsonify({
@@ -377,7 +324,7 @@ def get_user_conversation_detail(user_id: str, thread_id: str):
         
     except Exception as e:
         import traceback
-        logger.error(f"❌ 获取对话 {thread_id} 详情失败: {e}")
+        logger.error(f"❌ 异步获取对话 {thread_id} 详情失败: {e}")
         logger.error(f"❌ 详细错误信息: {traceback.format_exc()}")
         return jsonify({
             "success": False,
@@ -902,17 +849,19 @@ def get_conversation_summary_api(thread_id: str):
 
 # 为了支持独立运行
 if __name__ == "__main__":
-    # 在启动前初始化Agent
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(initialize_agent())
-        finally:
-            loop.close()
-        logger.info("✅ API 服务启动成功")
-    except Exception as e:
-        logger.error(f"❌ API 服务启动失败: {e}")
+    # 使用Flask 3.x原生异步支持启动
+    logger.info("🚀 使用Flask内置异步支持启动...")
+    
+    # 信号处理
+    import signal
+    
+    def signal_handler(signum, frame):
+        logger.info("🛑 收到关闭信号，开始清理...")
+        print("正在关闭服务...")
+        exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     
     # 启动Flask应用
-    app.run(host="0.0.0.0", port=8000, debug=False) 
+    app.run(host="0.0.0.0", port=8000, debug=False, threaded=True) 

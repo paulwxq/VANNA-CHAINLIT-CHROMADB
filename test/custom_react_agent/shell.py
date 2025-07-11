@@ -1,26 +1,23 @@
 """
 重构后的 CustomReactAgent 的交互式命令行客户端
 """
+# from __future__ import annotations
+
 import asyncio
 import logging
 import sys
 import os
 import json
 
-# 动态地将项目根目录添加到 sys.path，以支持跨模块导入
-# 这使得脚本更加健壮，无论从哪里执行
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.insert(0, PROJECT_ROOT)
+# 将当前目录和项目根目录添加到 sys.path
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, '..', '..'))
+sys.path.insert(0, CURRENT_DIR)  # 当前目录优先
+sys.path.insert(1, PROJECT_ROOT)  # 项目根目录
 
-# 从新模块导入 Agent 和配置
-try:
-    # 相对导入（当作为模块导入时）
-    from .agent import CustomReactAgent
-    from . import config
-except ImportError:
-    # 绝对导入（当直接运行时）
-    from test.custom_react_agent.agent import CustomReactAgent
-    from test.custom_react_agent import config
+# 导入 Agent 和配置（简化版本）
+from agent import CustomReactAgent
+import config
 
 # 配置日志
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT)

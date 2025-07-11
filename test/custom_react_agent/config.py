@@ -23,7 +23,7 @@ LOG_LEVEL = logging.INFO
 LOG_FORMAT = '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
 
 # --- Agent 配置 ---
-DEFAULT_USER_ID = "default-user"
+DEFAULT_USER_ID = "guest"
 
 # --- 网络重试配置 ---
 MAX_RETRIES = 3                    # 最大重试次数
