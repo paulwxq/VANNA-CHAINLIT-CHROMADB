@@ -95,8 +95,6 @@ POST  http://localhost:8084/api/v0/ask_agent 
             "agent_sql_generation",
             "format_response"
         ],
-        "from_cache": false,
-        "is_guest_user": true,
         "response": "当前提供的上下文信息不足以生成查询服务区对应管理经理的SQL语句。原因如下：\n\n1. 在服务区管理公司表(bss_company)中虽然存在created_by/updated_by字段，但这些字段仅记录数据操作者（系统用户），而非实际的管理经理人员信息。\n\n2. 现有表结构中缺失以下关键实体：\n   - 员工/人员信息表（存储经理姓名等个人信息）\n   - 公司与人员的组织架构表（关联公司ID与员工ID）\n\n3. 当前表间关系仅能查询到服务区所属的管理公司名称（通过bss_service_area.company_id关联bss_company.id），但无法获取具体管理人员的姓名。\n\n需要补充以下信息才能继续：\n- 存储人员信息的表结构（特别是管理岗位人员）\n- 公司与人员的关联关系表结构 请尝试提问其它问题。",
         "routing_mode_source": "config",
         "routing_mode_used": "hybrid",

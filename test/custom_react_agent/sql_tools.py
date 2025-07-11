@@ -36,13 +36,17 @@ def generate_sql(question: str, history_messages: List[Dict[str, Any]] = None) -
     logger.info(f"   History contains {len(history_messages)} messages.")
 
     # Combine history and the current question to form a rich prompt
-    history_str = "\n".join([f"{msg['type']}: {msg.get('content', '') or ''}" for msg in history_messages])
-    enriched_question = f"""\nBased on the following conversation history:
----
+    if history_messages:
+        history_str = "\n".join([f"{msg['type']}: {msg.get('content', '') or ''}" for msg in history_messages])
+        enriched_question = f"""Previous conversation context:
 {history_str}
----
 
-Please provide an SQL query that answers this specific question: {question}"""
+Current user question: {question}
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query."""
+    else:
+        # If no history messages, use the original question directly
+        enriched_question = question
 
     try:
         from common.vanna_instance import get_vanna_instance
