@@ -849,19 +849,53 @@ def get_conversation_summary_api(thread_id: str):
 
 # 为了支持独立运行
 if __name__ == "__main__":
-    # 使用Flask 3.x原生异步支持启动
-    logger.info("🚀 使用Flask内置异步支持启动...")
-    
-    # 信号处理
-    import signal
-    
-    def signal_handler(signum, frame):
-        logger.info("🛑 收到关闭信号，开始清理...")
-        print("正在关闭服务...")
-        exit(0)
-    
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    
-    # 启动Flask应用
-    app.run(host="0.0.0.0", port=8000, debug=False, threaded=True) 
+    try:
+        # 尝试使用ASGI模式启动（推荐）
+        import uvicorn
+        from asgiref.wsgi import WsgiToAsgi
+        
+        logger.info("🚀 使用ASGI模式启动异步Flask应用...")
+        logger.info("   这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存")
+        
+        # 将Flask WSGI应用转换为ASGI应用
+        asgi_app = WsgiToAsgi(app)
+        
+        # 信号处理
+        import signal
+        
+        def signal_handler(signum, frame):
+            logger.info("🛑 收到关闭信号，开始清理...")
+            print("正在关闭服务...")
+            exit(0)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        # 使用uvicorn启动ASGI应用
+        uvicorn.run(
+            asgi_app,
+            host="0.0.0.0",
+            port=8000,
+            log_level="info",
+            access_log=True
+        )
+        
+    except ImportError as e:
+        # 如果缺少ASGI依赖，fallback到传统Flask模式
+        logger.warning("⚠️ ASGI依赖缺失，使用传统Flask模式启动")
+        logger.warning("   建议安装: pip install uvicorn asgiref")
+        logger.warning("   传统模式可能存在异步事件循环冲突问题")
+        
+        # 信号处理
+        import signal
+        
+        def signal_handler(signum, frame):
+            logger.info("🛑 收到关闭信号，开始清理...")
+            print("正在关闭服务...")
+            exit(0)
+        
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        
+        # 启动传统Flask应用
+        app.run(host="0.0.0.0", port=8000, debug=False, threaded=True) 
