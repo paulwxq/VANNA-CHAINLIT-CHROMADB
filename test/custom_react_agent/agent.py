@@ -727,7 +727,13 @@ class CustomReactAgent:
         }
 
         try:
+            logger.info(f"🚀 开始处理用户消息: {message[:50]}...")
+            
             final_state = await self.agent_executor.ainvoke(inputs, config)
+            
+            # 🔍 调试：打印 final_state 的所有 keys
+            logger.info(f"🔍 Final state keys: {list(final_state.keys())}")
+            
             answer = final_state["messages"][-1].content
             
             # 🎯 提取最近的 run_sql 执行结果（不修改messages）
@@ -747,10 +753,16 @@ class CustomReactAgent:
                 result["sql_data"] = sql_data
                 logger.info("   📊 已包含SQL原始数据")
             
-            # 🎯 如果存在API格式数据，也添加到返回结果中（用于API层）
+            # 🔧 修复：检查 api_data 是否在 final_state 中
             if "api_data" in final_state:
                 result["api_data"] = final_state["api_data"]
                 logger.info("   🔌 已包含API格式数据")
+            else:
+                # 🔧 备用方案：如果 final_state 中没有 api_data，手动生成
+                logger.warning("   ⚠️ final_state 中未找到 api_data，手动生成...")
+                api_data = await self._async_generate_api_data(final_state)
+                result["api_data"] = api_data
+                logger.info("   🔌 已手动生成API格式数据")
             
             return result
             

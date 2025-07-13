@@ -6,8 +6,15 @@ import asyncio
 import logging
 import atexit
 import os
+import sys
 from datetime import datetime
 from typing import Optional, Dict, Any
+
+# 🔧 修复模块路径问题：添加项目根目录到 sys.path
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, '..', '..'))
+sys.path.insert(0, CURRENT_DIR)  # 当前目录优先
+sys.path.insert(1, PROJECT_ROOT)  # 项目根目录
 
 from flask import Flask, request, jsonify
 import redis.asyncio as redis
@@ -31,17 +38,19 @@ def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """验证请求数据"""
     errors = []
     
-    # 验证 question
+    # 验证 question（必填）
     question = data.get('question', '')
     if not question or not question.strip():
         errors.append('问题不能为空')
     elif len(question) > 2000:
         errors.append('问题长度不能超过2000字符')
     
-    # 验证 user_id
+    # 验证 user_id（可选，默认为"guest"）
     user_id = data.get('user_id', 'guest')
     if user_id and len(user_id) > 50:
         errors.append('用户ID长度不能超过50字符')
+    
+    # thread_id 是可选的，不需要验证
     
     if errors:
         raise ValueError('; '.join(errors))
@@ -49,7 +58,7 @@ def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'question': question.strip(),
         'user_id': user_id or 'guest',
-        'thread_id': data.get('thread_id')
+        'thread_id': data.get('thread_id')  # 可选，不传则自动生成新会话
     }
 
 async def initialize_agent():
@@ -194,16 +203,28 @@ async def chat_endpoint():
                 }
             }), 500
         
-        # Agent处理成功，提取数据
+        # Agent处理成功，按照设计文档格式化响应
         api_data = agent_result.get("api_data", {})
         
-        # 构建最终响应
+        # 构建符合设计文档的响应数据
         response_data = {
-            **api_data,  # 包含Agent格式化的所有数据
+            "response": api_data.get("response", ""),
+            "react_agent_meta": api_data.get("react_agent_meta", {
+                "thread_id": agent_result.get("thread_id"),
+                "agent_version": "custom_react_v1"
+            }),
             "timestamp": datetime.now().isoformat()
         }
         
-        logger.info(f"✅ 请求处理成功 - Thread: {api_data.get('react_agent_meta', {}).get('thread_id')}")
+        # 可选字段：SQL（仅当执行SQL时存在）
+        if "sql" in api_data:
+            response_data["sql"] = api_data["sql"]
+        
+        # 可选字段：records（仅当有查询结果时存在）
+        if "records" in api_data:
+            response_data["records"] = api_data["records"]
+        
+        logger.info(f"✅ 请求处理成功 - Thread: {response_data['react_agent_meta'].get('thread_id')}")
         
         return jsonify({
             "code": 200,
