@@ -220,6 +220,12 @@ class CustomReactAgent:
                 messages_for_llm.append(SystemMessage(content=instruction))
                 logger.info("✅ 已添加 '常识回答' 行为指令")
 
+        # 🛡️ 添加防幻觉系统提示词（重点防止参数篡改）
+        anti_hallucination_prompt = self._get_anti_hallucination_prompt(state)
+        if anti_hallucination_prompt:
+            messages_for_llm.append(SystemMessage(content=anti_hallucination_prompt))
+            logger.info("   🛡️ 已添加防幻觉系统提示词")
+
         # 添加重试机制处理网络连接问题
         import asyncio
         max_retries = config.MAX_RETRIES
@@ -464,9 +470,21 @@ class CustomReactAgent:
                 modified_args = tool_call["args"].copy()
                 
                 clean_history = []
-                messages_except_current = state["messages"][:-1]
                 
-                for msg in messages_except_current:
+                # 找到当前用户问题，确保不包含在历史上下文中
+                current_user_question = None
+                messages_for_history = []
+                
+                # 从最后开始找到当前用户问题
+                for i in range(len(state["messages"]) - 1, -1, -1):
+                    msg = state["messages"][i]
+                    if isinstance(msg, HumanMessage):
+                        current_user_question = msg.content
+                        messages_for_history = state["messages"][:i]  # 排除当前用户问题及之后的消息
+                        break
+                
+                # 处理历史消息，确保不包含当前用户问题
+                for msg in messages_for_history:
                     if isinstance(msg, HumanMessage):
                         clean_history.append({"type": "human", "content": msg.content})
                     elif isinstance(msg, AIMessage):
@@ -1330,3 +1348,38 @@ Please intelligently choose whether to query the database based on the nature of
             return f"抱歉，在处理您关于「{last_human_message.content}」的查询时遇到了技术问题。请稍后重试，或者重新描述您的问题。"
         else:
             return "抱歉，我现在无法正确处理您的问题。请稍后重试或重新表述您的问题。"
+
+    def _get_anti_hallucination_prompt(self, state: AgentState) -> str:
+        """
+        生成防幻觉提示词，专注于保持参数原样传递
+        """
+        # 获取当前用户的最新问题
+        last_user_message = None
+        for msg in reversed(state["messages"]):
+            if isinstance(msg, HumanMessage):
+                last_user_message = msg.content
+                break
+        
+        if not last_user_message:
+            return ""
+        
+        prompt = f"""🛡️ 关键指令：工具调用参数必须完全准确
+
+用户当前问题：「{last_user_message}」
+
+调用工具时的严格要求：
+1. **原样传递原则**：question 参数必须与用户问题完全一致，一字不差
+2. **禁止任何改写**：不得进行同义词替换、语言优化或任何形式的修改
+3. **保持专有名词**：所有人名、地名、专业术语必须保持原始表达
+
+❌ 错误示例：
+- 用户问"充电桩"，不得改为"充电栋"
+- 用户提到"南城服务区"，不得改为"南峡服务区"
+
+✅ 正确做法：
+- 完全复制用户的原始问题作为question参数
+- 保持所有词汇的原始形态
+
+请严格遵守此要求，确保工具调用的准确性。"""
+        
+        return prompt

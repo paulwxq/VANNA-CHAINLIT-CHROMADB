@@ -41,12 +41,19 @@ def generate_sql(question: str, history_messages: List[Dict[str, Any]] = None) -
         enriched_question = f"""Previous conversation context:
 {history_str}
 
-Current user question: {question}
+Current user question:
+human: {question}
 
 Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query."""
     else:
         # If no history messages, use the original question directly
         enriched_question = question
+
+    # 🎯 添加稳定的Vanna输入日志
+    logger.info("📝 [Vanna Input] Complete question being sent to Vanna:")
+    logger.info("--- BEGIN VANNA INPUT ---")
+    logger.info(enriched_question)
+    logger.info("--- END VANNA INPUT ---")
 
     try:
         from common.vanna_instance import get_vanna_instance

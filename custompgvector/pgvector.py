@@ -169,7 +169,8 @@ class PG_VectorStore(VannaBase):
 
         # 检查过滤后结果是否为空
         if results and not filtered_results:
-            self.logger.warning(f"向量查询找到了 {len(results)} 条SQL问答对，但全部被阈值过滤掉，问题: {question}")
+            self.logger.warning(f"向量查询找到了 {len(results)} 条SQL问答对，但全部被阈值过滤掉了.")
+           # self.logger.warning(f"问题: {question}")
 
         return filtered_results
 
