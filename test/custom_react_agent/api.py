@@ -50,7 +50,17 @@ def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     if user_id and len(user_id) > 50:
         errors.append('用户ID长度不能超过50字符')
     
-    # thread_id 是可选的，不需要验证
+    # thread_id 和 conversation_id 处理：如果thread_id没有值，就使用conversation_id的值
+    thread_id = data.get('thread_id') or data.get('conversation_id')
+    
+    # 用户ID与会话ID一致性校验
+    if thread_id and user_id != 'guest':
+        if ':' not in thread_id:
+            errors.append('会话ID格式无效，期望格式为 user_id:timestamp')
+        else:
+            thread_user_id = thread_id.split(':', 1)[0]  # 取冒号前的部分作为用户ID
+            if thread_user_id != user_id:
+                errors.append(f'会话归属验证失败：会话ID [{thread_id}] 不属于当前用户 [{user_id}]')
     
     if errors:
         raise ValueError('; '.join(errors))
@@ -58,7 +68,7 @@ def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         'question': question.strip(),
         'user_id': user_id or 'guest',
-        'thread_id': data.get('thread_id')  # 可选，不传则自动生成新会话
+        'thread_id': thread_id  # 可选，不传则自动生成新会话
     }
 
 async def initialize_agent():
@@ -161,8 +171,19 @@ async def chat_endpoint():
         }), 503
     
     try:
-        # 获取请求数据
-        data = request.get_json()
+        # 获取请求数据，处理JSON解析错误
+        try:
+            data = request.get_json(force=True)
+        except Exception as json_error:
+            logger.warning(f"⚠️ JSON解析失败: {json_error}")
+            return jsonify({
+                "code": 400,
+                "message": "请求格式错误",
+                "success": False,
+                "error": "无效的JSON格式，请检查请求体中是否存在语法错误（如多余的逗号、引号不匹配等）",
+                "details": str(json_error)
+            }), 400
+        
         if not data:
             return jsonify({
                 "code": 400,
@@ -194,6 +215,8 @@ async def chat_endpoint():
                 "success": False,
                 "error": error_msg,
                 "data": {
+                    "conversation_id": agent_result.get("thread_id"),  # 新增：conversation_id等于thread_id
+                    "user_id": validated_data['user_id'],  # 新增：返回用户ID
                     "react_agent_meta": {
                         "thread_id": agent_result.get("thread_id"),
                         "agent_version": "custom_react_v1_async",
@@ -209,6 +232,8 @@ async def chat_endpoint():
         # 构建符合设计文档的响应数据
         response_data = {
             "response": api_data.get("response", ""),
+            "conversation_id": agent_result.get("thread_id"),  # 新增：conversation_id等于thread_id
+            "user_id": validated_data['user_id'],  # 新增：返回用户ID
             "react_agent_meta": api_data.get("react_agent_meta", {
                 "thread_id": agent_result.get("thread_id"),
                 "agent_version": "custom_react_v1"
@@ -235,12 +260,25 @@ async def chat_endpoint():
         
     except ValueError as e:
         # 参数验证错误
-        logger.warning(f"⚠️ 参数验证失败: {e}")
+        error_msg = str(e)
+        logger.warning(f"⚠️ 参数验证失败: {error_msg}")
+        
+        # 根据错误类型提供更友好的消息
+        if "会话归属验证失败" in error_msg:
+            message = "会话归属验证失败"
+        elif "会话ID格式无效" in error_msg:
+            message = "会话ID格式无效"
+        elif "JSON格式" in error_msg:
+            message = "请求格式错误"
+        else:
+            message = "请求参数错误"
+        
         return jsonify({
             "code": 400,
-            "message": "请求参数错误",
+            "message": message,
             "success": False,
-            "error": str(e)
+            "error": error_msg,
+            "error_type": "validation_error"
         }), 400
         
     except Exception as e:
