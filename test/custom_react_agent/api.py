@@ -35,7 +35,7 @@ _agent_instance: Optional[CustomReactAgent] = None
 _redis_client: Optional[redis.Redis] = None
 
 def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
-    """验证请求数据"""
+    """验证请求数据，并支持从thread_id中推断user_id"""
     errors = []
     
     # 验证 question（必填）
@@ -45,20 +45,36 @@ def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     elif len(question) > 2000:
         errors.append('问题长度不能超过2000字符')
     
-    # 验证 user_id（可选，默认为"guest"）
-    user_id = data.get('user_id', 'guest')
+    # 优先获取 thread_id
+    thread_id = data.get('thread_id') or data.get('conversation_id')
+    
+    # 获取 user_id，但暂不设置默认值
+    user_id = data.get('user_id')
+
+    # 如果没有传递 user_id，则尝试从 thread_id 中推断
+    if not user_id:
+        if thread_id and ':' in thread_id:
+            inferred_user_id = thread_id.split(':', 1)[0]
+            if inferred_user_id:
+                user_id = inferred_user_id
+                logger.info(f"👤 未提供user_id，从 thread_id '{thread_id}' 中推断出: '{user_id}'")
+            else:
+                # 如果拆分结果为空，则使用默认值
+                user_id = 'guest'
+        else:
+            # 如果 thread_id 不存在或格式不正确，则使用默认值
+            user_id = 'guest'
+
+    # 验证 user_id 长度
     if user_id and len(user_id) > 50:
         errors.append('用户ID长度不能超过50字符')
     
-    # thread_id 和 conversation_id 处理：如果thread_id没有值，就使用conversation_id的值
-    thread_id = data.get('thread_id') or data.get('conversation_id')
-    
     # 用户ID与会话ID一致性校验
-    if thread_id and user_id != 'guest':
+    if thread_id:
         if ':' not in thread_id:
             errors.append('会话ID格式无效，期望格式为 user_id:timestamp')
         else:
-            thread_user_id = thread_id.split(':', 1)[0]  # 取冒号前的部分作为用户ID
+            thread_user_id = thread_id.split(':', 1)[0]
             if thread_user_id != user_id:
                 errors.append(f'会话归属验证失败：会话ID [{thread_id}] 不属于当前用户 [{user_id}]')
     
@@ -67,7 +83,7 @@ def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     
     return {
         'question': question.strip(),
-        'user_id': user_id or 'guest',
+        'user_id': user_id,
         'thread_id': thread_id  # 可选，不传则自动生成新会话
     }
 
