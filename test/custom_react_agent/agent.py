@@ -1058,7 +1058,9 @@ When generate_sql returns an error message or when queries return no results:
    - Acknowledge the limitation and suggest the data may not be available
    - Do not attempt to guess or fabricate specific data
 
-Please intelligently choose whether to query the database based on the nature of the user's question."""
+Please intelligently choose whether to query the database based on the nature of the user's question,
+not on explaining your decision-making process.
+"""
             
             return prompt
             
