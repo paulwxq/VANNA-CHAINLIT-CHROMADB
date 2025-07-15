@@ -176,8 +176,8 @@ class CustomReactAgent:
         
         messages_for_llm = list(state["messages"])
         
-        # 🎯 添加数据库范围系统提示词（仅在对话开始时添加）
-        if len(state["messages"]) == 1 and isinstance(state["messages"][0], HumanMessage):
+        # 🎯 添加数据库范围系统提示词（每次用户提问时添加）
+        if isinstance(state["messages"][-1], HumanMessage):
             db_scope_prompt = self._get_database_scope_prompt()
             if db_scope_prompt:
                 messages_for_llm.insert(0, SystemMessage(content=db_scope_prompt))
@@ -226,19 +226,59 @@ class CustomReactAgent:
             messages_for_llm.append(SystemMessage(content=anti_hallucination_prompt))
             logger.info("   🛡️ 已添加防幻觉系统提示词")
 
+        # 🔍 【新增】详细日志：发送给LLM的完整消息列表（按实际提交顺序）
+        logger.info("📤 发送给LLM的完整消息列表和参数:")
+        logger.info(f"   总消息数: {len(messages_for_llm)}")
+        logger.info("   消息详情:")
+        for i, msg in enumerate(messages_for_llm):
+            msg_type = type(msg).__name__
+            content = str(msg.content)
+            
+            # 对于长内容，显示前500字符并标记
+            if len(content) > 500:
+                content_display = content[:500] + f"... (内容被截断，完整长度: {len(content)}字符)"
+            else:
+                content_display = content
+                
+            logger.info(f"   [{i}] {msg_type}:")
+            # 多行显示内容，便于阅读
+            for line in content_display.split('\n'):
+                logger.info(f"      {line}")
+
         # 添加重试机制处理网络连接问题
         import asyncio
         max_retries = config.MAX_RETRIES
         for attempt in range(max_retries):
             try:
-                # 使用异步调用
-                response = await self.llm_with_tools.ainvoke(messages_for_llm)
+                # 🔍 【调试】打印LLM调用的详细信息
+                logger.info(f"🚀 准备调用LLM (尝试 {attempt + 1}/{max_retries})")
+                logger.info(f"   LLM实例: {type(self.llm_with_tools)}")
+                logger.info(f"   消息数量: {len(messages_for_llm)}")
                 
-                # 新增：详细的响应检查和日志
+                # 🔍 【调试】检查消息格式是否正确
+                for i, msg in enumerate(messages_for_llm):
+                    logger.info(f"   消息[{i}] 类型: {type(msg)}")
+                    logger.info(f"   消息[{i}] 有content: {hasattr(msg, 'content')}")
+                    if hasattr(msg, 'content'):
+                        logger.info(f"   消息[{i}] content类型: {type(msg.content)}")
+                        logger.info(f"   消息[{i}] content长度: {len(str(msg.content))}")
+                
+                # 使用异步调用
+                logger.info("🔄 开始调用LLM...")
+                response = await self.llm_with_tools.ainvoke(messages_for_llm)
+                logger.info("✅ LLM调用完成")
+                
+                # 🔍 【调试】详细的响应检查和日志
+                logger.info(f"   响应类型: {type(response)}")
+                logger.info(f"   响应有content: {hasattr(response, 'content')}")
+                logger.info(f"   响应有tool_calls: {hasattr(response, 'tool_calls')}")
                 logger.info(f"   LLM原始响应内容: '{response.content}'")
                 logger.info(f"   响应内容长度: {len(response.content) if response.content else 0}")
                 logger.info(f"   响应内容类型: {type(response.content)}")
-                logger.info(f"   LLM是否有工具调用: {hasattr(response, 'tool_calls') and response.tool_calls}")
+                if hasattr(response, 'tool_calls'):
+                    logger.info(f"   LLM是否有工具调用: {response.tool_calls}")
+                else:
+                    logger.info(f"   LLM是否有工具调用: 无tool_calls属性")
 
                 if hasattr(response, 'tool_calls') and response.tool_calls:
                     logger.info(f"   工具调用数量: {len(response.tool_calls)}")
