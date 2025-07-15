@@ -226,9 +226,9 @@ class CustomAgentShell:
             
             if result.get("success"):
                 answer = result.get('answer', '')
-                # 去除 [Formatted Output] 标记，只显示真正的回答
-                if answer.startswith("[Formatted Output]\n"):
-                    answer = answer.replace("[Formatted Output]\n", "")
+                # 注释掉 [Formatted Output] 清理逻辑 - 源头已不生成前缀
+                # if answer.startswith("[Formatted Output]\n"):
+                #     answer = answer.replace("[Formatted Output]\n", "")
                 
                 print(f"🤖 Agent: {answer}")
                 

@@ -489,7 +489,9 @@ class CustomReactAgent:
                         clean_history.append({"type": "human", "content": msg.content})
                     elif isinstance(msg, AIMessage):
                         if not msg.tool_calls and msg.content:
-                            clean_content = msg.content.replace("[Formatted Output]\n", "").strip()
+                            # 注释掉 [Formatted Output] 清理逻辑 - 源头已不生成前缀
+                            # clean_content = msg.content.replace("[Formatted Output]\n", "").strip()
+                            clean_content = msg.content.strip()
                             if clean_content:
                                 clean_history.append({"type": "ai", "content": clean_content})
                 
@@ -522,8 +524,9 @@ class CustomReactAgent:
             elif isinstance(msg, AIMessage):
                 # 只保留最终的、面向用户的回答（不包含工具调用的纯文本回答）
                 if not msg.tool_calls and msg.content:
-                    # 移除可能存在的格式化标记
-                    clean_content = msg.content.replace("[Formatted Output]\n", "").strip()
+                    # 注释掉 [Formatted Output] 清理逻辑 - 源头已不生成前缀
+                    # clean_content = msg.content.replace("[Formatted Output]\n", "").strip()
+                    clean_content = msg.content.strip()
                     if clean_content:
                         clean_history.append({"type": "ai", "content": clean_content})
         
@@ -578,7 +581,8 @@ class CustomReactAgent:
         
         # 保持原有的消息格式化（用于shell.py兼容）
         last_message = state['messages'][-1]
-        last_message.content = f"[Formatted Output]\n{last_message.content}"
+        # 注释掉前缀添加，直接使用原始内容
+        # last_message.content = f"[Formatted Output]\n{last_message.content}"
         
         # 生成API格式的数据
         api_data = await self._async_generate_api_data(state)
@@ -600,8 +604,9 @@ class CustomReactAgent:
         last_message = state['messages'][-1]
         response_content = last_message.content
         
-        if response_content.startswith("[Formatted Output]\n"):
-            response_content = response_content.replace("[Formatted Output]\n", "")
+        # 注释掉 [Formatted Output] 清理逻辑 - 源头已不生成前缀
+        # if response_content.startswith("[Formatted Output]\n"):
+        #     response_content = response_content.replace("[Formatted Output]\n", "")
         
         api_data = {
             "response": response_content

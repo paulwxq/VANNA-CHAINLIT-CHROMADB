@@ -309,22 +309,22 @@ def clean_ai_message_for_simple_mode(ai_msg: Dict[str, Any]) -> Dict[str, Any]:
     # 处理内容格式化
     content = original_content.strip()
     
-    # 调试：检查 [Formatted Output] 处理
-    if '[Formatted Output]' in content:
-        logger.info(f"🔍 发现 [Formatted Output] 标记")
-        
-        if content.startswith('[Formatted Output]\n'):
-            # 去掉标记，保留后面的实际内容
-            actual_content = content.replace('[Formatted Output]\n', '')
-            logger.info(f"🔍 去除标记后的内容: '{actual_content}', 长度: {len(actual_content)}")
-            cleaned_msg["content"] = actual_content
-            content = actual_content
-        elif content == '[Formatted Output]' or content == '[Formatted Output]\n':
-            # 如果只有标记没有内容
-            logger.info(f"🔍 只有标记没有实际内容")
-            cleaned_msg["content"] = ""
-            cleaned_msg["is_intermediate_step"] = True
-            content = ""
+    # 注释掉 [Formatted Output] 清理逻辑 - 源头已不生成前缀
+    # if '[Formatted Output]' in content:
+    #     logger.info(f"🔍 发现 [Formatted Output] 标记")
+    #     
+    #     if content.startswith('[Formatted Output]\n'):
+    #         # 去掉标记，保留后面的实际内容
+    #         actual_content = content.replace('[Formatted Output]\n', '')
+    #         logger.info(f"🔍 去除标记后的内容: '{actual_content}', 长度: {len(actual_content)}")
+    #         cleaned_msg["content"] = actual_content
+    #         content = actual_content
+    #     elif content == '[Formatted Output]' or content == '[Formatted Output]\n':
+    #         # 如果只有标记没有内容
+    #         logger.info(f"🔍 只有标记没有实际内容")
+    #         cleaned_msg["content"] = ""
+    #         cleaned_msg["is_intermediate_step"] = True
+    #         content = ""
     
     # 如果清理后内容为空或只有空白，标记为中间步骤
     if not content.strip():
