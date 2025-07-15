@@ -10,9 +10,12 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 
 # --- LLM 配置 ---
 # 在这里写死你的千问API Key
+# qwen-plus
+# qwen3-235b-a22b
+# qwen3-30b-a3b
 QWEN_API_KEY = "sk-db68e37f00974031935395315bfe07f0"
 QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-QWEN_MODEL = "qwen3-235b-a22b"
+QWEN_MODEL = "qwen3-30b-a3b"
 
 # --- Redis 配置 ---
 REDIS_URL = "redis://localhost:6379"

@@ -1044,18 +1044,16 @@ class CustomReactAgent:
 === DECISION RULES ===
 1. If the question involves data within the above business scope (service areas, branches, revenue, traffic flow, etc.), use the generate_sql tool
 2. If the question is about general knowledge (like "when do lychees ripen?", weather, historical events, etc.), answer directly based on your knowledge WITHOUT using database tools
-3. When answering general knowledge questions, clearly indicate that this is based on general knowledge, not database data
+3. When answering general knowledge questions, provide clear and helpful answers without any special prefixes
 
 === FALLBACK STRATEGY ===
 When generate_sql returns an error message or when queries return no results:
 1. First, check if the question is within the database scope described above
 2. For questions clearly OUTSIDE the database scope (world events, general knowledge, etc.):
    - Provide the answer based on your knowledge immediately
-   - CLEARLY indicate this is based on general knowledge, not database data
-   - Use format: "Based on general knowledge (not database data): [answer]"
+   - Give a direct, natural answer without any prefixes or disclaimers
 3. For questions within database scope but queries return no results:
-   - If it's a reasonable question that might have a general answer, provide it
-   - Still indicate the source: "Based on general knowledge (database had no results): [answer]"
+   - If it's a reasonable question that might have a general answer, provide it naturally
 4. For questions that definitely require specific database data:
    - Acknowledge the limitation and suggest the data may not be available
    - Do not attempt to guess or fabricate specific data
