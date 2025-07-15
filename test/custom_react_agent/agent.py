@@ -624,18 +624,7 @@ class CustomReactAgent:
         # 注释掉前缀添加，直接使用原始内容
         # last_message.content = f"[Formatted Output]\n{last_message.content}"
         
-        # 生成API格式的数据
-        api_data = await self._async_generate_api_data(state)
-
-        # 打印api_data
-        print("-"*20+"api_data_start"+"-"*20)
-        print(api_data)
-        print("-"*20+"api_data_end"+"-"*20)
-
-        return {
-            "messages": [last_message],
-            "api_data": api_data  # 新增：API格式数据
-        }
+        return {"messages": [last_message]}
 
     async def _async_generate_api_data(self, state: AgentState) -> Dict[str, Any]:
         """异步生成API格式的数据结构"""
@@ -874,16 +863,10 @@ class CustomReactAgent:
                 result["sql_data"] = sql_data
                 logger.info("   📊 已包含SQL原始数据")
             
-            # 🔧 修复：检查 api_data 是否在 final_state 中
-            if "api_data" in final_state:
-                result["api_data"] = final_state["api_data"]
-                logger.info("   🔌 已包含API格式数据")
-            else:
-                # 🔧 备用方案：如果 final_state 中没有 api_data，手动生成
-                logger.warning("   ⚠️ final_state 中未找到 api_data，手动生成...")
-                api_data = await self._async_generate_api_data(final_state)
-                result["api_data"] = api_data
-                logger.info("   🔌 已手动生成API格式数据")
+            # 生成API格式数据
+            api_data = await self._async_generate_api_data(final_state)
+            result["api_data"] = api_data
+            logger.info("   🔌 已生成API格式数据")
             
             return result
             
