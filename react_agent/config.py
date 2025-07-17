@@ -13,7 +13,9 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 # qwen-plus
 # qwen3-235b-a22b
 # qwen3-30b-a3b
-QWEN_API_KEY = "sk-db68e37f00974031935395315bfe07f0"
+# sk-8f2320dafc9e4076968accdd8eebd8e9
+# my:"sk-db68e37f00974031935395315bfe07f0"
+QWEN_API_KEY = "sk-8f2320dafc9e4076968accdd8eebd8e9"
 QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 QWEN_MODEL = "qwen3-235b-a22b"
 

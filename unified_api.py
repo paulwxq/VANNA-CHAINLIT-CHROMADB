@@ -453,17 +453,23 @@ async def ask_react_agent():
             error_msg = agent_result.get("error", "React Agent处理失败")
             logger.error(f"❌ React Agent处理失败: {error_msg}")
             
+            # 检查是否建议重试
+            retry_suggested = agent_result.get("retry_suggested", False)
+            error_code = 503 if retry_suggested else 500
+            message = "服务暂时不可用，请稍后重试" if retry_suggested else "处理失败"
+            
             return jsonify({
-                "code": 500,
-                "message": "处理失败",
+                "code": error_code,
+                "message": message,
                 "success": False,
                 "error": error_msg,
+                "retry_suggested": retry_suggested,
                 "data": {
                     "conversation_id": agent_result.get("thread_id"),
                     "user_id": validated_data['user_id'],
                     "timestamp": datetime.now().isoformat()
                 }
-            }), 500
+            }), error_code
         
         # Agent处理成功
         api_data = agent_result.get("api_data", {})
@@ -1936,8 +1942,34 @@ if __name__ == '__main__':
     logger.info("📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent")
     logger.info("📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent")
     
-    # 启动标准Flask应用（支持异步路由）
-    app.run(host="0.0.0.0", port=8084, debug=False, threaded=True)
+    try:
+        # 尝试使用ASGI模式启动（推荐）
+        import uvicorn
+        from asgiref.wsgi import WsgiToAsgi
+        
+        logger.info("🚀 使用ASGI模式启动异步Flask应用...")
+        logger.info("   这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存")
+        
+        # 将Flask WSGI应用转换为ASGI应用
+        asgi_app = WsgiToAsgi(app)
+        
+        # 使用uvicorn启动ASGI应用
+        uvicorn.run(
+            asgi_app,
+            host="0.0.0.0",
+            port=8084,
+            log_level="info",
+            access_log=True
+        )
+        
+    except ImportError as e:
+        # 如果缺少ASGI依赖，fallback到传统Flask模式
+        logger.warning("⚠️ ASGI依赖缺失，使用传统Flask模式启动")
+        logger.warning("   建议安装: pip install uvicorn asgiref")
+        logger.warning("   传统模式可能存在异步事件循环冲突问题")
+        
+        # 启动标准Flask应用（支持异步路由）
+        app.run(host="0.0.0.0", port=8084, debug=False, threaded=True)
 
 # Data Pipeline 全局变量 - 从 citu_app.py 迁移
 data_pipeline_manager = None
