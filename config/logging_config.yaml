@@ -15,7 +15,7 @@ default:
     enabled: true
     level: DEBUG
     filename: "app.log"
-    format: "%(asctime)s [%(levelname)s] [%(name)s] [user:%(user_id)s] [session:%(session_id)s] %(filename)s:%(lineno)d - %(message)s"
+    format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
     rotation:
       enabled: true
       max_size: "50MB"
@@ -33,15 +33,13 @@ modules:
       enabled: true
       level: DEBUG
       filename: "app.log"
-      format: "%(asctime)s [%(levelname)s] [%(name)s] [user:%(user_id)s] [session:%(session_id)s] %(filename)s:%(lineno)d - %(message)s"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
         enabled: true
         max_size: "50MB"
         backup_count: 10
   
   data_pipeline:
-    # 注意：data_pipeline的日志文件路径会在运行时动态设置到任务目录
-    # 这里的file配置主要用于格式和级别设置
     level: DEBUG
     console:
       enabled: true
@@ -50,15 +48,12 @@ modules:
     file:
       enabled: true
       level: DEBUG
-      # filename 将在运行时动态设置，不在这里指定
-      # filename: "data_pipeline.log"  # 移除固定路径
+      filename: "data_pipeline.log"
       format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
-        # 对于任务特定的日志，通常不需要rotation
-        # 但保留配置以防单个任务产生大量日志
-        enabled: false  # 禁用rotation，因为每个任务的日志是独立的
-        max_size: "10MB"    # 如果启用，限制为10MB
-        backup_count: 2     # 如果启用，只保留2个备份
+        enabled: true
+        max_size: "20MB"
+        backup_count: 5
   
   agent:
     level: DEBUG
@@ -70,7 +65,7 @@ modules:
       enabled: true
       level: DEBUG
       filename: "agent.log"
-      format: "%(asctime)s [%(levelname)s] [%(name)s] [user:%(user_id)s] [session:%(session_id)s] %(filename)s:%(lineno)d - %(message)s"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
         enabled: true
         max_size: "30MB"
@@ -90,4 +85,20 @@ modules:
       rotation:
         enabled: true
         max_size: "20MB"
-        backup_count: 5 
+        backup_count: 5
+  
+  react_agent:
+    level: DEBUG
+    console:
+      enabled: true
+      level: DEBUG
+      format: "%(asctime)s [%(levelname)s] ReactAgent: %(message)s"
+    file:
+      enabled: true
+      level: DEBUG
+      filename: "react_agent.log"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
+      rotation:
+        enabled: true
+        max_size: "30MB"
+        backup_count: 8 

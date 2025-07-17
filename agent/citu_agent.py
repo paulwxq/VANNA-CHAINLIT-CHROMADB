@@ -231,7 +231,6 @@ class CituLangGraphAgent:
                 error_message = sql_result.get("error", "")
                 error_type = sql_result.get("error_type", "")
                 
-                #print(f"[SQL_GENERATION] SQL生成失败: {error_message}")
                 self.logger.debug(f"error_type = '{error_type}'")
                 
                 # 根据错误类型生成用户提示

@@ -16,15 +16,15 @@ try:
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 except Exception as e:
-    print(f"Warning: Could not add project root to sys.path: {e}")
+    pass  # 忽略路径添加错误
 
-# 使用独立日志系统
+# 使用统一日志系统
 try:
     # 尝试相对导入（当作为模块导入时）
-    from .logger import get_react_agent_logger
+    from core.logging import get_react_agent_logger
 except ImportError:
     # 如果相对导入失败，尝试绝对导入（直接运行时）
-    from logger import get_react_agent_logger
+    from core.logging import get_react_agent_logger
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, ToolMessage, BaseMessage, SystemMessage, AIMessage
@@ -275,11 +275,11 @@ class CustomReactAgent:
                 
                 # 🔍 【调试】检查消息格式是否正确
                 for i, msg in enumerate(messages_for_llm):
-                    logger.info(f"   消息[{i}] 类型: {type(msg)}")
-                    logger.info(f"   消息[{i}] 有content: {hasattr(msg, 'content')}")
+                    logger.debug(f"   消息[{i}] 类型: {type(msg)}")
+                    logger.debug(f"   消息[{i}] 有content: {hasattr(msg, 'content')}")
                     if hasattr(msg, 'content'):
-                        logger.info(f"   消息[{i}] content类型: {type(msg.content)}")
-                        logger.info(f"   消息[{i}] content长度: {len(str(msg.content))}")
+                        logger.debug(f"   消息[{i}] content类型: {type(msg.content)}")
+                        logger.debug(f"   消息[{i}] content长度: {len(str(msg.content))}")
                 
                 # 使用异步调用
                 logger.info("🔄 开始调用LLM...")

@@ -29,6 +29,10 @@ def get_app_logger(name: str) -> logging.Logger:
     """获取app模块logger"""
     return get_logger(name, "app")
 
+def get_react_agent_logger(name: str) -> logging.Logger:
+    """获取react_agent模块logger"""
+    return get_logger(name, "react_agent")
+
 # 上下文管理便捷方法
 def set_log_context(**kwargs):
     """设置日志上下文（可选）

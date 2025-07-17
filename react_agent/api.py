@@ -21,11 +21,11 @@ import redis.asyncio as redis
 try:
     # 尝试相对导入（当作为模块导入时）
     from .agent import CustomReactAgent
-    from .logger import get_react_agent_logger
+    from core.logging import get_react_agent_logger
 except ImportError:
     # 如果相对导入失败，尝试绝对导入（直接运行时）
     from agent import CustomReactAgent
-    from logger import get_react_agent_logger
+    from core.logging import get_react_agent_logger
 
 # 使用独立日志系统
 logger = get_react_agent_logger("ReactAgentAPI")
@@ -943,7 +943,7 @@ if __name__ == "__main__":
         
         def signal_handler(signum, frame):
             logger.info("🛑 收到关闭信号，开始清理...")
-            print("正在关闭服务...")
+            logger.info("正在关闭服务...")
             exit(0)
         
         signal.signal(signal.SIGINT, signal_handler)
@@ -969,7 +969,7 @@ if __name__ == "__main__":
         
         def signal_handler(signum, frame):
             logger.info("🛑 收到关闭信号，开始清理...")
-            print("正在关闭服务...")
+            logger.info("正在关闭服务...")
             exit(0)
         
         signal.signal(signal.SIGINT, signal_handler)

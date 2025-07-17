@@ -184,4 +184,4 @@ try:
 except ValueError as e:
     # 在配置文件中使用stderr输出警告，避免依赖logging
     import sys
-    print(f"警告: {e}", file=sys.stderr)
+    sys.stderr.write(f"警告: {e}\n")

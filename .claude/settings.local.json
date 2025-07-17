@@ -23,7 +23,8 @@
       "Bash(\".venv/Scripts/python.exe\" -c \"import sys; sys.path.append('.'); from data_pipeline.schema_workflow import SchemaWorkflowOrchestrator; print('SchemaWorkflowOrchestrator导入成功')\")",
       "Bash(\".venv/Scripts/python.exe\" -c \"import sys; sys.path.append('.'); from data_pipeline.api.simple_workflow import SimpleWorkflowExecutor; print('SimpleWorkflowExecutor导入成功')\")",
       "Bash(\".venv/Scripts/python.exe\":*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }
