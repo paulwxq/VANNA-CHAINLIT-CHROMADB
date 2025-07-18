@@ -198,46 +198,53 @@ def train_formatted_question_sql_pairs(formatted_file):
     # 按双空行分割不同的问答对
     # 使用更精确的分隔符，避免误识别
     pairs = []
-    blocks = content.split("\n\nQuestion:")
+    # 使用大小写不敏感的正则表达式来分割
+    import re
+    blocks = re.split(r'\n\n(?=question\s*:)', content, flags=re.IGNORECASE)
     
     # 处理第一块（可能没有前导的"\n\nQuestion:"）
     first_block = blocks[0]
-    if first_block.strip().startswith("Question:"):
+    if re.search(r'^\s*question\s*:', first_block.strip(), re.IGNORECASE):
         pairs.append(first_block.strip())
-    elif "Question:" in first_block:
+    elif re.search(r'question\s*:', first_block, re.IGNORECASE):
         # 处理文件开头没有Question:的情况
-        question_start = first_block.find("Question:")
-        pairs.append(first_block[question_start:].strip())
+        question_match = re.search(r'question\s*:', first_block, re.IGNORECASE)
+        pairs.append(first_block[question_match.start():].strip())
     
     # 处理其余块
     for block in blocks[1:]:
-        pairs.append("Question:" + block.strip())
+        pairs.append(block.strip())
     
     # 处理每个问答对
     successfully_processed = 0
     for idx, pair in enumerate(pairs, start=1):
         try:
-            if "Question:" not in pair or "SQL:" not in pair:
+            # 使用大小写不敏感的匹配
+            question_match = re.search(r'question\s*:', pair, re.IGNORECASE)
+            sql_match = re.search(r'sql\s*:', pair, re.IGNORECASE)
+            
+            if not question_match or not sql_match:
                 print(f" 跳过不符合格式的对 #{idx}")
                 continue
-                
-            # 提取问题部分
-            question_start = pair.find("Question:") + len("Question:")
-            sql_start = pair.find("SQL:", question_start)
             
-            if sql_start == -1:
+            # 确保SQL在Question之后
+            if sql_match.start() <= question_match.end():
                 print(f" SQL部分未找到，跳过对 #{idx}")
                 continue
                 
+            # 提取问题部分
+            question_start = question_match.end()
+            sql_start = sql_match.start()
+            
             question = pair[question_start:sql_start].strip()
             
             # 提取SQL部分（支持多行）
-            sql_part = pair[sql_start + len("SQL:"):].strip()
+            sql_part = pair[sql_match.end():].strip()
             
             # 检查是否存在下一个Question标记（防止解析错误）
-            next_question = pair.find("Question:", sql_start)
-            if next_question != -1:
-                sql_part = pair[sql_start + len("SQL:"):next_question].strip()
+            next_question_match = re.search(r'question\s*:', pair[sql_match.end():], re.IGNORECASE)
+            if next_question_match:
+                sql_part = pair[sql_match.end():sql_match.end() + next_question_match.start()].strip()
             
             if not question or not sql_part:
                 print(f" 问题或SQL为空，跳过对 #{idx}")
@@ -280,12 +287,30 @@ def train_json_question_sql_pairs(json_file):
         for idx, pair in enumerate(data, start=1):
             try:
                 # 检查问答对格式
-                if not isinstance(pair, dict) or "question" not in pair or "sql" not in pair:
+                if not isinstance(pair, dict):
                     print(f" 跳过不符合格式的对 #{idx}")
                     continue
                 
-                question = pair["question"].strip()
-                sql = pair["sql"].strip()
+                # 大小写不敏感地查找question和sql键
+                question_key = None
+                sql_key = None
+                question_value = None
+                sql_value = None
+                
+                for key, value in pair.items():
+                    if key.lower() == "question":
+                        question_key = key
+                        question_value = value
+                    elif key.lower() == "sql":
+                        sql_key = key
+                        sql_value = value
+                
+                if question_key is None or sql_key is None:
+                    print(f" 跳过不符合格式的对 #{idx}")
+                    continue
+                
+                question = str(question_value).strip()
+                sql = str(sql_value).strip()
                 
                 if not question or not sql:
                     print(f" 问题或SQL为空，跳过对 #{idx}")
