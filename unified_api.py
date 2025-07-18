@@ -25,11 +25,16 @@ initialize_logging()
 # 标准 Flask 导入
 from flask import Flask, request, jsonify, session, send_file
 import redis.asyncio as redis
+from werkzeug.utils import secure_filename
 
 # 基础依赖
 import pandas as pd
 import json
 import sqlparse
+import tempfile
+import os
+import psycopg2
+import re
 
 # 项目模块导入
 from core.vanna_llm_factory import create_vanna_instance
@@ -1659,6 +1664,467 @@ def training_data_delete():
         return jsonify(internal_error_response(
             response_text="删除训练数据失败，请稍后重试"
         )), 500
+
+@app.route('/api/v0/training_data/update', methods=['POST'])
+def training_data_update():
+    """更新训练数据API - 支持单条更新，采用先删除后插入策略"""
+    try:
+        req = request.get_json(force=True)
+        
+        # 1. 参数验证
+        original_id = req.get('id')
+        if not original_id:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：id",
+                missing_params=["id"]
+            )), 400
+        
+        training_type = req.get('training_data_type')
+        if not training_type:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：training_data_type",
+                missing_params=["training_data_type"]
+            )), 400
+        
+        # 2. 先删除原始记录
+        try:
+            success = vn.remove_training_data(original_id)
+            if not success:
+                return jsonify(bad_request_response(
+                    response_text=f"原始记录 {original_id} 不存在或删除失败"
+                )), 400
+        except Exception as e:
+            return jsonify(internal_error_response(
+                response_text=f"删除原始记录失败: {str(e)}"
+            )), 500
+        
+        # 3. 根据类型验证和准备新数据
+        try:
+            if training_type == 'sql':
+                sql = req.get('sql')
+                if not sql:
+                    return jsonify(bad_request_response(
+                        response_text="SQL字段是必需的",
+                        missing_params=["sql"]
+                    )), 400
+                
+                # SQL语法检查
+                is_valid, error_msg = validate_sql_syntax(sql)
+                if not is_valid:
+                    return jsonify(bad_request_response(
+                        response_text=f"SQL语法错误: {error_msg}"
+                    )), 400
+                
+                question = req.get('question')
+                if question:
+                    training_id = vn.train(question=question, sql=sql)
+                else:
+                    training_id = vn.train(sql=sql)
+                    
+            elif training_type == 'error_sql':
+                question = req.get('question')
+                sql = req.get('sql')
+                if not question or not sql:
+                    return jsonify(bad_request_response(
+                        response_text="question和sql字段都是必需的",
+                        missing_params=["question", "sql"]
+                    )), 400
+                training_id = vn.train_error_sql(question=question, sql=sql)
+                
+            elif training_type == 'documentation':
+                content = req.get('content')
+                if not content:
+                    return jsonify(bad_request_response(
+                        response_text="content字段是必需的",
+                        missing_params=["content"]
+                    )), 400
+                training_id = vn.train(documentation=content)
+                
+            elif training_type == 'ddl':
+                ddl = req.get('ddl')
+                if not ddl:
+                    return jsonify(bad_request_response(
+                        response_text="ddl字段是必需的",
+                        missing_params=["ddl"]
+                    )), 400
+                training_id = vn.train(ddl=ddl)
+                
+            else:
+                return jsonify(bad_request_response(
+                    response_text=f"不支持的训练数据类型: {training_type}"
+                )), 400
+                
+        except Exception as e:
+            return jsonify(internal_error_response(
+                response_text=f"创建新训练数据失败: {str(e)}"
+            )), 500
+        
+        # 4. 获取更新后的总记录数
+        current_total = get_total_training_count()
+        
+        return jsonify(success_response(
+            response_text="训练数据更新成功",
+            data={
+                "original_id": original_id,
+                "new_training_id": training_id,
+                "type": training_type,
+                "current_total_count": current_total
+            }
+        ))
+        
+    except Exception as e:
+        logger.error(f"training_data_update执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="更新训练数据失败，请稍后重试"
+        )), 500
+
+# 导入现有的专业训练函数
+from data_pipeline.trainer.run_training import (
+    train_ddl_statements,
+    train_documentation_blocks, 
+    train_json_question_sql_pairs,
+    train_formatted_question_sql_pairs,
+    train_sql_examples
+)
+
+def get_allowed_extensions(file_type: str) -> list:
+    """根据文件类型返回允许的扩展名"""
+    type_specific_extensions = {
+        'ddl': ['ddl', 'sql', 'txt', ''],  # 支持无扩展名
+        'markdown': ['md', 'markdown'],    # 不支持无扩展名
+        'sql_pair_json': ['json', 'txt', ''],  # 支持无扩展名
+        'sql_pair': ['sql', 'txt', ''],   # 支持无扩展名
+        'sql': ['sql', 'txt', '']         # 支持无扩展名
+    }
+    
+    return type_specific_extensions.get(file_type, [])
+
+def validate_file_content(content: str, file_type: str) -> dict:
+    """验证文件内容格式"""
+    try:
+        if file_type == 'ddl':
+            # 检查是否包含CREATE语句
+            if not re.search(r'\bCREATE\b', content, re.IGNORECASE):
+                return {'valid': False, 'error': '文件内容不符合DDL格式，必须包含CREATE语句'}
+            
+        elif file_type == 'markdown':
+            # 检查是否包含##标题
+            if '##' not in content:
+                return {'valid': False, 'error': '文件内容不符合Markdown格式，必须包含##标题'}
+            
+        elif file_type == 'sql_pair_json':
+            # 检查是否为有效JSON
+            try:
+                data = json.loads(content)
+                if not isinstance(data, list) or not data:
+                    return {'valid': False, 'error': '文件内容不符合JSON问答对格式，必须是非空数组'}
+                
+                # 检查是否包含question和sql字段
+                for item in data:
+                    if not isinstance(item, dict):
+                        return {'valid': False, 'error': '文件内容不符合JSON问答对格式，数组元素必须是对象'}
+                    
+                    has_question = any(key.lower() == 'question' for key in item.keys())
+                    has_sql = any(key.lower() == 'sql' for key in item.keys())
+                    
+                    if not has_question or not has_sql:
+                        return {'valid': False, 'error': '文件内容不符合JSON问答对格式，必须包含question和sql字段'}
+                        
+            except json.JSONDecodeError:
+                return {'valid': False, 'error': '文件内容不符合JSON问答对格式，JSON格式错误'}
+            
+        elif file_type == 'sql_pair':
+            # 检查是否包含Question:和SQL:
+            if not re.search(r'\bQuestion\s*:', content, re.IGNORECASE):
+                return {'valid': False, 'error': '文件内容不符合问答对格式，必须包含Question:'}
+            if not re.search(r'\bSQL\s*:', content, re.IGNORECASE):
+                return {'valid': False, 'error': '文件内容不符合问答对格式，必须包含SQL:'}
+            
+        elif file_type == 'sql':
+            # 检查是否包含;分隔符
+            if ';' not in content:
+                return {'valid': False, 'error': '文件内容不符合SQL格式，必须包含;分隔符'}
+        
+        return {'valid': True}
+        
+    except Exception as e:
+        return {'valid': False, 'error': f'文件内容验证失败: {str(e)}'}
+
+@app.route('/api/v0/training_data/upload', methods=['POST'])
+def upload_training_data():
+    """上传训练数据文件API - 支持多种文件格式的自动解析和导入"""
+    try:
+        # 1. 参数验证
+        if 'file' not in request.files:
+            return jsonify(bad_request_response("未提供文件"))
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify(bad_request_response("未选择文件"))
+        
+        # 获取file_type参数
+        file_type = request.form.get('file_type')
+        if not file_type:
+            return jsonify(bad_request_response("缺少必需参数：file_type"))
+        
+        # 验证file_type参数
+        valid_file_types = ['ddl', 'markdown', 'sql_pair_json', 'sql_pair', 'sql']
+        if file_type not in valid_file_types:
+            return jsonify(bad_request_response(f"不支持的文件类型：{file_type}，支持的类型：{', '.join(valid_file_types)}"))
+        
+        # 2. 文件大小验证 (500KB)
+        file.seek(0, 2)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size > 500 * 1024:  # 500KB
+            return jsonify(bad_request_response("文件大小不能超过500KB"))
+        
+        # 3. 验证文件扩展名（基于file_type）
+        filename = secure_filename(file.filename)
+        allowed_extensions = get_allowed_extensions(file_type)
+        file_ext = filename.split('.')[-1].lower() if '.' in filename else ''
+        
+        if file_ext not in allowed_extensions:
+            # 构建友好的错误信息
+            non_empty_extensions = [ext for ext in allowed_extensions if ext]
+            if '' in allowed_extensions:
+                ext_message = f"{', '.join(non_empty_extensions)} 或无扩展名"
+            else:
+                ext_message = ', '.join(non_empty_extensions)
+            return jsonify(bad_request_response(f"文件类型 {file_type} 不支持的文件扩展名：{file_ext}，支持的扩展名：{ext_message}"))
+        
+        # 4. 读取文件内容并验证格式
+        file.seek(0)
+        content = file.read().decode('utf-8')
+        
+        # 格式验证
+        validation_result = validate_file_content(content, file_type)
+        if not validation_result['valid']:
+            return jsonify(bad_request_response(validation_result['error']))
+        
+        # 5. 创建临时文件（复用现有函数需要文件路径）
+        temp_file_path = None
+        
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.tmp', encoding='utf-8') as tmp_file:
+                tmp_file.write(content)
+                temp_file_path = tmp_file.name
+            
+            # 6. 根据文件类型调用现有的训练函数
+            if file_type == 'ddl':
+                train_ddl_statements(temp_file_path)
+                
+            elif file_type == 'markdown':
+                train_documentation_blocks(temp_file_path)
+                
+            elif file_type == 'sql_pair_json':
+                train_json_question_sql_pairs(temp_file_path)
+                
+            elif file_type == 'sql_pair':
+                train_formatted_question_sql_pairs(temp_file_path)
+                
+            elif file_type == 'sql':
+                train_sql_examples(temp_file_path)
+            
+            return jsonify(success_response(
+                response_text=f"文件上传并训练成功：{filename}",
+                data={
+                    "filename": filename,
+                    "file_type": file_type,
+                    "file_size": file_size,
+                    "status": "completed"
+                }
+            ))
+            
+        except Exception as e:
+            logger.error(f"训练失败: {str(e)}")
+            return jsonify(internal_error_response(f"训练失败: {str(e)}"))
+        finally:
+            # 清理临时文件
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                except Exception as e:
+                    logger.warning(f"清理临时文件失败: {str(e)}")
+        
+    except Exception as e:
+        logger.error(f"文件上传失败: {str(e)}")
+        return jsonify(internal_error_response(f"文件上传失败: {str(e)}"))
+
+def get_db_connection():
+    """获取数据库连接"""
+    try:
+        from app_config import PGVECTOR_CONFIG
+        return psycopg2.connect(**PGVECTOR_CONFIG)
+    except Exception as e:
+        logger.error(f"数据库连接失败: {str(e)}")
+        raise
+
+def get_db_connection_for_transaction():
+    """获取用于事务操作的数据库连接（非自动提交模式）"""
+    try:
+        from app_config import PGVECTOR_CONFIG
+        conn = psycopg2.connect(**PGVECTOR_CONFIG)
+        conn.autocommit = False  # 设置为非自动提交模式，允许手动控制事务
+        return conn
+    except Exception as e:
+        logger.error(f"数据库连接失败: {str(e)}")
+        raise
+
+@app.route('/api/v0/training_data/combine', methods=['POST'])
+def combine_training_data():
+    """合并训练数据API - 支持合并重复记录"""
+    try:
+        # 1. 参数验证
+        data = request.get_json()
+        if not data:
+            return jsonify(bad_request_response("请求体不能为空"))
+        
+        collection_names = data.get('collection_names', [])
+        if not collection_names or not isinstance(collection_names, list):
+            return jsonify(bad_request_response("collection_names 参数必须是非空数组"))
+        
+        # 验证集合名称
+        valid_collections = ['sql', 'ddl', 'documentation', 'error_sql']
+        invalid_collections = [name for name in collection_names if name not in valid_collections]
+        if invalid_collections:
+            return jsonify(bad_request_response(f"不支持的集合名称: {invalid_collections}"))
+        
+        dry_run = data.get('dry_run', True)
+        keep_strategy = data.get('keep_strategy', 'first')
+        
+        if keep_strategy not in ['first', 'last', 'by_metadata_time']:
+            return jsonify(bad_request_response("keep_strategy 必须是 'first', 'last' 或 'by_metadata_time'"))
+        
+        # 2. 获取数据库连接（用于事务操作）
+        conn = get_db_connection_for_transaction()
+        cursor = conn.cursor()
+        
+        # 3. 查找重复记录
+        duplicate_groups = []
+        total_before = 0
+        total_duplicates = 0
+        collections_stats = {}
+        
+        for collection_name in collection_names:
+            # 获取集合ID
+            cursor.execute(
+                "SELECT uuid FROM langchain_pg_collection WHERE name = %s",
+                (collection_name,)
+            )
+            collection_result = cursor.fetchone()
+            if not collection_result:
+                continue
+            
+            collection_id = collection_result[0]
+            
+            # 统计该集合的记录数
+            cursor.execute(
+                "SELECT COUNT(*) FROM langchain_pg_embedding WHERE collection_id = %s",
+                (collection_id,)
+            )
+            collection_before = cursor.fetchone()[0]
+            total_before += collection_before
+            
+            # 查找重复记录
+            if keep_strategy in ['first', 'last']:
+                order_by = "id"
+            else:
+                order_by = "COALESCE((cmetadata->>'createdat')::timestamp, '1970-01-01'::timestamp) DESC, id"
+            
+            cursor.execute(f"""
+                SELECT document, COUNT(*) as duplicate_count, 
+                       array_agg(id ORDER BY {order_by}) as record_ids
+                FROM langchain_pg_embedding 
+                WHERE collection_id = %s 
+                GROUP BY document 
+                HAVING COUNT(*) > 1
+            """, (collection_id,))
+            
+            collection_duplicates = 0
+            for row in cursor.fetchall():
+                document_content, duplicate_count, record_ids = row
+                collection_duplicates += duplicate_count - 1  # 减去要保留的一条
+                
+                # 根据保留策略选择要保留的记录
+                if keep_strategy == 'first':
+                    keep_id = record_ids[0]
+                    remove_ids = record_ids[1:]
+                elif keep_strategy == 'last':
+                    keep_id = record_ids[-1]
+                    remove_ids = record_ids[:-1]
+                else:  # by_metadata_time
+                    keep_id = record_ids[0]  # 已经按时间排序
+                    remove_ids = record_ids[1:]
+                
+                duplicate_groups.append({
+                    "collection_name": collection_name,
+                    "document_content": document_content[:100] + "..." if len(document_content) > 100 else document_content,
+                    "duplicate_count": duplicate_count,
+                    "kept_record_id" if not dry_run else "records_to_keep": keep_id,
+                    "removed_record_ids" if not dry_run else "records_to_remove": remove_ids
+                })
+            
+            total_duplicates += collection_duplicates
+            collections_stats[collection_name] = {
+                "before": collection_before,
+                "after": collection_before - collection_duplicates,
+                "duplicates_removed" if not dry_run else "duplicates_to_remove": collection_duplicates
+            }
+        
+        # 4. 执行合并操作（如果不是dry_run）
+        if not dry_run:
+            try:
+                # 连接已经设置为非自动提交模式，直接开始事务
+                for group in duplicate_groups:
+                    remove_ids = group["removed_record_ids"]
+                    if remove_ids:
+                        cursor.execute(
+                            "DELETE FROM langchain_pg_embedding WHERE id = ANY(%s)",
+                            (remove_ids,)
+                        )
+                
+                conn.commit()
+                
+            except Exception as e:
+                conn.rollback()
+                return jsonify(internal_error_response(f"合并操作失败: {str(e)}"))
+        
+        # 5. 构建响应
+        total_after = total_before - total_duplicates
+        
+        summary = {
+            "total_records_before": total_before,
+            "total_records_after": total_after,
+            "duplicates_removed" if not dry_run else "duplicates_to_remove": total_duplicates,
+            "collections_stats": collections_stats
+        }
+        
+        if dry_run:
+            response_text = f"发现 {total_duplicates} 条重复记录，预计删除后将从 {total_before} 条减少到 {total_after} 条记录"
+            data_key = "duplicate_groups"
+        else:
+            response_text = f"成功合并重复记录，删除了 {total_duplicates} 条重复记录，从 {total_before} 条减少到 {total_after} 条记录"
+            data_key = "merged_groups"
+        
+        return jsonify(success_response(
+            response_text=response_text,
+            data={
+                "dry_run": dry_run,
+                "collections_processed": collection_names,
+                "summary": summary,
+                data_key: duplicate_groups
+            }
+        ))
+        
+    except Exception as e:
+        return jsonify(internal_error_response(f"合并操作失败: {str(e)}"))
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
 
 # ==================== React Agent 扩展API ====================
 

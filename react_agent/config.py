@@ -30,6 +30,9 @@ LOG_FORMAT = '%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(messag
 # --- Agent 配置 ---
 DEFAULT_USER_ID = "guest"
 
+# --- StateGraph 配置 ---
+RECURSION_LIMIT = 100  # StateGraph递归限制
+
 # --- 网络重试配置 ---
 MAX_RETRIES = 3                    # 最大重试次数（减少以避免与OpenAI客户端冲突）
 RETRY_BASE_DELAY = 3               # 重试基础延迟（秒）

@@ -91,7 +91,7 @@ modules:
     level: DEBUG
     console:
       enabled: true
-      level: DEBUG
+      level: INFO
       format: "%(asctime)s [%(levelname)s] ReactAgent: %(message)s"
     file:
       enabled: true

@@ -209,16 +209,66 @@ class CustomReactAgent:
 
     async def _async_should_continue(self, state: AgentState) -> str:
         """异步判断是继续调用工具还是结束。"""
-        last_message = state["messages"][-1]
-        if hasattr(last_message, "tool_calls") and last_message.tool_calls:
+        thread_id = state.get("thread_id", "unknown")
+        messages = state["messages"]
+        total_messages = len(messages)
+        
+        # 显示当前递归计数
+        current_count = getattr(self, '_recursion_count', 0)
+        
+        logger.info(f"🔄 [Decision] _async_should_continue - Thread: {thread_id} | 递归计数: {current_count}/{config.RECURSION_LIMIT}")
+        logger.info(f"   消息总数: {total_messages}")
+        
+        if not messages:
+            logger.warning("   ⚠️ 消息列表为空，返回 'end'")
+            return "end"
+        
+        last_message = messages[-1]
+        message_type = type(last_message).__name__
+        
+        logger.info(f"   最后消息类型: {message_type}")
+        
+        # 检查是否有tool_calls
+        has_tool_calls = hasattr(last_message, "tool_calls") and last_message.tool_calls
+        
+        if has_tool_calls:
+            tool_calls_count = len(last_message.tool_calls)
+            logger.info(f"   发现工具调用: {tool_calls_count} 个")
+            
+            # 详细记录每个工具调用
+            for i, tool_call in enumerate(last_message.tool_calls):
+                tool_name = tool_call.get('name', 'unknown')
+                tool_id = tool_call.get('id', 'unknown')
+                logger.info(f"     工具调用[{i}]: {tool_name} (ID: {tool_id})")
+            
+            logger.info("   🔄 决策: continue (继续工具调用)")
             return "continue"
-        return "end"
+        else:
+            logger.info("   ✅ 无工具调用")
+            
+            # 检查消息内容以了解为什么结束
+            if hasattr(last_message, 'content'):
+                content_preview = str(last_message.content)[:100] + "..." if len(str(last_message.content)) > 100 else str(last_message.content)
+                logger.info(f"   消息内容预览: {content_preview}")
+            
+            logger.info("   🏁 决策: end (结束对话)")
+            return "end"
 
     async def _async_agent_node(self, state: AgentState) -> Dict[str, Any]:
         """异步Agent 节点：使用异步LLM调用。"""
-        logger.info(f"🧠 [Async Node] agent - Thread: {state['thread_id']}")
+        # 增加递归计数
+        if hasattr(self, '_recursion_count'):
+            self._recursion_count += 1
+        else:
+            self._recursion_count = 1
+            
+        logger.info(f"🧠 [Async Node] agent - Thread: {state['thread_id']} | 递归计数: {self._recursion_count}/{config.RECURSION_LIMIT}")
         
-        messages_for_llm = list(state["messages"])
+        # 获取建议的下一步操作
+        next_step = state.get("suggested_next_step")
+        
+        # 构建发送给LLM的消息列表
+        messages_for_llm = state["messages"].copy()
         
         # 🎯 添加数据库范围系统提示词（每次用户提问时添加）
         if isinstance(state["messages"][-1], HumanMessage):
@@ -228,7 +278,6 @@ class CustomReactAgent:
                 logger.info("   ✅ 已添加数据库范围判断提示词")
         
         # 检查是否需要分析验证错误
-        next_step = state.get("suggested_next_step")
         
         # 行为指令与工具建议分离
         real_tools = {'valid_sql', 'run_sql'}
@@ -525,12 +574,18 @@ class CustomReactAgent:
         logger.info(" ~" * 10 + " State Print End" + " ~" * 10)
 
     async def _async_prepare_tool_input_node(self, state: AgentState) -> Dict[str, Any]:
-        """
-        准备工具输入。
-        - 强制修正generate_sql的question参数，确保使用用户原始问题。
-        - 为generate_sql注入经过严格过滤的、干净的对话历史。
-        """
-        last_message = state['messages'][-1]
+        """异步准备工具输入节点：为generate_sql工具注入history_messages。"""
+        # 增加递归计数
+        if hasattr(self, '_recursion_count'):
+            self._recursion_count += 1
+        else:
+            self._recursion_count = 1
+            
+        logger.info(f"🔧 [Async Node] prepare_tool_input - Thread: {state['thread_id']} | 递归计数: {self._recursion_count}/{config.RECURSION_LIMIT}")
+        
+        # 获取最后一条消息（应该是来自agent的AIMessage）
+        last_message = state["messages"][-1]
+
         if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
             return {"messages": [last_message]}
 
@@ -617,15 +672,19 @@ class CustomReactAgent:
         return clean_history
 
     async def _async_update_state_after_tool_node(self, state: AgentState) -> Dict[str, Any]:
-        """在工具执行后，更新 suggested_next_step 并清理参数。"""
-        logger.info(f"📝 [Node] update_state_after_tool - Thread: {state['thread_id']}")
+        """异步更新工具执行后的状态。"""
+        # 增加递归计数
+        if hasattr(self, '_recursion_count'):
+            self._recursion_count += 1
+        else:
+            self._recursion_count = 1
+            
+        logger.info(f"📝 [Async Node] update_state_after_tool - Thread: {state['thread_id']} | 递归计数: {self._recursion_count}/{config.RECURSION_LIMIT}")
         
-        # 🎯 打印 state 全部信息
-        self._print_state_info(state, "update_state_after_tool")
-        
-        last_tool_message = state['messages'][-1]
-        tool_name = last_tool_message.name
-        tool_output = last_tool_message.content
+        # 获取最后一条工具消息
+        last_message = state["messages"][-1]
+        tool_name = last_message.name
+        tool_output = last_message.content
         next_step = None
 
         if tool_name == 'generate_sql':
@@ -660,15 +719,17 @@ class CustomReactAgent:
                         logger.info(f"   已将 generate_sql 的 history_messages 设置为空字符串")
 
     async def _async_format_final_response_node(self, state: AgentState) -> Dict[str, Any]:
-        """异步最终输出格式化节点。"""
-        logger.info(f"🎨 [Async Node] format_final_response - Thread: {state['thread_id']}")
+        """异步格式化最终响应节点。"""
+        # 增加递归计数
+        if hasattr(self, '_recursion_count'):
+            self._recursion_count += 1
+        else:
+            self._recursion_count = 1
+            
+        logger.info(f"✨ [Async Node] format_final_response - Thread: {state['thread_id']} | 递归计数: {self._recursion_count}/{config.RECURSION_LIMIT}")
         
-        # 保持原有的消息格式化（用于shell.py兼容）
-        last_message = state['messages'][-1]
-        # 注释掉前缀添加，直接使用原始内容
-        # last_message.content = f"[Formatted Output]\n{last_message.content}"
-        
-        return {"messages": [last_message]}
+        # 这个节点主要用于最终处理，通常不需要修改状态
+        return {"messages": state["messages"]}
 
     async def _async_generate_api_data(self, state: AgentState) -> Dict[str, Any]:
         """异步生成API格式的数据结构"""
@@ -867,11 +928,17 @@ class CustomReactAgent:
             thread_id = f"{user_id}:{now.strftime('%Y%m%d%H%M%S')}{milliseconds:03d}"
             logger.info(f"🆕 新建会话，Thread ID: {thread_id}")
         
-        config = {
+        # 初始化递归计数器（用于日志显示）
+        self._recursion_count = 0
+        
+        run_config = {
             "configurable": {
                 "thread_id": thread_id,
-            }
+            },
+            "recursion_limit": config.RECURSION_LIMIT
         }
+        
+        logger.info(f"🔢 递归限制设置: {config.RECURSION_LIMIT}")
         
         inputs = {
             "messages": [HumanMessage(content=message)],
@@ -899,7 +966,7 @@ class CustomReactAgent:
                     else:
                         logger.warning(f"⚠️ Checkpointer测试失败，但继续执行: {checkpoint_error}")
             
-            final_state = await self.agent_executor.ainvoke(inputs, config)
+            final_state = await self.agent_executor.ainvoke(inputs, run_config)
             
             # 🔍 调试：打印 final_state 的所有 keys
             logger.info(f"🔍 Final state keys: {list(final_state.keys())}")
@@ -957,9 +1024,9 @@ class CustomReactAgent:
         if not self.checkpointer:
             return []
         
-        config = {"configurable": {"thread_id": thread_id}}
+        thread_config = {"configurable": {"thread_id": thread_id}}
         try:
-            conversation_state = await self.checkpointer.aget(config)
+            conversation_state = await self.checkpointer.aget(thread_config)
         except RuntimeError as e:
             if "Event loop is closed" in str(e):
                 logger.warning(f"⚠️ Event loop已关闭，尝试重新获取对话历史: {thread_id}")
@@ -1185,7 +1252,7 @@ not on explaining your decision-making process.
 2. 修复语法错误后，调用 valid_sql 工具重新验证
 3. 常见问题：缺少逗号、括号不匹配、关键词拼写错误"""
 
-        # 新增的合并条件，处理所有“不存在”类型的错误
+        # 新增的合并条件，处理所有"不存在"类型的错误
         elif ("不存在" in validation_error or 
               "no such table" in validation_error.lower() or
               "does not exist" in validation_error.lower()):
