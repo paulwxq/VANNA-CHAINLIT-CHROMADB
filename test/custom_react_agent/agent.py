@@ -1002,15 +1002,23 @@ class CustomReactAgent:
                         # 生成对话预览
                         preview = self._generate_conversation_preview(messages)
                         
+                        # 获取最后一条用户消息
+                        last_human_message = None
+                        if messages:
+                            for msg in reversed(messages):
+                                if isinstance(msg, HumanMessage):
+                                    last_human_message = msg.content
+                                    break
+                        
                         conversations.append({
+                            "conversation_id": thread_id,
                             "thread_id": thread_id,
                             "user_id": user_id,
-                            "timestamp": thread_info["timestamp"],
                             "message_count": len(messages),
-                            "last_message": messages[-1].content if messages else None,
-                            "last_updated": state.get('created_at'),
-                            "conversation_preview": preview,
-                            "formatted_time": self._format_timestamp(thread_info["timestamp"])
+                            "last_message": last_human_message,
+                            "updated_at": self._format_utc_to_china_time(state.get('ts')) if state.get('ts') else None,
+                            "conversation_title": preview,
+                            "created_at": self._format_timestamp(thread_info["timestamp"])
                         })
                         
                 except Exception as e:
@@ -1038,7 +1046,7 @@ class CustomReactAgent:
         return "系统消息"
 
     def _format_timestamp(self, timestamp: str) -> str:
-        """格式化时间戳为可读格式"""
+        """格式化时间戳为可读格式，包含毫秒"""
         try:
             # timestamp格式: 20250710123137984
             if len(timestamp) >= 14:
@@ -1048,10 +1056,31 @@ class CustomReactAgent:
                 hour = timestamp[8:10]
                 minute = timestamp[10:12]
                 second = timestamp[12:14]
-                return f"{year}-{month}-{day} {hour}:{minute}:{second}"
+                # 提取毫秒部分（如果存在）
+                millisecond = timestamp[14:17] if len(timestamp) > 14 else "000"
+                return f"{year}-{month}-{day} {hour}:{minute}:{second}.{millisecond}"
         except Exception:
             pass
-        return timestamp 
+        return timestamp
+    
+    def _format_utc_to_china_time(self, utc_time_str: str) -> str:
+        """将UTC时间转换为中国时区时间格式"""
+        try:
+            from datetime import datetime, timezone, timedelta
+            
+            # 解析UTC时间字符串
+            # 格式: "2025-07-17T13:21:52.868292+00:00"
+            dt = datetime.fromisoformat(utc_time_str.replace('Z', '+00:00'))
+            
+            # 转换为中国时区 (UTC+8)
+            china_tz = timezone(timedelta(hours=8))
+            china_time = dt.astimezone(china_tz)
+            
+            # 格式化为目标格式: "2025-07-17 21:12:02.456"
+            return china_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # 只保留3位毫秒
+        except Exception as e:
+            logger.warning(f"时间格式转换失败: {e}")
+            return utc_time_str 
 
     def _get_database_scope_prompt(self) -> str:
         """Get database scope prompt for intelligent query decision making"""

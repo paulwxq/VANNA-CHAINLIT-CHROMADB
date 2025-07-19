@@ -10,7 +10,8 @@ import logging
 import atexit
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import pytz
 from typing import Optional, Dict, Any, TYPE_CHECKING, Union
 import signal
 from threading import Thread
@@ -82,6 +83,22 @@ redis_conversation_manager = RedisConversationManager()
 
 _react_agent_instance: Optional[Any] = None
 _redis_client: Optional[redis.Redis] = None
+
+def _format_timestamp_to_china_time(timestamp_str):
+    """将ISO时间戳转换为中国时区的指定格式"""
+    if not timestamp_str:
+        return None
+    try:
+        # 解析ISO时间戳
+        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        # 转换为中国时区
+        china_tz = pytz.timezone('Asia/Shanghai')
+        china_dt = dt.astimezone(china_tz)
+        # 格式化为指定格式
+        return china_dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]  # 保留3位毫秒
+    except Exception as e:
+        logger.warning(f"⚠️ 时间格式化失败: {e}")
+        return timestamp_str
 
 def validate_request_data(data: Dict[str, Any]) -> Dict[str, Any]:
     """验证请求数据，并支持从thread_id中推断user_id"""
@@ -2144,33 +2161,28 @@ async def get_user_conversations_react(user_id: str):
         
         # 确保Agent可用
         if not await ensure_agent_ready():
-            return jsonify({
-                "success": False,
-                "error": "Agent 未就绪",
-                "timestamp": datetime.now().isoformat()
-            }), 503
+            return jsonify(service_unavailable_response(
+                response_text="Agent 未就绪"
+            )), 503
         
         # 直接调用异步方法
         conversations = await _react_agent_instance.get_user_recent_conversations(user_id, limit)
         
-        return jsonify({
-            "success": True,
-            "data": {
+        return jsonify(success_response(
+            response_text="获取用户对话列表成功",
+            data={
                 "user_id": user_id,
                 "conversations": conversations,
                 "total_count": len(conversations),
                 "limit": limit
-            },
-            "timestamp": datetime.now().isoformat()
-        }), 200
+            }
+        )), 200
         
     except Exception as e:
         logger.error(f"❌ 异步获取用户 {user_id} 对话列表失败: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return jsonify(internal_error_response(
+            response_text=f"获取用户对话列表失败: {str(e)}"
+        )), 500
 
 @app.route('/api/v0/react/users/<user_id>/conversations/<thread_id>', methods=['GET'])
 async def get_user_conversation_detail_react(user_id: str, thread_id: str):
@@ -2180,53 +2192,63 @@ async def get_user_conversation_detail_react(user_id: str, thread_id: str):
     try:
         # 验证thread_id格式是否匹配user_id
         if not thread_id.startswith(f"{user_id}:"):
-            return jsonify({
-                "success": False,
-                "error": f"Thread ID {thread_id} 不属于用户 {user_id}",
-                "timestamp": datetime.now().isoformat()
-            }), 400
+            return jsonify(bad_request_response(
+                response_text=f"Thread ID {thread_id} 不属于用户 {user_id}"
+            )), 400
         
         logger.info(f"📖 异步获取用户 {user_id} 的对话 {thread_id} 详情")
         
         # 确保Agent可用
         if not await ensure_agent_ready():
-            return jsonify({
-                "success": False,
-                "error": "Agent 未就绪",
-                "timestamp": datetime.now().isoformat()
-            }), 503
+            return jsonify(service_unavailable_response(
+                response_text="Agent 未就绪"
+            )), 503
+        
+        # 获取查询参数
+        include_tools = request.args.get('include_tools', 'false').lower() == 'true'
         
         # 直接调用异步方法
-        history = await _react_agent_instance.get_conversation_history(thread_id)
-        logger.info(f"✅ 异步成功获取对话历史，消息数量: {len(history)}")
+        conversation_data = await _react_agent_instance.get_conversation_history(thread_id, include_tools=include_tools)
+        messages = conversation_data.get("messages", [])
         
-        if not history:
-            return jsonify({
-                "success": False,
-                "error": f"未找到对话 {thread_id}",
-                "timestamp": datetime.now().isoformat()
-            }), 404
+        logger.info(f"✅ 异步成功获取对话历史，消息数量: {len(messages)}")
         
-        return jsonify({
-            "success": True,
-            "data": {
+        if not messages:
+            return jsonify(not_found_response(
+                response_text=f"未找到对话 {thread_id}"
+            )), 404
+        
+        # 格式化消息
+        formatted_messages = []
+        for msg in messages:
+            formatted_msg = {
+                "message_id": msg["id"],  # id -> message_id
+                "role": msg["type"],      # type -> role
+                "content": msg["content"],
+                "timestamp": _format_timestamp_to_china_time(msg["timestamp"])  # 转换为中国时区
+            }
+            formatted_messages.append(formatted_msg)
+        
+        return jsonify(success_response(
+            response_text="获取对话详情成功",
+            data={
                 "user_id": user_id,
                 "thread_id": thread_id,
-                "message_count": len(history),
-                "messages": history
-            },
-            "timestamp": datetime.now().isoformat()
-        }), 200
+                "conversation_id": thread_id,  # 新增conversation_id字段
+                "message_count": len(formatted_messages),
+                "messages": formatted_messages,
+                "created_at": conversation_data.get("thread_created_at"),  # 已经包含毫秒
+                "total_checkpoints": conversation_data.get("total_checkpoints", 0)
+            }
+        )), 200
         
     except Exception as e:
         import traceback
         logger.error(f"❌ 异步获取对话 {thread_id} 详情失败: {e}")
         logger.error(f"❌ 详细错误信息: {traceback.format_exc()}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }), 500
+        return jsonify(internal_error_response(
+            response_text=f"获取对话详情失败: {str(e)}"
+        )), 500
 
 @app.route('/api/test/redis', methods=['GET'])
 def test_redis_connection():
