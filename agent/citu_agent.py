@@ -41,14 +41,16 @@ class CituLangGraphAgent:
     
     def _create_workflow(self, routing_mode: str = None) -> StateGraph:
         """根据路由模式创建不同的工作流"""
+        self.logger.info(f"🏗️ [WORKFLOW] 动态创建workflow被调用")
+        
         # 确定使用的路由模式
         if routing_mode:
             QUESTION_ROUTING_MODE = routing_mode
-            self.logger.info(f"创建工作流，使用传入的路由模式: {QUESTION_ROUTING_MODE}")
+            self.logger.info(f"使用传入的路由模式: {QUESTION_ROUTING_MODE}")
         else:
             try:
                 from app_config import QUESTION_ROUTING_MODE
-                self.logger.info(f"创建工作流，使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
+                self.logger.info(f"使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
             except ImportError:
                 QUESTION_ROUTING_MODE = "hybrid"
                 self.logger.warning(f"配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
@@ -90,6 +92,7 @@ class CituLangGraphAgent:
             workflow.add_edge("format_response", END)
             
         else:
+            self.logger.info(f"🧠 [WORKFLOW] 构建hybrid模式的workflow...")
             # 其他模式(hybrid, llm_only)：使用新的拆分工作流
             workflow.add_node("classify_question", self._classify_question_node)
             workflow.add_node("agent_chat", self._agent_chat_node)
@@ -813,6 +816,7 @@ class CituLangGraphAgent:
                 self.logger.info(f"使用指定路由模式: {routing_mode}")
             
             # 动态创建workflow（基于路由模式）
+            self.logger.info(f"🔄 [PROCESS] 调用动态创建workflow")
             workflow = self._create_workflow(routing_mode)
             
             # 初始化状态

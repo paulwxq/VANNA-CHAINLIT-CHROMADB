@@ -37,7 +37,7 @@ API_DEEPSEEK_CONFIG = {
 API_QIANWEN_CONFIG = {
     "api_key": os.getenv("QWEN_API_KEY"),  # 从环境变量读取API密钥
     "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",  # 千问API地址
-    "model": "qwen-plus",
+    "model": "qwen-plus-latest",
     "allow_llm_to_see_data": True,
     "temperature": 0.6,
     "n_results": 6,

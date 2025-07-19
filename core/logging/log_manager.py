@@ -180,15 +180,25 @@ class LogManager:
         """创建文件处理器（支持自动轮转）"""
         log_file = self.base_log_dir / file_config.get('filename', f'{module}.log')
         
-        # 使用RotatingFileHandler实现自动轮转和清理
+        # 使用RotatingFileHandler或TimedRotatingFileHandler实现自动轮转和清理
         rotation_config = file_config.get('rotation', {})
         if rotation_config.get('enabled', False):
-            handler = logging.handlers.RotatingFileHandler(
-                log_file,
-                maxBytes=self._parse_size(rotation_config.get('max_size', '50MB')),
-                backupCount=rotation_config.get('backup_count', 10),
-                encoding='utf-8'
-            )
+            # 检查是否配置了时间滚动
+            if 'when' in rotation_config:
+                handler = logging.handlers.TimedRotatingFileHandler(
+                    log_file,
+                    when=rotation_config.get('when', 'midnight'),
+                    interval=rotation_config.get('interval', 1),
+                    backupCount=rotation_config.get('backup_count', 30),
+                    encoding='utf-8'
+                )
+            else:
+                handler = logging.handlers.RotatingFileHandler(
+                    log_file,
+                    maxBytes=self._parse_size(rotation_config.get('max_size', '50MB')),
+                    backupCount=rotation_config.get('backup_count', 10),
+                    encoding='utf-8'
+                )
         else:
             handler = logging.FileHandler(log_file, encoding='utf-8')
         

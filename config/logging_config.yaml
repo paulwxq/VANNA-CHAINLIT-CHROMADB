@@ -18,8 +18,9 @@ default:
     format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
     rotation:
       enabled: true
-      max_size: "50MB"
-      backup_count: 10
+      when: "midnight"
+      interval: 1
+      backup_count: 30
 
 # 模块特定配置
 modules:
@@ -36,8 +37,9 @@ modules:
       format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
         enabled: true
-        max_size: "50MB"
-        backup_count: 10
+        when: "midnight"
+        interval: 1
+        backup_count: 30
   
   data_pipeline:
     level: DEBUG
@@ -52,8 +54,9 @@ modules:
       format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
         enabled: true
-        max_size: "20MB"
-        backup_count: 5
+        when: "midnight"
+        interval: 1
+        backup_count: 30
   
   agent:
     level: DEBUG
@@ -68,8 +71,9 @@ modules:
       format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
         enabled: true
-        max_size: "30MB"
-        backup_count: 8
+        when: "midnight"
+        interval: 1
+        backup_count: 30
   
   vanna:
     level: DEBUG
@@ -84,8 +88,9 @@ modules:
       format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
         enabled: true
-        max_size: "20MB"
-        backup_count: 5
+        when: "midnight"
+        interval: 1
+        backup_count: 30
   
   react_agent:
     level: DEBUG
@@ -100,5 +105,6 @@ modules:
       format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
       rotation:
         enabled: true
-        max_size: "30MB"
-        backup_count: 8 
+        when: "midnight"
+        interval: 1
+        backup_count: 30 
