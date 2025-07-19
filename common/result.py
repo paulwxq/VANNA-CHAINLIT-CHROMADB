@@ -58,6 +58,7 @@ def success_response(response_text=None, data=None, message=MessageTemplate.SUCC
     response_data = data or {}
     if response_text is not None:
         response_data["response"] = response_text
+    response_data["timestamp"] = datetime.now().isoformat()
     
     return {
         "code": code,

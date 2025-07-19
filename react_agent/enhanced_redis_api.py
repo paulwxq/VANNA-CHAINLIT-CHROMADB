@@ -105,11 +105,52 @@ def get_conversation_detail_from_redis(thread_id: str, include_tools: bool = Fal
         messages = extract_messages_from_checkpoint(checkpoint_data)
         logger.info(f"🔍 找到 {len(messages)} 条原始消息")
         
-        # 解析并过滤消息 - 这里是关键的开关逻辑
-        parsed_messages = parse_and_filter_messages(messages, include_tools)
+        # 🔑 关键改进：构建消息ID到时间戳的映射（模仿LangGraph API）
+        logger.info(f"🔍 开始构建消息时间戳映射...")
+        message_timestamps = _build_message_timestamp_map_from_redis(redis_client, thread_id)
+        
+        # 提取最新checkpoint时间戳作为备用
+        checkpoint_ts = None
+        if ('checkpoint' in checkpoint_data and 
+            isinstance(checkpoint_data['checkpoint'], dict) and 
+            'ts' in checkpoint_data['checkpoint']):
+            
+            ts_value = checkpoint_data['checkpoint']['ts']
+            if isinstance(ts_value, str):
+                try:
+                    # 转换为中国时区格式
+                    from datetime import datetime
+                    import pytz
+                    dt = datetime.fromisoformat(ts_value.replace('Z', '+00:00'))
+                    china_tz = pytz.timezone('Asia/Shanghai')
+                    china_dt = dt.astimezone(china_tz)
+                    checkpoint_ts = china_dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                    logger.info(f"🕒 备用checkpoint时间戳: {checkpoint_ts}")
+                except Exception as e:
+                    logger.warning(f"⚠️ 时间戳转换失败: {e}")
+        
+        # 解析并过滤消息 - 使用消息时间戳映射
+        parsed_messages = parse_and_filter_messages(messages, include_tools, checkpoint_ts, message_timestamps)
         
         # 提取用户ID
         user_id = thread_id.split(':')[0] if ':' in thread_id else 'unknown'
+        
+        # 解析created_at时间（从thread_id中提取）
+        created_at = None
+        if ':' in thread_id:
+            try:
+                timestamp_str = thread_id.split(':')[1]
+                # 转换为中国时区格式
+                from datetime import datetime
+                import pytz
+                # 假设timestamp是YYYYMMDDHHmmssSSS格式
+                dt = datetime.strptime(timestamp_str, '%Y%m%d%H%M%S%f')
+                china_tz = pytz.timezone('Asia/Shanghai')
+                china_dt = china_tz.localize(dt)
+                created_at = china_dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                logger.info(f"🕒 解析created_at: {created_at}")
+            except Exception as e:
+                logger.warning(f"⚠️ 解析created_at失败: {e}")
         
         # 生成对话统计信息
         stats = generate_conversation_stats(parsed_messages, include_tools)
@@ -120,6 +161,8 @@ def get_conversation_detail_from_redis(thread_id: str, include_tools: bool = Fal
             "success": True,
             "data": {
                 "thread_id": thread_id,
+                "conversation_id": thread_id,  # 添加conversation_id字段
+                "created_at": created_at,  # 添加created_at字段
                 "user_id": user_id,
                 "include_tools": include_tools,
                 "message_count": len(parsed_messages),
@@ -166,7 +209,113 @@ def extract_messages_from_checkpoint(checkpoint_data: Dict[str, Any]) -> List[An
     
     return messages
 
-def parse_and_filter_messages(raw_messages: List[Any], include_tools: bool) -> List[Dict[str, Any]]:
+def _build_message_timestamp_map_from_redis(redis_client, thread_id: str) -> Dict[str, str]:
+    """
+    构建消息ID到时间戳的映射，模仿LangGraph API的逻辑
+    遍历所有历史checkpoint，为每条消息记录其首次出现的时间戳
+    """
+    message_timestamps = {}
+    
+    try:
+        # 获取所有checkpoint keys
+        pattern = f"checkpoint:{thread_id}:*"
+        keys = []
+        cursor = 0
+        while True:
+            cursor, batch = redis_client.scan(cursor=cursor, match=pattern, count=1000)
+            keys.extend(batch)
+            if cursor == 0:
+                break
+        
+        if not keys:
+            logger.warning(f"⚠️ 未找到任何checkpoint keys: {pattern}")
+            return message_timestamps
+        
+        # 获取所有checkpoint数据并按时间戳排序
+        checkpoints_with_ts = []
+        
+        for key in keys:
+            try:
+                # 检查key类型并获取数据
+                key_type = redis_client.type(key)
+                data = None
+                
+                if key_type == 'string':
+                    data = redis_client.get(key)
+                elif key_type == 'ReJSON-RL':
+                    data = redis_client.execute_command('JSON.GET', key)
+                else:
+                    continue
+                
+                if not data:
+                    continue
+                
+                # 解析checkpoint数据
+                checkpoint_data = json.loads(data)
+                
+                # 提取时间戳
+                checkpoint_ts = None
+                if ('checkpoint' in checkpoint_data and 
+                    isinstance(checkpoint_data['checkpoint'], dict) and 
+                    'ts' in checkpoint_data['checkpoint']):
+                    
+                    ts_value = checkpoint_data['checkpoint']['ts']
+                    if isinstance(ts_value, str):
+                        try:
+                            # 转换为中国时区格式
+                            from datetime import datetime
+                            import pytz
+                            dt = datetime.fromisoformat(ts_value.replace('Z', '+00:00'))
+                            china_tz = pytz.timezone('Asia/Shanghai')
+                            china_dt = dt.astimezone(china_tz)
+                            checkpoint_ts = china_dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                        except Exception as e:
+                            logger.warning(f"⚠️ 解析时间戳失败 {key}: {e}")
+                            continue
+                
+                if checkpoint_ts:
+                    checkpoints_with_ts.append({
+                        'key': key,
+                        'timestamp': checkpoint_ts,
+                        'data': checkpoint_data,
+                        'raw_ts': ts_value  # 用于排序
+                    })
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ 处理checkpoint失败 {key}: {e}")
+                continue
+        
+        # 按时间戳排序（最早的在前）
+        checkpoints_with_ts.sort(key=lambda x: x['raw_ts'])
+        
+        logger.info(f"🔍 找到 {len(checkpoints_with_ts)} 个有效checkpoint，按时间排序")
+        
+        # 遍历每个checkpoint，为新消息分配时间戳
+        for checkpoint_info in checkpoints_with_ts:
+            checkpoint_data = checkpoint_info['data']
+            checkpoint_ts = checkpoint_info['timestamp']
+            
+            # 提取消息
+            messages = extract_messages_from_checkpoint(checkpoint_data)
+            
+            # 为这个checkpoint中的新消息分配时间戳
+            for msg in messages:
+                if isinstance(msg, dict) and 'kwargs' in msg:
+                    msg_id = msg['kwargs'].get('id')
+                    if msg_id and msg_id not in message_timestamps:
+                        message_timestamps[msg_id] = checkpoint_ts
+                        logger.debug(f"🕒 消息 {msg_id} 分配时间戳: {checkpoint_ts}")
+        
+        logger.info(f"✅ 成功构建消息时间戳映射，包含 {len(message_timestamps)} 条消息")
+        
+    except Exception as e:
+        logger.error(f"❌ 构建消息时间戳映射失败: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    return message_timestamps
+
+def parse_and_filter_messages(raw_messages: List[Any], include_tools: bool, checkpoint_ts: str = None, message_timestamps: Dict[str, str] = None) -> List[Dict[str, Any]]:
     """
     解析和过滤消息列表 - 关键的开关逻辑实现
     
@@ -183,11 +332,22 @@ def parse_and_filter_messages(raw_messages: List[Any], include_tools: bool) -> L
     
     for msg in raw_messages:
         try:
-            parsed_msg = parse_single_message(msg)
+            # 获取消息ID，用于查找其真实时间戳
+            msg_id = None
+            if isinstance(msg, dict) and 'kwargs' in msg:
+                msg_id = msg['kwargs'].get('id')
+            
+            # 使用消息映射中的时间戳，如果没有则使用checkpoint时间戳
+            msg_timestamp = checkpoint_ts
+            if message_timestamps and msg_id and msg_id in message_timestamps:
+                msg_timestamp = message_timestamps[msg_id]
+                logger.debug(f"🕒 使用消息映射时间戳: {msg_id} -> {msg_timestamp}")
+            
+            parsed_msg = parse_single_message(msg, msg_timestamp)
             if not parsed_msg:
                 continue
             
-            msg_type = parsed_msg['type']
+            msg_type = parsed_msg['role']  # 使用新的字段名
             
             if include_tools:
                 # 完整模式：包含所有消息类型
@@ -222,9 +382,13 @@ def parse_and_filter_messages(raw_messages: List[Any], include_tools: bool) -> L
     logger.info(f"📊 解析结果: {len(parsed_messages)} 条消息 (include_tools={include_tools})")
     return parsed_messages
 
-def parse_single_message(msg: Any) -> Optional[Dict[str, Any]]:
+def parse_single_message(msg: Any, checkpoint_ts: str = None) -> Optional[Dict[str, Any]]:
     """
     解析单个消息，支持LangChain序列化格式
+    
+    Args:
+        msg: 原始消息数据
+        checkpoint_ts: checkpoint的时间戳，用作消息的真实时间（备用）
     """
     if isinstance(msg, dict):
         # LangChain序列化格式
@@ -249,12 +413,15 @@ def parse_single_message(msg: Any) -> Optional[Dict[str, Any]]:
             else:
                 msg_type = 'unknown'
             
-            # 构建基础消息对象
+            # 使用传入的时间戳（现在将通过消息ID映射获得）
+            final_timestamp = checkpoint_ts or datetime.now().isoformat()
+            
+            # 构建基础消息对象 - 修改字段名称
             parsed_msg = {
-                "type": msg_type,
+                "role": msg_type,  # type -> role
                 "content": kwargs.get('content', ''),
-                "id": kwargs.get('id'),
-                "timestamp": datetime.now().isoformat()
+                "message_id": kwargs.get('id'),  # id -> message_id
+                "timestamp": final_timestamp  # 使用消息自己的时间戳或备用时间戳
             }
             
             # 处理AI消息的特殊字段
@@ -284,10 +451,10 @@ def parse_single_message(msg: Any) -> Optional[Dict[str, Any]]:
         # 简单字典格式
         elif 'type' in msg:
             return {
-                "type": msg.get('type', 'unknown'),
+                "role": msg.get('type', 'unknown'),  # type -> role
                 "content": msg.get('content', ''),
-                "id": msg.get('id'),
-                "timestamp": datetime.now().isoformat()
+                "message_id": msg.get('id'),  # id -> message_id
+                "timestamp": checkpoint_ts or datetime.now().isoformat()  # 使用真实时间戳
             }
     
     return None
@@ -300,9 +467,9 @@ def clean_ai_message_for_simple_mode(ai_msg: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"🔍 清理AI消息，原始内容: '{original_content}', 长度: {len(original_content)}")
     
     cleaned_msg = {
-        "type": ai_msg["type"],
+        "role": ai_msg["role"],  # 使用新的字段名
         "content": original_content,
-        "id": ai_msg.get("id"),
+        "message_id": ai_msg.get("message_id"),  # 使用新的字段名
         "timestamp": ai_msg.get("timestamp")
     }
     
