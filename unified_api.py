@@ -1054,7 +1054,8 @@ def qa_feedback_update(feedback_id):
         
         if not update_data:
             return jsonify(bad_request_response(
-                response_text="没有提供有效的更新字段"
+                response_text="没有提供有效的更新字段",
+                missing_params=allowed_fields
             )), 400
         
         manager = get_qa_feedback_manager()
@@ -1081,17 +1082,23 @@ def qa_feedback_update(feedback_id):
 
 @app.route('/api/v0/qa_feedback/add_to_training', methods=['POST'])
 def qa_feedback_add_to_training():
-    """将反馈记录添加到训练数据集API"""
+    """
+    将反馈记录添加到训练数据集API
+    支持混合批量处理：正向反馈加入SQL训练集，负向反馈加入error_sql训练集
+    """
     try:
         req = request.get_json(force=True)
         feedback_ids = req.get('feedback_ids', [])
         
         if not feedback_ids or not isinstance(feedback_ids, list):
             return jsonify(bad_request_response(
-                response_text="缺少有效的反馈ID列表"
+                response_text="缺少有效的反馈ID列表",
+                missing_params=["feedback_ids"]
             )), 400
         
         manager = get_qa_feedback_manager()
+        
+        # 获取反馈记录
         records = manager.get_feedback_by_ids(feedback_ids)
         
         if not records:
@@ -1099,42 +1106,68 @@ def qa_feedback_add_to_training():
                 response_text="未找到任何有效的反馈记录"
             )), 404
         
-        positive_count = 0
-        negative_count = 0
-        successfully_trained_ids = []
+        # 分别处理正向和负向反馈
+        positive_count = 0  # 正向训练计数
+        negative_count = 0  # 负向训练计数
+        already_trained_count = 0  # 已训练计数
+        error_count = 0  # 错误计数
+        
+        successfully_trained_ids = []  # 成功训练的ID列表
         
         for record in records:
             try:
+                # 检查是否已经在训练数据中
                 if record['is_in_training_data']:
+                    already_trained_count += 1
                     continue
                 
                 if record['is_thumb_up']:
+                    # 正向反馈 - 加入标准SQL训练集
                     training_id = vn.train(
                         question=record['question'], 
                         sql=record['sql']
                     )
                     positive_count += 1
+                    logger.info(f"正向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
                 else:
+                    # 负向反馈 - 加入错误SQL训练集
                     training_id = vn.train_error_sql(
                         question=record['question'], 
                         sql=record['sql']
                     )
                     negative_count += 1
+                    logger.info(f"负向训练成功 - ID: {record['id']}, TrainingID: {training_id}")
                 
                 successfully_trained_ids.append(record['id'])
                 
             except Exception as e:
                 logger.error(f"训练失败 - 反馈ID: {record['id']}, 错误: {e}")
+                error_count += 1
         
+        # 更新训练状态
         if successfully_trained_ids:
-            manager.mark_training_status(successfully_trained_ids, True)
+            updated_count = manager.mark_training_status(successfully_trained_ids, True)
+            logger.info(f"批量更新训练状态完成，影响 {updated_count} 条记录")
+        
+        # 构建响应
+        total_processed = positive_count + negative_count + already_trained_count + error_count
         
         return jsonify(success_response(
             response_text=f"训练数据添加完成，成功处理 {positive_count + negative_count} 条记录",
             data={
-                "positive_trained": positive_count,
-                "negative_trained": negative_count,
-                "successfully_trained_ids": successfully_trained_ids
+                "summary": {
+                    "total_requested": len(feedback_ids),
+                    "total_processed": total_processed,
+                    "positive_trained": positive_count,
+                    "negative_trained": negative_count,
+                    "already_trained": already_trained_count,
+                    "errors": error_count
+                },
+                "successfully_trained_ids": successfully_trained_ids,
+                "training_details": {
+                    "sql_training_count": positive_count,
+                    "error_sql_training_count": negative_count
+                }
             }
         ))
         
@@ -1146,7 +1179,10 @@ def qa_feedback_add_to_training():
 
 @app.route('/api/v0/qa_feedback/add', methods=['POST'])
 def qa_feedback_add():
-    """添加反馈记录API"""
+    """
+    添加反馈记录API
+    用于前端直接创建反馈记录
+    """
     try:
         req = request.get_json(force=True)
         question = req.get('question')
@@ -1154,9 +1190,23 @@ def qa_feedback_add():
         is_thumb_up = req.get('is_thumb_up')
         user_id = req.get('user_id', 'guest')
         
-        if not question or not sql or is_thumb_up is None:
+        # 参数验证
+        if not question:
             return jsonify(bad_request_response(
-                response_text="缺少必需参数"
+                response_text="缺少必需参数：question",
+                missing_params=["question"]
+            )), 400
+        
+        if not sql:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：sql",
+                missing_params=["sql"]
+            )), 400
+        
+        if is_thumb_up is None:
+            return jsonify(bad_request_response(
+                response_text="缺少必需参数：is_thumb_up",
+                missing_params=["is_thumb_up"]
             )), 400
         
         manager = get_qa_feedback_manager()
@@ -1169,7 +1219,9 @@ def qa_feedback_add():
         
         return jsonify(success_response(
             response_text="反馈记录创建成功",
-            data={"feedback_id": feedback_id}
+            data={
+                "feedback_id": feedback_id
+            }
         ))
         
     except Exception as e:
@@ -1180,13 +1232,19 @@ def qa_feedback_add():
 
 @app.route('/api/v0/qa_feedback/stats', methods=['GET'])
 def qa_feedback_stats():
-    """反馈统计API"""
+    """
+    反馈统计API
+    返回反馈数据的统计信息
+    """
     try:
         manager = get_qa_feedback_manager()
         
+        # 查询各种统计数据
         all_records, total_count = manager.query_feedback(page=1, page_size=1)
         positive_records, positive_count = manager.query_feedback(page=1, page_size=1, is_thumb_up=True)
         negative_records, negative_count = manager.query_feedback(page=1, page_size=1, is_thumb_up=False)
+        trained_records, trained_count = manager.query_feedback(page=1, page_size=1, is_in_training_data=True)
+        untrained_records, untrained_count = manager.query_feedback(page=1, page_size=1, is_in_training_data=False)
         
         return jsonify(success_response(
             response_text="统计信息获取成功",
@@ -1194,7 +1252,10 @@ def qa_feedback_stats():
                 "total_feedback": total_count,
                 "positive_feedback": positive_count,
                 "negative_feedback": negative_count,
-                "positive_rate": round(positive_count / max(total_count, 1) * 100, 2)
+                "trained_feedback": trained_count,
+                "untrained_feedback": untrained_count,
+                "positive_rate": round(positive_count / max(total_count, 1) * 100, 2),
+                "training_rate": round(trained_count / max(total_count, 1) * 100, 2)
             }
         ))
         
