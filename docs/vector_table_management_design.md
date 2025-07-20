@@ -3,15 +3,15 @@
 ## 概述
 
 为 data_pipeline 添加两个新参数来管理 vector 表数据：
-- `--backup_vector_tables`: 备份vector表数据
-- `--truncate_vector_tables`: 清空vector表数据（自动启用备份）
+- `--backup-vector-tables`: 备份vector表数据
+- `--truncate-vector-tables`: 清空vector表数据（自动启用备份）
 
 ## 需求分析
 
 ### 1. 参数依赖关系
-- 可以单独使用 `--backup_vector_tables`
-- 不可以单独使用 `--truncate_vector_tables`
-- 使用 `--truncate_vector_tables` 时自动启用 `--backup_vector_tables`
+- 可以单独使用 `--backup-vector-tables`
+- 不可以单独使用 `--truncate-vector-tables`
+- 使用 `--truncate-vector-tables` 时自动启用 `--backup-vector-tables`
 
 ### 2. 支持的执行入口
 1. `python -m data_pipeline.schema_workflow`（包括使用 `--skip-training-load` 的情况）
@@ -946,5 +946,36 @@ SCHEMA_TOOLS_CONFIG = {
     - `schema_workflow` 中独立执行vector管理
     - 传递给 `run_training` 时禁用vector管理参数（设为False）
     - 确保操作只执行一次
+
+#### 第四轮修正：
+13. **参数命名一致性**: 根据实际代码修正了文档中的命令行参数写法
+    - 统一使用连字符格式：`--backup-vector-tables` 和 `--truncate-vector-tables`
+    - 修正了概述和需求分析部分的参数名称
+    - 确保文档与实际代码实现的一致性
+
+## 🎯 **正确的使用示例**
+
+### 命令行使用 (注意使用连字符)：
+
+```bash
+# 1. 完整工作流 + 备份和清空vector表
+python -m data_pipeline.schema_workflow --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" --table-list ./data_pipeline/tables.txt --business-context "高速公路服务区管理系统" --truncate-vector-tables
+
+# 2. 跳过训练但执行vector表管理
+python -m data_pipeline.schema_workflow --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" --table-list ./data_pipeline/tables.txt --business-context "高速公路服务区管理系统" --skip-training-load --backup-vector-tables
+
+# 3. 跳过训练并清空vector表
+python -m data_pipeline.schema_workflow --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" --table-list ./data_pipeline/tables.txt --business-context "高速公路服务区管理系统" --skip-training-load --truncate-vector-tables
+
+# 4. 独立训练脚本 + vector表管理
+python -m data_pipeline.trainer.run_training --data_path "./training_data/" --backup-vector-tables --truncate-vector-tables
+
+# 5. 只备份不清空
+python -m data_pipeline.trainer.run_training --data_path "./training_data/" --backup-vector-tables
+```
+
+### 参数说明：
+- `--backup-vector-tables`: 备份 langchain_pg_collection 和 langchain_pg_embedding 表
+- `--truncate-vector-tables`: 清空 langchain_pg_embedding 表（自动启用备份）
 
 核心原则是**安全优先**，确保在任何情况下都不会意外丢失数据。 

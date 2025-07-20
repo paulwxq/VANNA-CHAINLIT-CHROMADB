@@ -9,11 +9,12 @@
 1. [模块架构概览](#1-模块架构概览)
 2. [核心脚本入口](#2-核心脚本入口)
 3. [一键工作流脚本](#3-一键工作流脚本)
-4. [分步执行脚本](#4-分步执行脚本)
-5. [日志配置](#5-日志配置)
-6. [配置文件](#6-配置文件)
-7. [使用示例](#7-使用示例)
-8. [故障排查](#8-故障排查)
+4. [Vector表管理功能](#4-vector表管理功能)
+5. [分步执行脚本](#5-分步执行脚本)
+6. [日志配置](#6-日志配置)
+7. [配置文件](#7-配置文件)
+8. [使用示例](#8-使用示例)
+9. [故障排查](#9-故障排查)
 
 ## 1. 模块架构概览
 
@@ -93,6 +94,8 @@ python data_pipeline/schema_workflow.py [参数]
 | `--disable-llm-repair` | flag | `False` | 禁用LLM修复功能 |
 | `--no-modify-file` | flag | `False` | 不修改原始JSON文件 |
 | `--skip-training-load` | flag | `False` | 跳过训练数据加载步骤 |
+| `--backup-vector-tables` | flag | `False` | 备份vector表数据到任务目录 |
+| `--truncate-vector-tables` | flag | `False` | 清空vector表数据（自动启用备份） |
 | `--verbose` | flag | `False` | 启用详细日志输出 |
 | `--log-file` | string | 无 | 指定日志文件路径 |
 
@@ -134,9 +137,105 @@ python -m data_pipeline.schema_workflow \
   --log-file ./logs/workflow.log
 ```
 
-## 4. 分步执行脚本
+#### Vector表管理
+```bash
+# 仅备份vector表
+python -m data_pipeline.schema_workflow \
+  --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" \
+  --table-list ./data_pipeline/tables.txt \
+  --business-context "高速公路服务区管理系统" \
+  --skip-training-load \
+  --backup-vector-tables
 
-### 4.1 DDL/MD文档生成
+# 备份并清空vector表（自动启用备份）
+python -m data_pipeline.schema_workflow \
+  --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" \
+  --table-list ./data_pipeline/tables.txt \
+  --business-context "高速公路服务区管理系统" \
+  --skip-training-load \
+  --truncate-vector-tables
+```
+
+## 4. Vector表管理功能
+
+### 4.1 功能概述
+
+data_pipeline现在支持Vector表管理功能，用于备份和清空向量数据：
+
+#### 关键参数
+- `--backup-vector-tables`: 备份vector表数据到任务目录
+- `--truncate-vector-tables`: 清空vector表数据（自动启用备份）
+
+#### 参数依赖关系
+- ✅ 可以单独使用 `--backup-vector-tables`
+- ❌ 不能单独使用 `--truncate-vector-tables`  
+- 🔄 使用 `--truncate-vector-tables` 时自动启用 `--backup-vector-tables`
+
+#### 影响的表
+- `langchain_pg_collection`: 只备份，不清空
+- `langchain_pg_embedding`: 备份并清空
+
+#### 应用场景
+- **重新训练**: 在加载新训练数据前清空旧的embedding数据
+- **数据迁移**: 备份vector数据用于环境迁移
+- **版本管理**: 保留不同版本的vector数据备份
+
+### 4.2 支持的脚本
+
+| 脚本 | 支持备份 | 支持清空 | 说明 |
+|------|----------|----------|------|
+| `schema_workflow.py` | ✅ | ✅ | 完整工作流，独立执行Vector管理 |
+| `trainer/run_training.py` | ✅ | ✅ | 训练前执行Vector管理 |
+
+### 4.3 使用示例
+
+#### 一键工作流 + Vector管理
+```bash
+# 完整工作流 + 清空vector表
+python -m data_pipeline.schema_workflow \
+  --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" \
+  --table-list ./data_pipeline/tables.txt \
+  --business-context "高速公路服务区管理系统" \
+  --truncate-vector-tables
+
+# 跳过训练加载，仅执行vector管理
+python -m data_pipeline.schema_workflow \
+  --db-connection "postgresql://postgres:postgres@localhost:6432/highway_db" \
+  --table-list ./data_pipeline/tables.txt \
+  --business-context "高速公路服务区管理系统" \
+  --skip-training-load \
+  --backup-vector-tables
+```
+
+#### 独立训练脚本 + Vector管理
+```bash
+# 训练前清空vector表
+python -m data_pipeline.trainer.run_training \
+  --data_path ./data_pipeline/training_data/manual_20250627_143052/ \
+  --truncate-vector-tables
+
+# 仅备份vector表
+python -m data_pipeline.trainer.run_training \
+  --data_path ./data_pipeline/training_data/manual_20250627_143052/ \
+  --backup-vector-tables
+```
+
+### 4.4 输出文件
+
+启用Vector表管理后，会在任务目录下生成备份文件：
+
+```
+data_pipeline/training_data/manual_20250627_143052/
+├── vector_bak/                                 # Vector表备份目录
+│   ├── langchain_pg_collection_20250627_143052.csv
+│   ├── langchain_pg_embedding_20250627_143052.csv
+│   └── vector_backup_log.txt                  # 备份操作详细日志
+└── data_pipeline.log                          # 包含Vector管理的执行日志
+```
+
+## 5. 分步执行脚本
+
+### 5.1 DDL/MD文档生成
 
 **入口点**: `data_pipeline/ddl_generation/ddl_md_generator.py`
 
@@ -177,7 +276,7 @@ python -m data_pipeline.ddl_generation.ddl_md_generator \
   --check-permissions-only
 ```
 
-### 4.2 Question-SQL对生成
+### 5.2 Question-SQL对生成
 
 **入口点**: `data_pipeline/qa_generation/qs_generator.py`
 
@@ -210,7 +309,7 @@ python -m data_pipeline.qa_generation.qs_generator \
   --verbose
 ```
 
-### 4.3 SQL验证工具
+### 5.3 SQL验证工具
 
 **入口点**: `data_pipeline/validators/sql_validate_cli.py`
 
@@ -254,7 +353,7 @@ python -m data_pipeline.validators.sql_validate_cli \
   --verbose
 ```
 
-### 4.4 训练数据加载
+### 5.4 训练数据加载
 
 **入口点**: `data_pipeline/trainer/run_training.py`
 
@@ -263,6 +362,8 @@ python -m data_pipeline.validators.sql_validate_cli \
 | 参数 | 必需 | 类型 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `--data_path` | ❌ | string | config值 | 训练数据目录路径 |
+| `--backup-vector-tables` | ❌ | flag | `False` | 备份vector表数据 |
+| `--truncate-vector-tables` | ❌ | flag | `False` | 清空vector表数据（自动启用备份） |
 
 #### 支持的文件格式
 
@@ -281,18 +382,24 @@ python -m data_pipeline.trainer.run_training
 # 指定路径
 python -m data_pipeline.trainer.run_training \
   --data_path ./data_pipeline/training_data/task_20250627_143052/
+
+# 带vector表管理
+python -m data_pipeline.trainer.run_training \
+  --data_path ./data_pipeline/training_data/task_20250627_143052/ \
+  --backup-vector-tables \
+  --truncate-vector-tables
 ```
 
-## 5. 日志配置
+## 6. 日志配置
 
-### 5.1 日志系统架构
+### 6.1 日志系统架构
 
 data_pipeline使用统一的日志管理系统，支持两种模式：
 
 1. **脚本模式**: 生成`manual_YYYYMMDD_HHMMSS`格式的task_id
 2. **API模式**: 使用传入的task_id
 
-### 5.2 日志文件位置
+### 6.2 日志文件位置
 
 #### 脚本模式日志
 ```
@@ -315,9 +422,9 @@ logs/
 └── data_pipeline.log                    # data_pipeline模块日志（已弃用）
 ```
 
-### 5.3 日志配置方式
+### 6.3 日志配置方式
 
-#### 5.3.1 使用内置日志系统
+#### 6.3.1 使用内置日志系统
 
 ```python
 from data_pipeline.dp_logging import get_logger
@@ -330,7 +437,7 @@ logger = get_logger("SchemaWorkflow", task_id)
 logger = get_logger("SchemaWorkflow", "task_20250627_143052")
 ```
 
-#### 5.3.2 日志级别配置
+#### 6.3.2 日志级别配置
 
 | 级别 | 用途 | 输出位置 |
 |------|------|----------|
@@ -340,7 +447,7 @@ logger = get_logger("SchemaWorkflow", "task_20250627_143052")
 | `ERROR` | 错误信息 | 控制台 + 文件 |
 | `CRITICAL` | 严重错误 | 控制台 + 文件 |
 
-#### 5.3.3 日志格式
+#### 6.3.3 日志格式
 
 ```
 2025-07-01 14:30:52 [INFO] [SchemaWorkflowOrchestrator] schema_workflow.py:123 - 🚀 开始执行Schema工作流编排
@@ -349,9 +456,9 @@ logger = get_logger("SchemaWorkflow", "task_20250627_143052")
 2025-07-01 14:31:25 [ERROR] [TrainingDataLoader] run_training.py:234 - 训练数据加载失败: 连接超时
 ```
 
-### 5.4 日志配置参数
+### 6.4 日志配置参数
 
-#### 5.4.1 命令行参数
+#### 6.4.1 命令行参数
 
 ```bash
 # 启用详细日志
@@ -365,7 +472,7 @@ python -m data_pipeline.schema_workflow \
   [其他参数]
 ```
 
-#### 5.4.2 环境变量配置
+#### 6.4.2 环境变量配置
 
 ```bash
 # 设置日志级别
@@ -375,7 +482,7 @@ export DATA_PIPELINE_LOG_LEVEL=DEBUG
 export DATA_PIPELINE_LOG_DIR=./logs/data_pipeline/
 ```
 
-#### 5.4.3 编程方式配置
+#### 6.4.3 编程方式配置
 
 ```python
 import logging
@@ -389,16 +496,16 @@ logger = get_logger("CustomModule", "manual_20250627_143052")
 logger.info("自定义日志消息")
 ```
 
-## 6. 配置文件
+## 7. 配置文件
 
-### 6.1 主配置文件
+### 7.1 主配置文件
 
 **位置**: `data_pipeline/config.py`  
 **变量**: `SCHEMA_TOOLS_CONFIG`
 
-### 6.2 主要配置项
+### 7.2 主要配置项
 
-#### 6.2.1 核心配置
+#### 7.2.1 核心配置
 
 ```python
 {
@@ -408,7 +515,7 @@ logger.info("自定义日志消息")
 }
 ```
 
-#### 6.2.2 处理链配置
+#### 7.2.2 处理链配置
 
 ```python
 {
@@ -420,7 +527,7 @@ logger.info("自定义日志消息")
 }
 ```
 
-#### 6.2.3 数据处理配置
+#### 7.2.3 数据处理配置
 
 ```python
 {
@@ -431,7 +538,7 @@ logger.info("自定义日志消息")
 }
 ```
 
-#### 6.2.4 并发配置
+#### 7.2.4 并发配置
 
 ```python
 {
@@ -440,7 +547,7 @@ logger.info("自定义日志消息")
 }
 ```
 
-#### 6.2.5 Question-SQL生成配置
+#### 7.2.5 Question-SQL生成配置
 
 ```python
 {
@@ -455,7 +562,7 @@ logger.info("自定义日志消息")
 }
 ```
 
-#### 6.2.6 SQL验证配置
+#### 7.2.6 SQL验证配置
 
 ```python
 {
@@ -470,13 +577,13 @@ logger.info("自定义日志消息")
 }
 ```
 
-### 6.3 配置优先级
+### 7.3 配置优先级
 
 ```
 命令行参数 > data_pipeline/config.py > 默认值
 ```
 
-### 6.4 修改配置
+### 7.4 修改配置
 
 #### 方法1: 直接修改配置文件
 
@@ -497,9 +604,9 @@ update_config({
 })
 ```
 
-## 7. 使用示例
+## 8. 使用示例
 
-### 7.1 典型工作流场景
+### 8.1 典型工作流场景
 
 #### 场景1: 首次处理新数据库
 ```bash
@@ -537,6 +644,12 @@ python -m data_pipeline.validators.sql_validate_cli \
   --db-connection "postgresql://user:pass@localhost:5432/db" \
   --input-file ./debug_output/qs_test_db_*.json \
   --verbose
+
+# 4. 仅训练数据加载 + vector表管理
+python -m data_pipeline.trainer.run_training \
+  --data_path ./debug_output/ \
+  --backup-vector-tables \
+  --truncate-vector-tables
 ```
 
 #### 场景3: 生产环境批量处理
@@ -556,6 +669,7 @@ for db in "${DATABASES[@]}"; do
       --table-list "./tables_${db}.txt" \
       --business-context "${db}业务系统" \
       --output-dir "./output/${db}/" \
+      --truncate-vector-tables \
       --verbose
     
     if [ $? -eq 0 ]; then
@@ -570,7 +684,7 @@ chmod +x process_databases.sh
 ./process_databases.sh
 ```
 
-### 7.2 表清单文件格式
+### 8.2 表清单文件格式
 
 #### 基本格式
 ```
@@ -602,7 +716,7 @@ bss_company              # 公司信息
 bss_service_area         # 服务区信息
 ```
 
-### 7.3 输出文件结构
+### 8.3 输出文件结构
 
 ```
 data_pipeline/training_data/manual_20250627_143052/
@@ -616,15 +730,19 @@ data_pipeline/training_data/manual_20250627_143052/
 ├── sql_validation_20250627_143052_summary.log  # SQL验证摘要
 ├── sql_validation_20250627_143052_report.json  # SQL验证详细报告
 ├── file_modifications_20250627_143052.log      # 文件修改日志
+├── vector_bak/                                 # Vector表备份目录（如果启用）
+│   ├── langchain_pg_collection_20250627_143052.csv
+│   ├── langchain_pg_embedding_20250627_143052.csv
+│   └── vector_backup_log.txt
 ├── metadata.txt                                # 元数据文件
 └── filename_mapping.txt                        # 文件名映射
 ```
 
-## 8. 故障排查
+## 9. 故障排查
 
-### 8.1 常见错误
+### 9.1 常见错误
 
-#### 8.1.1 表数量超过限制
+#### 9.1.1 表数量超过限制
 ```
 错误信息: 表数量(25)超过限制(20)。请分批处理或调整配置中的max_tables参数。
 
@@ -633,7 +751,7 @@ data_pipeline/training_data/manual_20250627_143052/
 2. 修改配置：在config.py中增加max_tables限制
 ```
 
-#### 8.1.2 DDL和MD文件数量不一致
+#### 9.1.2 DDL和MD文件数量不一致
 ```
 错误信息: DDL文件数量(5)与表数量(6)不一致
 
@@ -643,7 +761,7 @@ data_pipeline/training_data/manual_20250627_143052/
 3. 检查数据库权限
 ```
 
-#### 8.1.3 LLM调用失败
+#### 9.1.3 LLM调用失败
 ```
 错误信息: LLM调用超时或失败
 
@@ -654,7 +772,7 @@ data_pipeline/training_data/manual_20250627_143052/
 4. 检查LLM服务配置
 ```
 
-#### 8.1.4 权限不足
+#### 9.1.4 权限不足
 ```
 错误信息: 数据库查询权限不足
 
@@ -664,9 +782,9 @@ data_pipeline/training_data/manual_20250627_143052/
 3. Data Pipeline支持只读数据库
 ```
 
-### 8.2 日志分析
+### 9.2 日志分析
 
-#### 8.2.1 查看详细日志
+#### 9.2.1 查看详细日志
 ```bash
 # 查看最新的任务日志
 find data_pipeline/training_data/ -name "data_pipeline.log" -exec ls -t {} + | head -1 | xargs tail -f
@@ -678,7 +796,7 @@ grep -i "error" data_pipeline/training_data/manual_*/data_pipeline.log
 grep "bss_company" data_pipeline/training_data/manual_*/data_pipeline.log
 ```
 
-#### 8.2.2 日志级别调整
+#### 9.2.2 日志级别调整
 ```bash
 # 启用DEBUG级别日志
 python -m data_pipeline.schema_workflow \
@@ -686,9 +804,9 @@ python -m data_pipeline.schema_workflow \
   [其他参数]
 ```
 
-### 8.3 性能优化
+### 9.3 性能优化
 
-#### 8.3.1 并发配置调优
+#### 9.3.1 并发配置调优
 ```python
 # 在config.py中调整
 "max_concurrent_tables": 2,              # 增加并发数（谨慎）
@@ -696,14 +814,14 @@ python -m data_pipeline.schema_workflow \
 "batch_size": 20                         # 增加批处理大小
 ```
 
-#### 8.3.2 数据采样优化
+#### 9.3.2 数据采样优化
 ```python
 # 减少采样数据量
 "sample_data_limit": 10,                 # 从20减少到10
 "enum_detection_sample_limit": 1000      # 从5000减少到1000
 ```
 
-#### 8.3.3 跳过耗时步骤
+#### 9.3.3 跳过耗时步骤
 ```bash
 # 跳过SQL验证
 python -m data_pipeline.schema_workflow \
@@ -716,9 +834,9 @@ python -m data_pipeline.schema_workflow \
   [其他参数]
 ```
 
-### 8.4 环境检查
+### 9.4 环境检查
 
-#### 8.4.1 依赖检查
+#### 9.4.1 依赖检查
 ```bash
 # 检查Python版本
 python --version
@@ -738,7 +856,7 @@ asyncio.run(test())
 "
 ```
 
-#### 8.4.2 权限检查
+#### 9.4.2 权限检查
 ```bash
 # 使用内置权限检查工具
 python -m data_pipeline.ddl_generation.ddl_md_generator \
@@ -746,7 +864,7 @@ python -m data_pipeline.ddl_generation.ddl_md_generator \
   --check-permissions-only
 ```
 
-#### 8.4.3 磁盘空间检查
+#### 9.4.3 磁盘空间检查
 ```bash
 # 检查输出目录空间
 df -h data_pipeline/training_data/

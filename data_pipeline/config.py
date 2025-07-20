@@ -133,6 +133,21 @@ SCHEMA_TOOLS_CONFIG = {
         "max_lines": 1000,                   # 最大行数限制
         "encoding": "utf-8",                 # 文件编码
         "allow_overwrite": True,             # 是否允许覆盖已存在的文件
+    },
+    
+    # Vector表管理配置
+    "vector_table_management": {
+        "backup_enabled": True,
+        "backup_directory": "vector_bak",
+        "supported_tables": [
+            "langchain_pg_collection",
+            "langchain_pg_embedding"
+        ],
+        "truncate_tables": [
+            "langchain_pg_embedding"  # 只清空embedding表
+        ],
+        "timestamp_format": "%Y%m%d_%H%M%S",
+        "backup_temp_suffix": ".tmp"
     }
 }
 

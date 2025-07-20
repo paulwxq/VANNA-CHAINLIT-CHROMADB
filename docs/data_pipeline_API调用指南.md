@@ -57,6 +57,7 @@ unified_api.py (Flask应用)
 | **完整工作流** | 一次性执行4个步骤 | 生产环境，自动化处理 |
 | **分步执行** | 逐步执行各个步骤 | 调试，质量控制 |
 | **后台执行** | 使用subprocess独立进程 | 长时间任务，不阻塞API |
+| **Vector表管理** | 备份和清空vector表数据 | 重新训练前清理旧数据 |
 
 ## 2. 核心API端点
 
@@ -106,6 +107,28 @@ unified_api.py (Flask应用)
 | `409` | 冲突 | 任务已在执行 |
 | `500` | 服务器错误 | 内部错误 |
 
+### 2.4 Vector表管理功能
+
+data_pipeline API现在支持Vector表管理功能，用于备份和清空向量数据：
+
+#### 关键参数
+- `backup_vector_tables`: 备份vector表数据到任务目录
+- `truncate_vector_tables`: 清空vector表数据（自动启用备份）
+
+#### 参数依赖关系
+- ✅ 可以单独使用 `backup_vector_tables`
+- ❌ 不能单独使用 `truncate_vector_tables`  
+- 🔄 使用 `truncate_vector_tables` 时自动启用 `backup_vector_tables`
+
+#### 影响的表
+- `langchain_pg_collection`: 只备份，不清空
+- `langchain_pg_embedding`: 备份并清空
+
+#### 应用场景
+- **重新训练**: 在加载新训练数据前清空旧的embedding数据
+- **数据迁移**: 备份vector数据用于环境迁移
+- **版本管理**: 保留不同版本的vector数据备份
+
 ## 3. 任务管理API
 
 ### 3.1 创建任务
@@ -125,6 +148,8 @@ unified_api.py (Flask应用)
 | `enable_llm_repair` | ❌ | boolean | `true` | 是否启用LLM修复 |
 | `modify_original_file` | ❌ | boolean | `true` | 是否修改原始文件 |
 | `enable_training_data_load` | ❌ | boolean | `true` | 是否启用训练数据加载 |
+| `backup_vector_tables` | ❌ | boolean | `false` | 是否备份vector表数据 |
+| `truncate_vector_tables` | ❌ | boolean | `false` | 是否清空vector表数据（自动启用备份） |
 
 #### 请求示例
 
@@ -139,7 +164,9 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks \
     "enable_sql_validation": true,
     "enable_llm_repair": true,
     "modify_original_file": true,
-    "enable_training_data_load": true
+    "enable_training_data_load": true,
+    "backup_vector_tables": false,
+    "truncate_vector_tables": false
   }'
 ```
 
@@ -169,6 +196,8 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks \
 |------|------|------|--------|------|
 | `execution_mode` | ❌ | enum | `complete` | 执行模式：`complete`/`step` |
 | `step_name` | ❌ | string | - | 步骤名称，步骤模式时必需 |
+| `backup_vector_tables` | ❌ | boolean | `false` | 是否备份vector表数据 |
+| `truncate_vector_tables` | ❌ | boolean | `false` | 是否清空vector表数据（自动启用备份） |
 
 #### 有效步骤名称
 
@@ -184,7 +213,17 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks \
 curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "execution_mode": "complete"
+    "execution_mode": "complete",
+    "backup_vector_tables": false,
+    "truncate_vector_tables": false
+  }'
+
+# 执行完整工作流并清空vector表
+curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "execution_mode": "complete",
+    "truncate_vector_tables": true
   }'
 
 # 执行单个步骤
@@ -192,7 +231,9 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_1430
   -H "Content-Type: application/json" \
   -d '{
     "execution_mode": "step",
-    "step_name": "ddl_generation"
+    "step_name": "ddl_generation",
+    "backup_vector_tables": false,
+    "truncate_vector_tables": false
   }'
 ```
 
@@ -238,7 +279,9 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_1430
         "completed_at": null,
         "parameters": {
             "business_context": "高速公路服务区管理系统",
-            "enable_sql_validation": true
+            "enable_sql_validation": true,
+            "backup_vector_tables": false,
+            "truncate_vector_tables": false
         },
         "current_step": {
             "execution_id": "task_20250627_143052_step_qa_generation_exec_20250627143521",
@@ -855,7 +898,9 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks \
     "table_list_file": "tables.txt",
     "business_context": "高速公路服务区管理系统",
     "db_name": "highway_db",
-    "task_name": "高速公路数据处理"
+    "task_name": "高速公路数据处理",
+    "backup_vector_tables": false,
+    "truncate_vector_tables": false
   }'
 ```
 
@@ -864,7 +909,9 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks \
 curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "execution_mode": "complete"
+    "execution_mode": "complete",
+    "backup_vector_tables": false,
+    "truncate_vector_tables": false
   }'
 ```
 
@@ -894,7 +941,49 @@ curl "http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/file
 curl -O "http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/files/qs_highway_db_20250627_143052_pair.json"
 ```
 
-### 8.2 分步执行示例
+### 8.2 Vector表管理示例
+
+#### 带Vector表管理的完整工作流
+```bash
+# 创建任务并启用vector表清空
+curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "table_list_file": "tables.txt",
+    "business_context": "高速公路服务区管理系统",
+    "db_name": "highway_db",
+    "task_name": "高速公路数据处理_清空vector",
+    "truncate_vector_tables": true
+  }'
+
+# 执行工作流（truncate_vector_tables会自动启用backup_vector_tables）
+curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "execution_mode": "complete",
+    "truncate_vector_tables": true
+  }'
+
+# 检查vector表管理结果
+curl "http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052"
+
+# 下载备份文件（如果有）
+curl "http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/files" | \
+  jq -r '.data.files[] | select(.file_name | contains("langchain_")) | .download_url'
+```
+
+#### 仅备份Vector表
+```bash
+curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_143052/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "execution_mode": "complete",
+    "backup_vector_tables": true,
+    "truncate_vector_tables": false
+  }'
+```
+
+### 8.3 分步执行示例
 
 #### 步骤1: 创建任务（无表清单）
 ```bash
@@ -932,7 +1021,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/tasks/task_20250627_1430
   }'
 ```
 
-### 8.3 数据库工具使用示例
+### 8.4 数据库工具使用示例
 
 #### 获取数据库表列表
 ```bash
@@ -955,7 +1044,7 @@ curl -X POST http://localhost:8084/api/v0/database/table/ddl \
   }'
 ```
 
-### 8.4 JavaScript客户端示例
+### 8.5 JavaScript客户端示例
 
 ```javascript
 class DataPipelineAPI {
@@ -1041,7 +1130,9 @@ async function runDataPipelineWorkflow() {
             table_list_file: 'tables.txt',
             business_context: '高速公路服务区管理系统',
             db_name: 'highway_db',
-            task_name: '高速公路数据处理'
+            task_name: '高速公路数据处理',
+            backup_vector_tables: false,
+            truncate_vector_tables: false
         });
         
         const taskId = createResult.data.task_id;
@@ -1065,7 +1156,7 @@ async function runDataPipelineWorkflow() {
 }
 ```
 
-### 8.5 Python客户端示例
+### 8.6 Python客户端示例
 
 ```python
 import requests
@@ -1171,7 +1262,9 @@ def run_data_pipeline_workflow():
             table_list_file='tables.txt',
             business_context='高速公路服务区管理系统',
             db_name='highway_db',
-            task_name='高速公路数据处理'
+            task_name='高速公路数据处理',
+            backup_vector_tables=False,
+            truncate_vector_tables=False
         )
         
         task_id = create_result['data']['task_id']
@@ -1218,6 +1311,8 @@ if __name__ == '__main__':
 | `INVALID_STEP_NAME` | 400 | 无效的步骤名称 | 使用有效的步骤名称 |
 | `FILE_NOT_FOUND` | 404 | 文件不存在 | 检查文件名是否正确 |
 | `DATABASE_CONNECTION_ERROR` | 500 | 数据库连接失败 | 检查数据库配置 |
+| `VECTOR_BACKUP_FAILED` | 500 | Vector表备份失败 | 检查数据库连接和磁盘空间 |
+| `VECTOR_TRUNCATE_FAILED` | 500 | Vector表清空失败 | 检查数据库权限 |
 
 ### 9.2 错误响应格式
 
@@ -1370,19 +1465,33 @@ task_name_patterns = {
         "enable_sql_validation": true,
         "enable_llm_repair": true,
         "modify_original_file": true,
-        "enable_training_data_load": true
+        "enable_training_data_load": true,
+        "backup_vector_tables": false,
+        "truncate_vector_tables": false
     },
     "调试配置": {
         "enable_sql_validation": false,
         "enable_llm_repair": false,
         "modify_original_file": false,
-        "enable_training_data_load": false
+        "enable_training_data_load": false,
+        "backup_vector_tables": false,
+        "truncate_vector_tables": false
     },
     "快速配置": {
         "enable_sql_validation": true,
         "enable_llm_repair": false,
         "modify_original_file": false,
-        "enable_training_data_load": true
+        "enable_training_data_load": true,
+        "backup_vector_tables": false,
+        "truncate_vector_tables": false
+    },
+    "Vector清理配置": {
+        "enable_sql_validation": true,
+        "enable_llm_repair": true,
+        "modify_original_file": true,
+        "enable_training_data_load": true,
+        "backup_vector_tables": true,
+        "truncate_vector_tables": true
     }
 }
 ```

@@ -333,12 +333,14 @@ def train_json_question_sql_pairs(json_file):
     except Exception as e:
         print(f" 错误：处理JSON问答训练 - {e}")
 
-def process_training_files(data_path, task_id=None):
+def process_training_files(data_path, task_id=None, backup_vector_tables=False, truncate_vector_tables=False):
     """处理指定路径下的所有训练文件
     
     Args:
         data_path (str): 训练数据目录路径
         task_id (str): 任务ID，用于日志记录
+        backup_vector_tables (bool): 是否备份vector表数据
+        truncate_vector_tables (bool): 是否清空vector表数据
     """
     # 初始化日志
     if task_id:
@@ -365,6 +367,28 @@ def process_training_files(data_path, task_id=None):
             getattr(logger, level)(message)
         else:
             print(message)
+    
+    # Vector表管理（前置步骤）
+    vector_stats = None
+    if backup_vector_tables or truncate_vector_tables:
+        # 参数验证和自动启用逻辑
+        if truncate_vector_tables:
+            backup_vector_tables = True
+        
+        try:
+            import asyncio
+            from data_pipeline.trainer.vector_table_manager import VectorTableManager
+            
+            log_message("🗂️ 开始执行Vector表管理...")
+            
+            vector_manager = VectorTableManager(data_path, task_id)
+            vector_stats = asyncio.run(vector_manager.execute_vector_management(backup_vector_tables, truncate_vector_tables))
+            
+            log_message("✅ Vector表管理完成")
+            
+        except Exception as e:
+            log_message(f"❌ Vector表管理失败: {e}", "error")
+            return False
     
     # 初始化统计计数器
     stats = {
@@ -434,9 +458,9 @@ def process_training_files(data_path, task_id=None):
     total_files = sum(stats.values())
     if total_files == 0:
         log_message(f"警告: 在目录 {data_path} 中未找到任何可训练的文件", "warning")
-        return False
+        return False, vector_stats
         
-    return True
+    return True, vector_stats
 
 def check_pgvector_connection():
     """检查 PgVector 数据库连接是否可用
@@ -537,6 +561,13 @@ def main():
     
     parser.add_argument('--data_path', type=str, default=default_path,
                         help='训练数据目录路径 (默认: 从data_pipeline.config.SCHEMA_TOOLS_CONFIG)')
+    
+    parser.add_argument('--backup-vector-tables', action='store_true',
+                        help='备份vector表数据')
+    
+    parser.add_argument('--truncate-vector-tables', action='store_true',
+                        help='清空vector表数据（自动启用备份）')
+    
     args = parser.parse_args()
     
     # 使用Path对象处理路径以确保跨平台兼容性
@@ -605,7 +636,9 @@ def main():
         print(f"\n===== 未知的向量数据库类型: {vector_db_type} =====\n")
     
     # 处理训练文件
-    process_successful = process_training_files(data_path)
+    process_successful, vector_stats = process_training_files(data_path, None, 
+                                                             args.backup_vector_tables, 
+                                                             args.truncate_vector_tables)
     
     if process_successful:
         # 训练结束，刷新和关闭批处理器
@@ -641,6 +674,39 @@ def main():
             print(f"请检查{vector_db_type.upper()}连接和表结构。")
     else:
         print("\n===== 未能找到或处理任何训练文件，训练过程终止 =====")
+    
+    # Vector表管理总结
+    print("\n===== Vector表管理统计 =====")
+    if vector_stats:
+        if vector_stats.get("backup_performed", False):
+            tables_info = vector_stats.get("tables_backed_up", {})
+            print(f"✓ 备份执行: 成功备份 {len(tables_info)} 个表")
+            for table_name, info in tables_info.items():
+                if info.get("success", False):
+                    print(f"  - {table_name}: {info['row_count']}行 -> {info['backup_file']} ({info['file_size']})")
+                else:
+                    print(f"  - {table_name}: 备份失败 - {info.get('error', '未知错误')}")
+        else:
+            print("- 备份执行: 未执行")
+            
+        if vector_stats.get("truncate_performed", False):
+            truncate_info = vector_stats.get("truncate_results", {})
+            print("✓ 清空执行: langchain_pg_embedding表已清空")
+            for table_name, info in truncate_info.items():
+                if info.get("success", False):
+                    print(f"  - {table_name}: {info['rows_before']}行 -> 0行")
+                else:
+                    print(f"  - {table_name}: 清空失败 - {info.get('error', '未知错误')}")
+        else:
+            print("- 清空执行: 未执行")
+            
+        print(f"✓ 总耗时: {vector_stats.get('duration', 0):.1f}秒")
+        
+        if vector_stats.get("errors"):
+            print(f"⚠ 错误: {'; '.join(vector_stats['errors'])}")
+    else:
+        print("- 未执行vector表管理操作")
+    print("===========================")
     
     # 输出embedding模型信息
     print("\n===== Embedding模型信息 =====")

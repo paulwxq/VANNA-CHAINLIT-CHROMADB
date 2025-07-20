@@ -30,7 +30,9 @@ class SchemaWorkflowOrchestrator:
                  enable_sql_validation: bool = True,
                  enable_llm_repair: bool = True,
                  modify_original_file: bool = True,
-                 enable_training_data_load: bool = True):
+                 enable_training_data_load: bool = True,
+                 backup_vector_tables: bool = False,
+                 truncate_vector_tables: bool = False):
         """
         初始化Schema工作流编排器
         
@@ -44,6 +46,8 @@ class SchemaWorkflowOrchestrator:
             enable_llm_repair: 是否启用LLM修复功能
             modify_original_file: 是否修改原始JSON文件
             enable_training_data_load: 是否启用训练数据加载
+            backup_vector_tables: 是否备份vector表数据
+            truncate_vector_tables: 是否清空vector表数据（自动启用备份）
         """
         self.db_connection = db_connection
         self.table_list_file = table_list_file
@@ -53,6 +57,14 @@ class SchemaWorkflowOrchestrator:
         self.enable_llm_repair = enable_llm_repair
         self.modify_original_file = modify_original_file
         self.enable_training_data_load = enable_training_data_load
+        
+        # 处理vector表管理参数
+        # 参数验证和自动启用逻辑：如果启用truncate，自动启用backup
+        if truncate_vector_tables:
+            backup_vector_tables = True
+            
+        self.backup_vector_tables = backup_vector_tables
+        self.truncate_vector_tables = truncate_vector_tables
         
         # 处理task_id
         if task_id is None:
@@ -141,6 +153,10 @@ class SchemaWorkflowOrchestrator:
                 await self._execute_step_3_sql_validation()
             else:
                 self.logger.info("⏭️ 跳过SQL验证步骤")
+            
+            # 新增：独立的Vector表管理（在训练加载之前或替代训练加载）
+            if self.backup_vector_tables or self.truncate_vector_tables:
+                await self._execute_vector_table_management()
             
             # 步骤4: 训练数据加载（可选）
             if self.enable_training_data_load:
@@ -354,6 +370,51 @@ class SchemaWorkflowOrchestrator:
             self.logger.error(f"❌ 步骤3失败: {str(e)}")
             raise
     
+    async def _execute_vector_table_management(self):
+        """独立执行Vector表管理（支持--skip-training-load场景）"""
+        if not (self.backup_vector_tables or self.truncate_vector_tables):
+            return
+            
+        self.logger.info("=" * 60)
+        self.logger.info("🗂️ 开始执行Vector表管理")
+        self.logger.info("=" * 60)
+        
+        vector_stats = None
+        try:
+            from data_pipeline.trainer.vector_table_manager import VectorTableManager
+            
+            vector_manager = VectorTableManager(
+                task_output_dir=str(self.output_dir),
+                task_id=self.task_id
+            )
+            
+            # 执行vector表管理
+            vector_stats = await vector_manager.execute_vector_management(
+                backup=self.backup_vector_tables,
+                truncate=self.truncate_vector_tables
+            )
+            
+            # 记录结果到工作流状态（无论成功失败都记录）
+            self.workflow_state["artifacts"]["vector_management"] = vector_stats
+            
+            if vector_stats.get("errors"):
+                self.logger.warning(f"⚠️ Vector表管理完成，但有错误: {'; '.join(vector_stats['errors'])}")
+            else:
+                self.logger.info("✅ Vector表管理完成")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Vector表管理失败: {e}")
+            # 即使异常也要记录基本状态
+            if vector_stats is None:
+                vector_stats = {
+                    "backup_performed": self.backup_vector_tables,
+                    "truncate_performed": False,
+                    "errors": [f"执行异常: {str(e)}"],
+                    "duration": 0
+                }
+                self.workflow_state["artifacts"]["vector_management"] = vector_stats
+            raise
+    
     async def _execute_step_4_training_data_load(self):
         """步骤4: 训练数据加载"""
         self.workflow_state["current_step"] = "training_data_load"
@@ -377,7 +438,10 @@ class SchemaWorkflowOrchestrator:
             
             # 执行训练数据加载
             self.logger.info("🔄 开始处理训练文件...")
-            load_successful = process_training_files(training_data_dir, self.task_id)
+            # 禁用vector管理参数以避免重复执行
+            load_successful, _ = process_training_files(training_data_dir, self.task_id, 
+                                                       backup_vector_tables=False, 
+                                                       truncate_vector_tables=False)
             
             step_duration = time.time() - step_start_time
             
@@ -608,6 +672,31 @@ class SchemaWorkflowOrchestrator:
             else:
                 self.logger.info(f"  📚 训练数据加载: 启用")
             
+            # Vector表管理总结
+            vector_stats = report.get("workflow_state", {}).get("artifacts", {}).get("vector_management")
+            if vector_stats:
+                self.logger.info("📊 Vector表管理:")
+                if vector_stats.get("backup_performed", False):
+                    tables_count = len(vector_stats.get("tables_backed_up", {}))
+                    total_size = sum(
+                        self._parse_file_size(info.get("file_size", "0 B")) 
+                        for info in vector_stats.get("tables_backed_up", {}).values() 
+                        if info.get("success", False)
+                    )
+                    self.logger.info(f"   ✅ 备份执行: {tables_count}个表，总大小: {self._format_size(total_size)}")
+                else:
+                    self.logger.info("   - 备份执行: 未执行")
+                    
+                if vector_stats.get("truncate_performed", False):
+                    self.logger.info("   ✅ 清空执行: langchain_pg_embedding表已清空")
+                else:
+                    self.logger.info("   - 清空执行: 未执行")
+                    
+                duration = vector_stats.get("duration", 0)
+                self.logger.info(f"   ⏱️  执行耗时: {duration:.1f}秒")
+            else:
+                self.logger.info("📊 Vector表管理: 未执行（未启用相关参数）")
+            
         else:
             error = report["error"]
             summary = report["workflow_summary"]
@@ -619,6 +708,43 @@ class SchemaWorkflowOrchestrator:
             self.logger.error(f"✅ 已完成步骤: {', '.join(summary['completed_steps']) if summary['completed_steps'] else '无'}")
         
         self.logger.info("=" * 80)
+    
+    def _parse_file_size(self, size_str: str) -> float:
+        """解析文件大小字符串为字节数"""
+        import re
+        
+        # 匹配数字和单位的正则表达式
+        match = re.match(r'(\d+\.?\d*)\s*([KMGT]?B)', size_str.upper())
+        if not match:
+            return 0.0
+            
+        size, unit = match.groups()
+        size = float(size)
+        
+        unit_multipliers = {
+            'B': 1,
+            'KB': 1024,
+            'MB': 1024**2,
+            'GB': 1024**3,
+            'TB': 1024**4
+        }
+        
+        return size * unit_multipliers.get(unit, 1)
+    
+    def _format_size(self, size_bytes: float) -> str:
+        """格式化字节数为可读的大小字符串"""
+        if size_bytes == 0:
+            return "0 B"
+        
+        size_names = ["B", "KB", "MB", "GB"]
+        i = 0
+        size = float(size_bytes)
+        
+        while size >= 1024.0 and i < len(size_names) - 1:
+            size /= 1024.0
+            i += 1
+        
+        return f"{size:.1f} {size_names[i]}"
     
     def _parse_db_connection(self, db_connection: str) -> Dict[str, str]:
         """
@@ -742,6 +868,18 @@ def setup_argument_parser():
     )
     
     parser.add_argument(
+        "--backup-vector-tables",
+        action="store_true",
+        help="备份vector表数据到任务目录"
+    )
+    
+    parser.add_argument(
+        "--truncate-vector-tables",
+        action="store_true",
+        help="清空vector表数据（自动启用备份）"
+    )
+    
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="启用详细日志输出"
@@ -790,7 +928,9 @@ async def main():
             enable_sql_validation=not args.skip_validation,
             enable_llm_repair=not args.disable_llm_repair,
             modify_original_file=not args.no_modify_file,
-            enable_training_data_load=not args.skip_training_load
+            enable_training_data_load=not args.skip_training_load,
+            backup_vector_tables=args.backup_vector_tables,
+            truncate_vector_tables=args.truncate_vector_tables
         )
         
         # 获取logger用于启动信息
