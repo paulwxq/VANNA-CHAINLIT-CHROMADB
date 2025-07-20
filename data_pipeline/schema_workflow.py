@@ -15,6 +15,7 @@ from data_pipeline.qa_generation.qs_agent import QuestionSQLGenerationAgent
 from data_pipeline.validators.sql_validation_agent import SQLValidationAgent
 from data_pipeline.config import SCHEMA_TOOLS_CONFIG
 from data_pipeline.dp_logging import get_logger
+from data_pipeline.utils.logger import setup_logging
 
 
 class SchemaWorkflowOrchestrator:
@@ -63,14 +64,17 @@ class SchemaWorkflowOrchestrator:
         
         # 设置输出目录
         if output_dir is None:
-            # 脚本模式或未指定输出目录时，使用任务目录
+            # 脚本模式或未指定输出目录时，使用默认基础目录
             # 获取项目根目录的绝对路径
             project_root = Path(__file__).parent.parent
-            self.output_dir = project_root / "data_pipeline" / "training_data" / self.task_id
+            base_dir = project_root / "data_pipeline" / "training_data"
         else:
-            # API模式或明确指定输出目录时，使用指定的目录
-            self.output_dir = Path(output_dir)
-            
+            # 用户指定了输出目录时，使用指定的目录作为基础目录
+            base_dir = Path(output_dir)
+        
+        # 无论哪种情况，都在基础目录下创建task子目录
+        self.output_dir = base_dir / self.task_id
+        
         # 确保输出目录存在
         self.output_dir.mkdir(parents=True, exist_ok=True)
             
@@ -192,13 +196,28 @@ class SchemaWorkflowOrchestrator:
                 "total_tables": ddl_md_result.get("summary", {}).get("total_tables", 0),
                 "processed_successfully": ddl_md_result.get("summary", {}).get("processed_successfully", 0),
                 "failed": ddl_md_result.get("summary", {}).get("failed", 0),
-                "files_generated": ddl_md_result.get("statistics", {}).get("files_generated", 0),
+                "files_generated": ddl_md_result.get("statistics", {}).get("total_files_generated", 0),
                 "duration": step_duration
             }
             self.workflow_state["statistics"]["step1_duration"] = step_duration
             
             processed_tables = ddl_md_result.get("summary", {}).get("processed_successfully", 0)
-            self.logger.info(f"✅ 步骤1完成: 成功处理 {processed_tables} 个表，耗时 {step_duration:.2f}秒")
+            
+            # 获取文件统计信息
+            statistics = ddl_md_result.get("statistics", {})
+            md_files = statistics.get("md_files_generated", 0)
+            ddl_files = statistics.get("ddl_files_generated", 0)
+            
+            if md_files > 0 and ddl_files > 0:
+                file_info = f"生成 {md_files} 个MD文件，{ddl_files} 个DDL文件"
+            elif md_files > 0:
+                file_info = f"生成 {md_files} 个MD文件"
+            elif ddl_files > 0:
+                file_info = f"生成 {ddl_files} 个DDL文件"
+            else:
+                file_info = "未生成文件"
+                
+            self.logger.info(f"✅ 步骤1完成: 成功处理 {processed_tables} 个表，{file_info}，耗时 {step_duration:.2f}秒")
             
         except Exception as e:
             self.workflow_state["failed_steps"].append("ddl_md_generation")
@@ -527,10 +546,42 @@ class SchemaWorkflowOrchestrator:
             self.logger.info(f"⏱️  总耗时: {summary['total_duration']} 秒")
             self.logger.info(f"📝 完成步骤: {len(summary['completed_steps'])}/{summary['total_steps']}")
             
-            # DDL/MD生成结果
+            # 获取并显示embedding模型信息
+            try:
+                from common.utils import get_current_model_info
+                model_info = get_current_model_info()
+                self.logger.info(f"🤖 使用的embedding模型: {model_info['embedding_model']} ({model_info['embedding_type']})")
+            except Exception as e:
+                self.logger.info(f"🤖 使用的embedding模型: 未知 (获取信息失败: {e})")
+            
+            # 解析并显示源库信息
+            try:
+                db_info = self._parse_db_connection(self.db_connection)
+                self.logger.info(f"🗄️  源库名: {db_info['dbname']}")
+                self.logger.info(f"🏠 源库Hostname: {db_info['host']}:{db_info['port']}")
+            except Exception as e:
+                self.logger.info(f"🗄️  源库名: {self.db_name}")
+                self.logger.info(f"🏠 源库Hostname: 未知 (解析失败: {e})")
+            
+            # DDL/MD生成结果 - 增加详细的文件统计
             if "ddl_md_generation" in results:
                 ddl_md = results["ddl_md_generation"]
                 self.logger.info(f"📋 DDL/MD生成: {ddl_md.get('processed_successfully', 0)} 个表成功处理")
+                
+                # 尝试获取详细的文件统计信息
+                try:
+                    # 从输出目录统计实际生成的文件
+                    output_path = Path(self.output_dir)
+                    if output_path.exists():
+                        md_files = list(output_path.glob("*.md"))
+                        ddl_files = list(output_path.glob("*.ddl"))
+                        md_count = len([f for f in md_files if not f.name.startswith('metadata')])  # 排除metadata.md
+                        ddl_count = len(ddl_files)
+                        self.logger.info(f"📁 生成文件: {md_count} 个MD文件，{ddl_count} 个DDL文件")
+                    else:
+                        self.logger.info(f"📁 生成文件: 统计信息不可用")
+                except Exception as e:
+                    self.logger.info(f"📁 生成文件: 统计失败 ({e})")
             
             # Question-SQL生成结果
             if "question_sql_generation" in results:
@@ -544,8 +595,18 @@ class SchemaWorkflowOrchestrator:
                 self.logger.info(f"🔍 SQL验证: {success_rate:.1%} 成功率 ({validation.get('valid_sql_count', 0)}/{validation.get('original_sql_count', 0)})")
             
             self.logger.info(f"📁 输出目录: {outputs['output_directory']}")
-            self.logger.info(f"📄 主要输出文件: {outputs['primary_output_file']}")
+            self.logger.info(f"📄 QUESTION/SQL键值对文件: {outputs['primary_output_file']}")
             self.logger.info(f"❓ 最终问题数量: {outputs['final_question_count']}")
+            
+            # 配置参数反馈
+            self.logger.info("⚙️ 执行配置:")
+            self.logger.info(f"  🔍 SQL验证: {'启用' if self.enable_sql_validation else '禁用'}")
+            self.logger.info(f"  🔧 LLM修复: {'启用' if self.enable_llm_repair else '禁用'}")
+            self.logger.info(f"  📝 文件修改: {'启用' if self.modify_original_file else '禁用'}")
+            if not self.enable_training_data_load:
+                self.logger.info(f"  ⏭️ 训练数据加载: 已跳过")
+            else:
+                self.logger.info(f"  📚 训练数据加载: 启用")
             
         else:
             error = report["error"]
@@ -558,6 +619,35 @@ class SchemaWorkflowOrchestrator:
             self.logger.error(f"✅ 已完成步骤: {', '.join(summary['completed_steps']) if summary['completed_steps'] else '无'}")
         
         self.logger.info("=" * 80)
+    
+    def _parse_db_connection(self, db_connection: str) -> Dict[str, str]:
+        """
+        解析PostgreSQL连接字符串
+        
+        Args:
+            db_connection: PostgreSQL连接字符串，格式为 postgresql://user:password@host:port/dbname
+        
+        Returns:
+            包含数据库连接参数的字典
+        """
+        import re
+        
+        # 解析连接字符串的正则表达式
+        pattern = r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)'
+        match = re.match(pattern, db_connection)
+        
+        if not match:
+            raise ValueError(f"无效的PostgreSQL连接字符串格式: {db_connection}")
+        
+        user, password, host, port, dbname = match.groups()
+        
+        return {
+            'user': user,
+            'password': password,
+            'host': host,
+            'port': port,
+            'dbname': dbname
+        }
 
 
 # 便捷的命令行接口
@@ -570,7 +660,7 @@ def setup_argument_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例用法:
-  # 完整工作流程
+  # 完整工作流程（会在指定目录下创建任务子目录）
   python -m data_pipeline.schema_workflow \\
     --db-connection "postgresql://user:pass@localhost:5432/highway_db" \\
     --table-list tables.txt \\
@@ -623,8 +713,8 @@ def setup_argument_parser():
     # 可选参数
     parser.add_argument(
         "--output-dir",
-        default="./data_pipeline/training_data/",
-        help="输出目录（默认：./data_pipeline/training_data/）"
+        default=None,
+        help="基础输出目录，将在此目录下创建任务子目录（默认：./data_pipeline/training_data/）"
     )
     
     parser.add_argument(
@@ -711,7 +801,7 @@ async def main():
         from data_pipeline.dp_logging import get_logger
         logger = get_logger("SchemaWorkflow", script_task_id)
         logger.info(f"🚀 开始执行Schema工作流编排...")
-        logger.info(f"📁 输出目录: {args.output_dir}")
+        logger.info(f"📁 输出目录: {orchestrator.output_dir}")
         logger.info(f"📋 表清单: {args.table_list}")
         logger.info(f"🏢 业务背景: {args.business_context}")
         logger.info(f"💾 数据库: {orchestrator.db_name}")
@@ -737,7 +827,6 @@ async def main():
             logger.error(f"\n❌ 工作流程执行失败")
             exit_code = 2  # 失败
         
-        logger.info(f"📄 主要输出文件: {report['final_outputs']['primary_output_file']}")
         sys.exit(exit_code)
         
     except KeyboardInterrupt:

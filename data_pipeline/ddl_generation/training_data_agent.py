@@ -125,6 +125,13 @@ class SchemaTrainingDataAgent:
         if not inspector.connection_pool:
             await inspector._create_connection_pool()
         
+        # 解析并打印数据库连接信息
+        try:
+            db_info = self._parse_db_connection(self.db_connection)
+            self.logger.info(f"🔗 数据库连接信息: 用户名={db_info['user']}, 密码={'*' * len(db_info['password'])}, 主机={db_info['host']}:{db_info['port']}, 数据库={db_info['dbname']}")
+        except Exception as e:
+            self.logger.warning(f"无法解析数据库连接字符串: {e}")
+        
         checker = DatabasePermissionChecker(inspector)
         
         permissions = await checker.check_permissions()
@@ -139,6 +146,35 @@ class SchemaTrainingDataAgent:
                 self.logger.warning("数据库为只读或权限受限，部分功能可能受影响")
         
         self.logger.info(f"数据库权限检查完成: {permissions}")
+    
+    def _parse_db_connection(self, db_connection: str) -> Dict[str, str]:
+        """
+        解析PostgreSQL连接字符串
+        
+        Args:
+            db_connection: PostgreSQL连接字符串，格式为 postgresql://user:password@host:port/dbname
+        
+        Returns:
+            包含数据库连接参数的字典
+        """
+        import re
+        
+        # 解析连接字符串的正则表达式
+        pattern = r'postgresql://([^:]+):([^@]+)@([^:]+):(\d+)/(.+)'
+        match = re.match(pattern, db_connection)
+        
+        if not match:
+            raise ValueError(f"无效的PostgreSQL连接字符串格式: {db_connection}")
+        
+        user, password, host, port, dbname = match.groups()
+        
+        return {
+            'user': user,
+            'password': password,
+            'host': host,
+            'port': port,
+            'dbname': dbname
+        }
     
     async def _parse_table_list(self) -> List[str]:
         """解析表清单文件"""
@@ -279,6 +315,25 @@ class SchemaTrainingDataAgent:
         
         avg_execution_time = sum(r.get('execution_time', 0) for r in results) / len(results) if results else 0
         
+        # 计算生成的文件数量
+        successful_count = len(successful_results)
+        if self.pipeline == 'full':
+            md_files_generated = successful_count
+            ddl_files_generated = successful_count
+            total_files_generated = successful_count * 2
+        elif self.pipeline == 'ddl_only':
+            md_files_generated = 0
+            ddl_files_generated = successful_count
+            total_files_generated = successful_count
+        elif self.pipeline == 'analysis_only':
+            md_files_generated = successful_count
+            ddl_files_generated = 0
+            total_files_generated = successful_count
+        else:
+            md_files_generated = successful_count
+            ddl_files_generated = 0
+            total_files_generated = successful_count
+        
         report = {
             'summary': {
                 'total_tables': self.stats['total_tables'],
@@ -291,7 +346,9 @@ class SchemaTrainingDataAgent:
             'statistics': {
                 'total_fields_processed': total_fields,
                 'enum_fields_detected': total_enum_fields,
-                'files_generated': len(successful_results) * (2 if self.pipeline == 'full' else 1)
+                'md_files_generated': md_files_generated,
+                'ddl_files_generated': ddl_files_generated,
+                'total_files_generated': total_files_generated
             },
             'failed_tables': self.failed_tables,
             'detailed_results': results,
@@ -308,7 +365,14 @@ class SchemaTrainingDataAgent:
         self.logger.info(f"  ✅ 成功: {report['summary']['processed_successfully']} 个表")
         self.logger.info(f"  ❌ 失败: {report['summary']['failed']} 个表")
         self.logger.info(f"  ⏭️  跳过: {report['summary']['skipped_system_tables']} 个系统表")
-        self.logger.info(f"  📁 生成文件: {report['statistics']['files_generated']} 个")
+        if md_files_generated > 0 and ddl_files_generated > 0:
+            self.logger.info(f"  📁 生成文件: {md_files_generated} 个MD文件，{ddl_files_generated} 个DDL文件")
+        elif md_files_generated > 0:
+            self.logger.info(f"  📁 生成文件: {md_files_generated} 个MD文件")
+        elif ddl_files_generated > 0:
+            self.logger.info(f"  📁 生成文件: {ddl_files_generated} 个DDL文件")
+        else:
+            self.logger.info(f"  📁 生成文件: 0 个")
         self.logger.info(f"  🕐 总耗时: {total_time:.2f} 秒")
         
         if self.failed_tables:
