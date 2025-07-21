@@ -8,6 +8,7 @@ import asyncio
 import json
 import os
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -22,15 +23,30 @@ from data_pipeline.dp_logging import get_logger
 class SimpleWorkflowExecutor:
     """简化的任务工作流执行器"""
     
-    def __init__(self, task_id: str):
+    def __init__(self, task_id: str, backup_vector_tables: bool = False, truncate_vector_tables: bool = False, skip_training: bool = False):
         """
         初始化工作流执行器
         
         Args:
             task_id: 任务ID
+            backup_vector_tables: 是否备份vector表数据
+            truncate_vector_tables: 是否清空vector表数据（自动启用备份）
+            skip_training: 是否跳过训练文件处理，仅执行Vector表管理
         """
         self.task_id = task_id
+        self.backup_vector_tables = backup_vector_tables
+        self.truncate_vector_tables = truncate_vector_tables
+        self.skip_training = skip_training
+        
+        # 参数逻辑：truncate自动启用backup
+        if self.truncate_vector_tables:
+            self.backup_vector_tables = True
+        
         self.logger = get_logger("SimpleWorkflowExecutor", task_id)
+        
+        # 记录Vector表管理参数状态
+        if self.backup_vector_tables or self.truncate_vector_tables:
+            self.logger.info(f"🗂️ Vector表管理已启用: backup={self.backup_vector_tables}, truncate={self.truncate_vector_tables}")
         
         # 初始化管理器
         self.task_manager = SimpleTaskManager()
@@ -135,6 +151,81 @@ class SimpleWorkflowExecutor:
             except Exception as e:
                 self.logger.error(f"记录任务目录日志失败: {e}")
     
+    def _backup_existing_files_if_needed(self):
+        """如果需要，备份现有文件（仅备份文件，不包括子目录）"""
+        try:
+            task_dir = self.file_manager.get_task_directory(self.task_id)
+            
+            # 严格检查：只允许保留指定文件
+            allowed_files = {"table_list.txt", "data_pipeline.log"}
+            
+            # 扫描任务目录中的文件（排除子目录和允许的文件）
+            files_to_backup = []
+            for item in task_dir.iterdir():
+                if item.is_file() and item.name not in allowed_files:
+                    files_to_backup.append(item)
+            
+            # 如果没有文件需要备份，直接返回
+            if not files_to_backup:
+                self._log_to_task_directory("INFO", "任务目录中没有需要备份的文件")
+                return
+            
+            # 创建备份目录
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_dir_name = f"file_bak_{timestamp}"
+            backup_dir = task_dir / backup_dir_name
+            
+            # 处理备份目录名冲突
+            counter = 1
+            while backup_dir.exists():
+                backup_dir = task_dir / f"{backup_dir_name}_{counter}"
+                counter += 1
+            
+            backup_dir.mkdir(parents=True)
+            
+            # 移动文件到备份目录
+            moved_files = []
+            failed_files = []
+            
+            for file_path in files_to_backup:
+                try:
+                    target_path = backup_dir / file_path.name
+                    shutil.move(str(file_path), str(target_path))
+                    moved_files.append(file_path.name)
+                    self._log_to_task_directory("DEBUG", f"文件已备份: {file_path.name}")
+                except Exception as e:
+                    failed_files.append({"file": file_path.name, "error": str(e)})
+                    self._log_to_task_directory("WARNING", f"文件备份失败: {file_path.name} - {e}")
+            
+            # 生成备份记录文件
+            backup_info = {
+                "backup_time": datetime.now().isoformat(),
+                "backup_directory": backup_dir.name,
+                "moved_files": moved_files,
+                "failed_files": failed_files,
+                "task_id": self.task_id
+            }
+            
+            backup_info_file = backup_dir / "backup_info.json"
+            with open(backup_info_file, 'w', encoding='utf-8') as f:
+                json.dump(backup_info, f, ensure_ascii=False, indent=2)
+            
+            # 记录备份完成
+            self._log_to_task_directory("INFO", 
+                f"文件备份完成: {len(moved_files)} 个文件已移动到 {backup_dir.name}")
+            
+            # 如果有文件备份失败，中断作业
+            if failed_files:
+                error_msg = f"❌ 无法清理工作目录，以下文件移动失败: {[f['file'] for f in failed_files]}"
+                self._log_to_task_directory("ERROR", error_msg)
+                raise Exception(error_msg)
+        
+        except Exception as e:
+            # 备份失败必须中断作业
+            error_msg = f"❌ 文件备份过程失败，作业中断: {e}"
+            self._log_to_task_directory("ERROR", error_msg)
+            raise Exception(error_msg)
+    
     def _resolve_table_list_file_path(self) -> str:
         """解析表清单文件路径"""
         table_list_file = self.task_params['table_list_file']
@@ -183,7 +274,11 @@ class SimpleWorkflowExecutor:
             enable_sql_validation=self.task_params.get('enable_sql_validation', True),
             enable_llm_repair=self.task_params.get('enable_llm_repair', True),
             modify_original_file=self.task_params.get('modify_original_file', True),
-            enable_training_data_load=self.task_params.get('enable_training_data_load', True)
+            enable_training_data_load=self.task_params.get('enable_training_data_load', True),
+            # 新增：Vector表管理参数
+            backup_vector_tables=self.backup_vector_tables,
+            truncate_vector_tables=self.truncate_vector_tables,
+            skip_training=self.skip_training
         )
     
     @contextmanager
@@ -219,7 +314,10 @@ class SimpleWorkflowExecutor:
     async def execute_complete_workflow(self) -> Dict[str, Any]:
         """执行完整工作流"""
         try:
-            # 确保任务目录存在
+            # 🆕 新增：先备份现有文件（清理环境）
+            self._backup_existing_files_if_needed()
+            
+            # 确保任务目录存在并写入新配置
             if not self._ensure_task_directory():
                 raise Exception("无法创建任务目录")
             
@@ -314,6 +412,19 @@ class SimpleWorkflowExecutor:
     async def execute_single_step(self, step_name: str) -> Dict[str, Any]:
         """执行单个步骤"""
         try:
+            # 新增：非training_load步骤的Vector表管理参数警告
+            if step_name != 'training_load' and (self.backup_vector_tables or self.truncate_vector_tables or self.skip_training):
+                self.logger.warning(
+                    f"⚠️ Vector表管理参数仅在training_load步骤有效，当前步骤: {step_name}，忽略参数"
+                )
+                # 临时禁用Vector表管理参数
+                temp_backup = self.backup_vector_tables
+                temp_truncate = self.truncate_vector_tables
+                temp_skip = self.skip_training
+                self.backup_vector_tables = False
+                self.truncate_vector_tables = False
+                self.skip_training = False
+            
             # 确保任务目录存在
             if not self._ensure_task_directory():
                 raise Exception("无法创建任务目录")
@@ -321,7 +432,7 @@ class SimpleWorkflowExecutor:
             # 更新任务状态
             self.task_manager.update_task_status(self.task_id, 'in_progress')
             
-            # 创建工作流编排器
+            # 创建工作流编排器（会根据当前参数状态创建）
             orchestrator = self._create_orchestrator()
             
             # 重定向SchemaWorkflowOrchestrator的日志到任务目录
@@ -351,6 +462,12 @@ class SimpleWorkflowExecutor:
                 
                 # 写入步骤结果文件
                 self._write_step_result_file(step_name, result)
+            
+            # 恢复原始参数状态（如果被临时修改）
+            if step_name != 'training_load' and 'temp_backup' in locals():
+                self.backup_vector_tables = temp_backup
+                self.truncate_vector_tables = temp_truncate
+                self.skip_training = temp_skip
             
             # 检查是否所有步骤都已完成
             self._update_overall_task_status()

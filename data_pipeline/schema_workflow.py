@@ -32,7 +32,8 @@ class SchemaWorkflowOrchestrator:
                  modify_original_file: bool = True,
                  enable_training_data_load: bool = True,
                  backup_vector_tables: bool = False,
-                 truncate_vector_tables: bool = False):
+                 truncate_vector_tables: bool = False,
+                 skip_training: bool = False):
         """
         初始化Schema工作流编排器
         
@@ -48,6 +49,7 @@ class SchemaWorkflowOrchestrator:
             enable_training_data_load: 是否启用训练数据加载
             backup_vector_tables: 是否备份vector表数据
             truncate_vector_tables: 是否清空vector表数据（自动启用备份）
+            skip_training: 是否跳过训练文件处理，仅执行Vector表管理
         """
         self.db_connection = db_connection
         self.table_list_file = table_list_file
@@ -65,6 +67,7 @@ class SchemaWorkflowOrchestrator:
             
         self.backup_vector_tables = backup_vector_tables
         self.truncate_vector_tables = truncate_vector_tables
+        self.skip_training = skip_training
         
         # 处理task_id
         if task_id is None:
@@ -80,18 +83,31 @@ class SchemaWorkflowOrchestrator:
             # 获取项目根目录的绝对路径
             project_root = Path(__file__).parent.parent
             base_dir = project_root / "data_pipeline" / "training_data"
+            # 在基础目录下创建task子目录
+            self.output_dir = base_dir / self.task_id
         else:
-            # 用户指定了输出目录时，使用指定的目录作为基础目录
-            base_dir = Path(output_dir)
-        
-        # 无论哪种情况，都在基础目录下创建task子目录
-        self.output_dir = base_dir / self.task_id
+            # 用户指定了输出目录时，检查是否为API模式
+            output_path = Path(output_dir)
+            
+            # API模式判断：如果output_dir路径已经包含task_id，则直接使用，不再创建子目录
+            if self.task_id in str(output_path):
+                # API模式：直接使用传入的目录，这个目录已经是task专用目录
+                self.output_dir = output_path
+            else:
+                # 脚本模式：在指定目录下创建task子目录
+                self.output_dir = output_path / self.task_id
         
         # 确保输出目录存在
         self.output_dir.mkdir(parents=True, exist_ok=True)
             
         # 初始化独立日志系统
         self.logger = get_logger("SchemaWorkflowOrchestrator", self.task_id)
+        
+        # 记录Vector表管理参数状态
+        if self.truncate_vector_tables and truncate_vector_tables != backup_vector_tables:
+            self.logger.info("🔄 启用truncate时自动启用backup")
+        if self.backup_vector_tables or self.truncate_vector_tables:
+            self.logger.info(f"🗂️ Vector表管理参数: backup={self.backup_vector_tables}, truncate={self.truncate_vector_tables}")
         
         # 工作流程状态
         self.workflow_state = {
@@ -154,9 +170,7 @@ class SchemaWorkflowOrchestrator:
             else:
                 self.logger.info("⏭️ 跳过SQL验证步骤")
             
-            # 新增：独立的Vector表管理（在训练加载之前或替代训练加载）
-            if self.backup_vector_tables or self.truncate_vector_tables:
-                await self._execute_vector_table_management()
+
             
             # 步骤4: 训练数据加载（可选）
             if self.enable_training_data_load:
@@ -371,7 +385,7 @@ class SchemaWorkflowOrchestrator:
             raise
     
     async def _execute_vector_table_management(self):
-        """独立执行Vector表管理（支持--skip-training-load场景）"""
+        """独立执行Vector表管理"""
         if not (self.backup_vector_tables or self.truncate_vector_tables):
             return
             
@@ -438,12 +452,19 @@ class SchemaWorkflowOrchestrator:
             
             # 执行训练数据加载
             self.logger.info("🔄 开始处理训练文件...")
-            # 禁用vector管理参数以避免重复执行
-            load_successful, _ = process_training_files(training_data_dir, self.task_id, 
-                                                       backup_vector_tables=False, 
-                                                       truncate_vector_tables=False)
+            # 传递Vector表管理参数到training步骤
+            load_successful, vector_stats = process_training_files(training_data_dir, self.task_id, 
+                                                                  backup_vector_tables=self.backup_vector_tables, 
+                                                                  truncate_vector_tables=self.truncate_vector_tables,
+                                                                  skip_training=self.skip_training)
             
             step_duration = time.time() - step_start_time
+            
+            # 记录Vector表管理结果到工作流状态
+            if vector_stats:
+                if "artifacts" not in self.workflow_state:
+                    self.workflow_state["artifacts"] = {}
+                self.workflow_state["artifacts"]["vector_management"] = vector_stats
             
             if load_successful:
                 # 获取统计信息
@@ -861,11 +882,7 @@ def setup_argument_parser():
         help="不修改原始JSON文件（仅生成报告）"
     )
     
-    parser.add_argument(
-        "--skip-training-load",
-        action="store_true",
-        help="跳过训练数据加载步骤"
-    )
+
     
     parser.add_argument(
         "--backup-vector-tables",
@@ -928,7 +945,7 @@ async def main():
             enable_sql_validation=not args.skip_validation,
             enable_llm_repair=not args.disable_llm_repair,
             modify_original_file=not args.no_modify_file,
-            enable_training_data_load=not args.skip_training_load,
+            enable_training_data_load=True,
             backup_vector_tables=args.backup_vector_tables,
             truncate_vector_tables=args.truncate_vector_tables
         )

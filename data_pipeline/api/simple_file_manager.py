@@ -315,24 +315,36 @@ class SimpleFileManager:
             if not content.strip():
                 raise ValueError("表清单文件为空")
             
-            # 简单验证：检查是否包含至少一个非空行
-            lines = [line.strip() for line in content.split('\n') if line.strip()]
-            if not lines:
+            # 解析表名，支持换行符和逗号分隔
+            all_tables = []
+            lines = content.split('\n')
+            
+            for line in lines:
+                line = line.strip()
+                # 跳过空行和注释行
+                if not line or line.startswith('#') or line.startswith('--'):
+                    continue
+                
+                # 如果行内包含逗号，按逗号分割；否则整行作为一个表名
+                if ',' in line:
+                    tables_in_line = [t.strip() for t in line.split(',') if t.strip()]
+                else:
+                    tables_in_line = [line]
+                
+                all_tables.extend(tables_in_line)
+            
+            if not all_tables:
                 raise ValueError("表清单文件不包含有效的表名")
             
-            # 可选：验证表名格式（避免SQL注入等安全问题）
+            # 验证表名格式（避免SQL注入等安全问题）
             import re
             table_name_pattern = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$')
             invalid_tables = []
             
-            for line in lines[:10]:  # 只检查前10行以避免过度验证
-                # 忽略注释行
-                if line.startswith('#') or line.startswith('--'):
-                    continue
-                
-                # 检查表名格式
-                if not table_name_pattern.match(line):
-                    invalid_tables.append(line)
+            # 只检查前10个表名以避免过度验证
+            for table_name in all_tables[:10]:
+                if not table_name_pattern.match(table_name):
+                    invalid_tables.append(table_name)
             
             if invalid_tables:
                 raise ValueError(f"表清单文件包含无效的表名格式: {', '.join(invalid_tables[:3])}")
@@ -373,11 +385,11 @@ class SimpleFileManager:
                         "error": f"无法解码文件内容，请确保文件编码为 {encoding}"
                     }
             
-            # 分析文件内容
+            # 分析文件内容，支持换行符和逗号分隔
             lines = content.splitlines()
             total_lines = len(lines)
             
-            # 过滤空行和注释行
+            # 过滤空行和注释行，解析表名
             valid_lines = []
             comment_lines = 0
             empty_lines = 0
@@ -389,16 +401,23 @@ class SimpleFileManager:
                 elif stripped.startswith('#'):
                     comment_lines += 1
                 else:
-                    # 简单验证表名格式
-                    if self._is_valid_table_name(stripped):
-                        valid_lines.append(stripped)
+                    # 如果行内包含逗号，按逗号分割；否则整行作为一个表名
+                    if ',' in stripped:
+                        tables_in_line = [t.strip() for t in stripped.split(',') if t.strip()]
                     else:
-                        return {
-                            "valid": False,
-                            "error": f"第 {line_num} 行包含无效的表名: {stripped}",
-                            "details": {
-                                "line_number": line_num,
-                                "invalid_content": stripped
+                        tables_in_line = [stripped]
+                    
+                    # 验证每个表名格式
+                    for table_name in tables_in_line:
+                        if self._is_valid_table_name(table_name):
+                            valid_lines.append(table_name)
+                        else:
+                            return {
+                                "valid": False,
+                                "error": f"第 {line_num} 行包含无效的表名: {table_name}",
+                                "details": {
+                                    "line_number": line_num,
+                                    "invalid_content": table_name
                             }
                         }
             
@@ -486,13 +505,26 @@ class SimpleFileManager:
             
             file_stat = file_path.stat()
             
-            # 尝试读取文件内容进行分析
+            # 尝试读取文件内容进行分析，支持换行符和逗号分隔
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                     lines = content.splitlines()
-                    valid_tables = [line.strip() for line in lines 
-                                   if line.strip() and not line.strip().startswith('#')]
+                    valid_tables = []
+                    
+                    for line in lines:
+                        line = line.strip()
+                        # 跳过空行和注释行
+                        if not line or line.startswith('#') or line.startswith('--'):
+                            continue
+                        
+                        # 如果行内包含逗号，按逗号分割；否则整行作为一个表名
+                        if ',' in line:
+                            tables_in_line = [t.strip() for t in line.split(',') if t.strip()]
+                        else:
+                            tables_in_line = [line]
+                        
+                        valid_tables.extend(tables_in_line)
             except Exception:
                 valid_tables = []
             

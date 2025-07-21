@@ -2764,53 +2764,7 @@ def get_conversation_summary_api(thread_id: str):
             response_text=f"获取对话摘要失败: {str(e)}"
         )), 500
 
-# ==================== 启动逻辑 ====================
 
-def signal_handler(signum, frame):
-    """信号处理器，优雅退出"""
-    logger.info(f"接收到信号 {signum}，准备退出...")
-    cleanup_resources()
-    sys.exit(0)
-
-if __name__ == '__main__':
-    # 注册信号处理器
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    
-    logger.info("🚀 启动统一API服务...")
-    logger.info("📍 服务地址: http://localhost:8084")
-    logger.info("🔗 健康检查: http://localhost:8084/health")
-    logger.info("📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent")
-    logger.info("📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent")
-    
-    try:
-        # 尝试使用ASGI模式启动（推荐）
-        import uvicorn
-        from asgiref.wsgi import WsgiToAsgi
-        
-        logger.info("🚀 使用ASGI模式启动异步Flask应用...")
-        logger.info("   这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存")
-        
-        # 将Flask WSGI应用转换为ASGI应用
-        asgi_app = WsgiToAsgi(app)
-        
-        # 使用uvicorn启动ASGI应用
-        uvicorn.run(
-            asgi_app,
-            host="0.0.0.0",
-            port=8084,
-            log_level="info",
-            access_log=True
-        )
-        
-    except ImportError as e:
-        # 如果缺少ASGI依赖，fallback到传统Flask模式
-        logger.warning("⚠️ ASGI依赖缺失，使用传统Flask模式启动")
-        logger.warning("   建议安装: pip install uvicorn asgiref")
-        logger.warning("   传统模式可能存在异步事件循环冲突问题")
-        
-        # 启动标准Flask应用（支持异步路由）
-        app.run(host="0.0.0.0", port=8084, debug=False, threaded=True)
 
 # Data Pipeline 全局变量 - 从 citu_app.py 迁移
 data_pipeline_manager = None
@@ -3133,6 +3087,11 @@ def execute_data_pipeline_task(task_id):
         execution_mode = req.get('execution_mode', 'complete')
         step_name = req.get('step_name')
         
+        # 新增：Vector表管理参数
+        backup_vector_tables = req.get('backup_vector_tables', False)
+        truncate_vector_tables = req.get('truncate_vector_tables', False)
+        skip_training = req.get('skip_training', False)
+        
         # 验证执行模式
         if execution_mode not in ['complete', 'step']:
             return jsonify(bad_request_response(
@@ -3154,6 +3113,16 @@ def execute_data_pipeline_task(task_id):
                     response_text=f"无效的步骤名称，支持的步骤: {', '.join(valid_steps)}",
                     invalid_params=['step_name']
                 )), 400
+        
+        # 新增：Vector表管理参数验证和警告
+        if execution_mode == 'step' and step_name != 'training_load':
+            if backup_vector_tables or truncate_vector_tables or skip_training:
+                logger.warning(
+                    f"⚠️ Vector表管理参数仅在training_load步骤有效，当前步骤: {step_name}，忽略参数"
+                )
+                backup_vector_tables = False
+                truncate_vector_tables = False
+                skip_training = False
         
         # 检查任务是否存在
         manager = get_data_pipeline_manager()
@@ -3183,6 +3152,14 @@ def execute_data_pipeline_task(task_id):
                 
                 if step_name:
                     cmd.extend(["--step-name", step_name])
+                    
+                # 新增：Vector表管理参数传递
+                if backup_vector_tables:
+                    cmd.append("--backup-vector-tables")
+                if truncate_vector_tables:
+                    cmd.append("--truncate-vector-tables")
+                if skip_training:
+                    cmd.append("--skip-training")
                 
                 logger.info(f"启动任务进程: {' '.join(cmd)}")
                 
@@ -3203,6 +3180,10 @@ def execute_data_pipeline_task(task_id):
         # 在新线程中启动subprocess（避免阻塞API响应）
         thread = Thread(target=run_task_subprocess, daemon=True)
         thread.start()
+        
+        # 新增：记录Vector表管理参数到日志
+        if backup_vector_tables or truncate_vector_tables:
+            logger.info(f"📋 API请求包含Vector表管理参数: backup={backup_vector_tables}, truncate={truncate_vector_tables}")
         
         response_data = {
             "task_id": task_id,
@@ -4449,3 +4430,52 @@ def query_data_pipeline_task_logs(task_id):
         return jsonify(internal_error_response(
             response_text="查询任务日志失败，请稍后重试"
         )), 500
+
+
+# ==================== 启动逻辑 ====================
+
+def signal_handler(signum, frame):
+    """信号处理器，优雅退出"""
+    logger.info(f"接收到信号 {signum}，准备退出...")
+    cleanup_resources()
+    sys.exit(0)
+
+if __name__ == '__main__':
+    # 注册信号处理器
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    logger.info("🚀 启动统一API服务...")
+    logger.info("📍 服务地址: http://localhost:8084")
+    logger.info("🔗 健康检查: http://localhost:8084/health")
+    logger.info("📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent")
+    logger.info("📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent")
+    
+    try:
+        # 尝试使用ASGI模式启动（推荐）
+        import uvicorn
+        from asgiref.wsgi import WsgiToAsgi
+        
+        logger.info("🚀 使用ASGI模式启动异步Flask应用...")
+        logger.info("   这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存")
+        
+        # 将Flask WSGI应用转换为ASGI应用
+        asgi_app = WsgiToAsgi(app)
+        
+        # 使用uvicorn启动ASGI应用
+        uvicorn.run(
+            asgi_app,
+            host="0.0.0.0",
+            port=8084,
+            log_level="info",
+            access_log=True
+        )
+        
+    except ImportError as e:
+        # 如果缺少ASGI依赖，fallback到传统Flask模式
+        logger.warning("⚠️ ASGI依赖缺失，使用传统Flask模式启动")
+        logger.warning("   建议安装: pip install uvicorn asgiref")
+        logger.warning("   传统模式可能存在异步事件循环冲突问题")
+        
+        # 启动标准Flask应用（支持异步路由）
+        app.run(host="0.0.0.0", port=8084, debug=False, threaded=True)

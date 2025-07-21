@@ -1,0 +1,1460 @@
+2025-07-20 00:49:17 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-20 00:49:17 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 00:49:17 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-20 00:49:17 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001CA2C180F80>
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-20 00:49:17 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-20 00:49:17 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-20 00:49:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-20 00:49:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-20 00:49:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 00:49:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001CA2DB41EB0>
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-20 00:49:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-20 00:49:19 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-20 00:49:20 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-20 00:49:55 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-20 00:49:55 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 00:49:55 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001CA2FEEF650>
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-20 00:49:56 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-20 00:49:56 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-20 00:49:58 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:270 - 尝试为问题生成SQL: 请问哪个服务区的档口数量最多？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析每个服务区关联的路线数量并找出覆盖路线最多的服务区 | similarity: 0.7464
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 哪些服务区只有单一方向的档口？ | similarity: 0.7459
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析各服务区关联的路段路线数量TOP10 | similarity: 0.7405
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 每个服务区的营业档口数量（曾经有交易的）？ | similarity: 0.7326
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 最近30天中车流量最高的服务区？ | similarity: 0.7325
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 各分公司管辖服务区的档口总数对比如何？ | similarity: 0.7275
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - SQL 阈值过滤: 总数=6, 阈值=0.65, 最少保留=3
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - SQL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 1: similarity=0.7464 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 2: similarity=0.7459 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 3: similarity=0.7405 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 4: similarity=0.7326 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 5: similarity=0.7325 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 6: similarity=0.7275 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属... | similarity: 0.649
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路段路线与服务区关联表
+-- 描述: 路段路线与服务区关联表，维护路线与服务区之间的... | similarity: 0.6368
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线经过的服务区信息
+cr... | similarity: 0.6357
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线分段与服务区关联表
+-- 描述: 路线分段与服务区关联表，记录路线与服务区的对应... | similarity: 0.6313
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线ID与服务区ID的对应... | similarity: 0.626
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 存储路线段与服务区关联关系
+-- 描述: 存储路线段与服务区关联关系，管理高速线路与... | similarity: 0.6199
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DDL 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DDL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 1: similarity=0.649 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 2: similarity=0.6368 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 3: similarity=0.6357 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 4: similarity=0.6313 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 5: similarity=0.626 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 6: similarity=0.6199 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础... | similarity: 0.6543
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_serv... | similarity: 0.6345
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息（名称、编码）及操作记录）
+bss... | similarity: 0.6339
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route_area_link（路线与服务区关联表）
+bss_sect... | similarity: 0.6287
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（服务区基础信息表）
+bss_service_area 表记录... | similarity: 0.627
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route_area_link（记录高速公路路段路线与服务区的关联关系... | similarity: 0.6263
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DOC 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DOC 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 1: similarity=0.6543 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 2: similarity=0.6345 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 3: similarity=0.6339 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 4: similarity=0.6287 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 5: similarity=0.627 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 6: similarity=0.6263 ✓
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:104 - 开始生成SQL提示词，问题: 请问哪个服务区的档口数量最多？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:654 - Error SQL Match: 查询所有部门信息 | similarity: 0.2713
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:392 - Error SQL 阈值过滤: 总数=1, 阈值=0.8
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] pgvector.py:410 - Error SQL 过滤结果: 所有 1 条结果都低于阈值 0.8，返回空列表
+2025-07-20 00:49:58 [WARNING] [vanna.BaseLLMChat] pgvector.py:673 - 向量查询找到了 1 条错误SQL示例，但全部被阈值过滤掉.
+2025-07-20 00:49:58 [WARNING] [vanna.BaseLLMChat] pgvector.py:674 - 问题: 请问哪个服务区的档口数量最多？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:159 - 未找到相关的错误SQL示例
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a PostgreSQL expert. 
+Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+===Tables 
+-- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+create table bss_branch (
+  id varchar(32) not null,              -- 主键ID
+  version integer not null,             -- 数据版本号
+  create_ts timestamp(3),               -- 创建时间
+  created_by varchar(50),               -- 创建人
+  update_ts timestamp(3),               -- 更新时间
+  updated_by varchar(50),               -- 更新人
+  delete_ts timestamp(3),               -- 删除时间
+  deleted_by varchar(50),               -- 删除人
+  branch_name varchar(255),             -- 档口名称
+  branch_no varchar(255),               -- 档口编码
+  service_area_id varchar(32),          -- 服务区ID,外键(关联bss_service_area.id)
+  company_id varchar(32),               -- 公司ID,外键(关联bss_company.ID)
+  classify varchar(256),                -- 品类
+  product_brand varchar(256),           -- 品牌
+  category varchar(256),                -- 类别
+  section_route_id varchar(32),         -- 所属路线ID,外键(关联bss_section_route.id)
+  direction varchar(256),               -- 所在方向
+  is_manual_entry integer default 0,    -- 是否手工录入
+  co_company varchar(256)               -- 合作公司名称
+)
+
+-- 中文名: 路段路线与服务区关联表
+-- 描述: 路段路线与服务区关联表，维护路线与服务区之间的归属关系。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线经过的服务区信息
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线分段与服务区关联表
+-- 描述: 路线分段与服务区关联表，记录路线与服务区的对应关系
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线ID与服务区ID的对应关系，支持路径规划和资源分配。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 存储路线段与服务区关联关系
+-- 描述: 存储路线段与服务区关联关系，管理高速线路与服务区归属
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区编码，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+
+===Additional Context 
+
+## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+字段列表：
+- id (varchar(32)) - 主键ID [示例: 00904903cae681aab7a494c3e88e5acd]
+- version (integer) - 数据版本号 [示例: 1]
+- create_ts (timestamp(3)) - 创建时间 [示例: 2021-10-15 09:46:45.010]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp(3)) - 更新时间 [示例: 2021-10-15 09:46:45.010]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp(3)) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- branch_name (varchar(255)) - 档口名称 [示例: 于都驿美餐饮南区]
+- branch_no (varchar(255)) - 档口编码（唯一业务标识）[示例: 003585]
+- service_area_id (varchar(32)) - 服务区ID（外键关联bss_service_area.id）[示例: c7e2f26df373e9cb75bd24ddba57f27f]
+- company_id (varchar(32)) - 公司ID（外键关联bss_company.id）[示例: ce5e6f553513dad393694e1fa663aaf4]
+- classify (varchar(256)) - 经营品类，枚举型：餐饮、小吃、便利店、整体租赁、其他 [示例: 餐饮]
+- product_brand (varchar(256)) - 品牌名称 [示例: 驿美餐饮]
+- category (varchar(256)) - 经营类别 [示例: 混沌]
+- section_route_id (varchar(32)) - 所属路线ID（外键关联bss_section_route.id）[示例: lvkcuu94d4487c42z7qltsvxcyz0iqu5]
+- direction (varchar(256)) - 所在方向（枚举：北区/南区/西区/东区/两区）[示例: 南区]
+- is_manual_entry (integer) - 是否手工录入（0=系统自动，1=手工录入）[示例: 0]
+- co_company (varchar(256)) - 合作公司名称 [示例: 江西驿美餐饮管理有限责任公司]
+字段补充说明：
+- service_area_id 外键关联服务区基础信息表(bss_service_area)
+- company_id 外键关联服务区管理公司表(bss_company)
+- section_route_id 外键关联高速线路信息表(bss_section_route)
+- direction 表示档口在服务区内的物理位置分区,为枚举型：北区、南区、西区、东区、两区。
+- is_manual_entry 标识数据来源（系统采集或人工录入）
+- classify 表示经营品类，为枚举型：餐饮、小吃、便利店、整体租赁、其他。
+
+## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_service_area 表存储高速公路服务区基础信息及版本变更记录，支持服务区全生命周期管理。
+字段列表：
+- id (varchar(32)) - 主键标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 运营状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_service_area（存储高速公路服务区基础信息（名称、编码）及操作记录）
+bss_service_area 表存储高速公路服务区基础信息（名称、编码）及操作记录，支撑BSS系统服务区全生命周期管理
+字段列表：
+- id (varchar(32)) - 主键标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理位置坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_section_route_area_link（路线与服务区关联表）
+bss_section_route_area_link 表路线与服务区关联表，记录路线ID与服务区ID的对应关系，支持路径规划和资源分配。
+字段列表：
+- section_route_id (varchar(32)) - 路段路线ID [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
+- service_area_id (varchar(32)) - 服务区ID [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
+字段补充说明：
+- 复合主键：section_route_id, service_area_id
+
+## bss_service_area（服务区基础信息表）
+bss_service_area 表记录高速公路服务区的基础属性，包括服务区编码、名称、方向、公司归属、地理位置、服务类型和状态，是业务分析与服务区定位的核心表。
+字段列表：
+- id (varchar(32)) - 服务区唯一标识（主键，UUID) [示例: 0271d68ef93de9684b7ad8c7aae600b6]
+- version (integer) - 版本号 [示例: 3]
+- create_ts (timestamp(3)) - 创建时间 [示例: 2021-05-21 13:26:40.589]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp(3)) - 更新时间 [示例: 2021-07-10 15:41:28.795]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp(3)) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区]
+- service_area_no (varchar(255)) - 服务区编码（业务唯一标识）[示例: H0814]
+- company_id (varchar(32)) - 公司ID（外键关联bss_company.id）[示例: b1629f07c8d9ac81494fbc1de61f1ea5]
+- service_position (varchar(255)) - 经纬度坐标 [示例: 114.574721,26.825584]
+- service_area_type (varchar(50)) - 服务区类型（枚举：信息化服务区、智能化服务区）[示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态（枚举：开放/关闭/上传数据）[示例: 开放]
+字段补充说明：
+- id 为主键，使用 UUID 编码，唯一标识每个服务区。
+- company_id 外键,关联服务区管理公司表(bss_company.id)
+- service_position 经纬度格式为"经度,纬度"
+- service_area_type 为枚举字段，包含两个取值：信息化服务区、智能化服务区。
+- 是多个表(bss_branch, bss_car_day_count等)的核心关联实体
+
+## bss_section_route_area_link（记录高速公路路段路线与服务区的关联关系）
+bss_section_route_area_link 表记录高速公路路段路线与服务区的关联关系，支撑路线规划与服务区运营管理。
+字段列表：
+- section_route_id (varchar(32)) - 路段路线ID [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
+- service_area_id (varchar(32)) - 服务区ID [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
+字段补充说明：
+- 复合主键：section_route_id, service_area_id
+
+===Response Guidelines 
+**IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+
+1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+3. If the provided context is insufficient, please explain why it can't be generated. 
+4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+     interpret it as 'How many dining stalls does Nancheng Service Area have?'
+5. Please use the most relevant table(s). 
+6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+7. Ensure that the output SQL is PostgreSQL-compliant and executable, and free of syntax errors. 
+8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+   - Every column MUST use AS with a Chinese alias
+   - Raw column names without aliases are NOT acceptable
+   - Examples: 
+     * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+     * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+     * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+   - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 分析每个服务区关联的路线数量并找出覆盖路线最多的服务区
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_area_id AS 服务区ID, COUNT(section_route_id) AS 关联路线数 FROM bss_section_route_area_link GROUP BY service_area_id ORDER BY 关联路线数 DESC LIMIT 1;
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 哪些服务区只有单一方向的档口？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sa.service_area_name, COUNT(DISTINCT b.direction) AS direction_count, STRING_AGG(DISTINCT b.direction, ', ') AS directions FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service_area_name HAVING COUNT(DISTINCT b.direction) = 1 ORDER BY sa.service_area_name;
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 分析各服务区关联的路段路线数量TOP10
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sa.service_area_name AS 服务区名称, COUNT(sr.id) AS 关联路段数 FROM bss_section_route_area_link link JOIN bss_service_area sa ON link.service_area_id = sa.id JOIN bss_section_route sr ON link.section_route_id = sr.id WHERE sa.delete_ts IS NULL GROUP BY sa.service_area_name ORDER BY 关联路段数 DESC LIMIT 10;
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 每个服务区的营业档口数量（曾经有交易的）？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_name, COUNT(DISTINCT branch_no) AS branch_count FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name;
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 最近30天中车流量最高的服务区？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT s.service_area_name, SUM(c.customer_count) AS total_cars FROM bss_car_day_count c JOIN bss_service_area s ON c.service_area_id = s.id WHERE c.count_date >= CURRENT_DATE - INTERVAL '30 day' GROUP BY s.service_area_name ORDER BY total_cars DESC NULLS LAST LIMIT 10;
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 各分公司管辖服务区的档口总数对比如何？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT c.company_name, COUNT(DISTINCT b.id) AS total_branches FROM bss_company c JOIN bss_service_area sa ON c.id = sa.company_id JOIN bss_branch b ON sa.id = b.service_area_id WHERE c.delete_ts IS NULL AND sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY c.company_name ORDER BY total_branches DESC NULLS LAST;
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 请问哪个服务区的档口数量最多？
+2025-07-20 00:49:58 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:70 - [Vanna] SQL Prompt: [{'role': 'system', 'content': 'You are a PostgreSQL expert. \nPlease help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the respon...
+2025-07-20 00:49:58 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 2977.0 tokens (approx)
+2025-07-20 00:49:58 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 00:49:58 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 00:50:01 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:77 - [Vanna] LLM Response: SELECT sa.service_area_name AS 服务区名称, COUNT(b.id) AS 档口数量 FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service...
+2025-07-20 00:50:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:80 - [Vanna] Extracted SQL: SELECT sa.service_area_name AS 服务区名称, COUNT(b.id) AS 档口数量 FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service_area_name ORDER BY 档口数量 DESC LIMIT 1;
+2025-07-20 00:50:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:320 - 成功生成SQL:
+ SELECT sa.service_area_name AS 服务区名称, COUNT(b.id) AS 档口数量 FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service_area_name ORDER BY 档口数量 DESC LIMIT 1;
+2025-07-20 00:50:01 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:476 - 生成摘要 - 问题: 请问哪个服务区的档口数量最多？
+2025-07-20 00:50:01 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:477 - DataFrame 形状: (1, 2)
+2025-07-20 00:50:01 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a professional data analysis assistant. The user asked: '请问哪个服务区的档口数量最多？'
+
+Here is the pandas DataFrame data from the query results:|    | 服务区名称   |   档口数量 |
+|---:|:-------------|-----------:|
+|  0 | 南城服务区   |         39 |
+
+Please think and analyze in the context provided and respond accordingly.
+
+2025-07-20 00:50:01 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: Based on the user's question, please briefly summarize this data. Requirements:
+1. Provide only a brief summary without adding extra explanations
+2. If there are numbers in the data, maintain appropriate precision
+Please respond in Chinese. 
+2025-07-20 00:50:01 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 136.75 tokens (approx)
+2025-07-20 00:50:01 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 00:50:01 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 00:50:02 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:502 - 隐藏thinking内容 - 原始长度: 19, 处理后长度: 19
+2025-07-20 00:50:02 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:504 - 生成的摘要: 南城服务区的档口数量最多，共有39个。...
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:270 - 尝试为问题生成SQL: 
+[CONTEXT]
+User: 请问哪个服务区的档口数量最多？
+Assistant: 南城服务区的档口数量最多，共有39个。
+
+[CURRENT]
+请问这个服务区有几个餐饮档口？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 每个服务区的营业档口数量（曾经有交易的）？ | similarity: 0.722
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 各分公司管辖服务区的档口总数对比如何？ | similarity: 0.7118
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 哪些服务区只有单一方向的档口？ | similarity: 0.7021
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析各服务区关联的路段路线数量TOP10 | similarity: 0.6933
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 当前各运营状态下的服务区数量分布情况？ | similarity: 0.6761
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 各服务区不同类型车辆数量分布 | similarity: 0.6755
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - SQL 阈值过滤: 总数=6, 阈值=0.65, 最少保留=3
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - SQL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 1: similarity=0.722 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 2: similarity=0.7118 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 3: similarity=0.7021 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 4: similarity=0.6933 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 5: similarity=0.6761 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 6: similarity=0.6755 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属... | similarity: 0.6139
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路段路线与服务区关联表
+-- 描述: 路段路线与服务区关联表，维护路线与服务区之间的... | similarity: 0.5757
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线经过的服务区信息
+cr... | similarity: 0.5731
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线分段与服务区关联表
+-- 描述: 路线分段与服务区关联表，记录路线与服务区的对应... | similarity: 0.5698
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 服务区基础信息表
+-- 描述: 记录服务区的基础信息，如编码、名称、公司、经纬度、状... | similarity: 0.568
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线ID与服务区ID的对应... | similarity: 0.5665
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DDL 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DDL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 1: similarity=0.6139 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 2: similarity=0.5757 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 3: similarity=0.5731 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 4: similarity=0.5698 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 5: similarity=0.568 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 6: similarity=0.5665 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础... | similarity: 0.6332
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_serv... | similarity: 0.5755
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息（名称、编码）及操作记录）
+bss... | similarity: 0.5722
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（服务区基础信息表）
+bss_service_area 表服务... | similarity: 0.5708
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（服务区基础信息表）
+bss_service_area 表记录... | similarity: 0.5675
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基本信息（名称、编码等））
+bss_ser... | similarity: 0.5625
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DOC 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DOC 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 1: similarity=0.6332 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 2: similarity=0.5755 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 3: similarity=0.5722 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 4: similarity=0.5708 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 5: similarity=0.5675 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 6: similarity=0.5625 ✓
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:104 - 开始生成SQL提示词，问题: 
+[CONTEXT]
+User: 请问哪个服务区的档口数量最多？
+Assistant: 南城服务区的档口数量最多，共有39个。
+
+[CURRENT]
+请问这个服务区有几个餐饮档口？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:654 - Error SQL Match: 查询所有部门信息 | similarity: 0.2673
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:392 - Error SQL 阈值过滤: 总数=1, 阈值=0.8
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] pgvector.py:410 - Error SQL 过滤结果: 所有 1 条结果都低于阈值 0.8，返回空列表
+2025-07-20 00:51:35 [WARNING] [vanna.BaseLLMChat] pgvector.py:673 - 向量查询找到了 1 条错误SQL示例，但全部被阈值过滤掉.
+2025-07-20 00:51:35 [WARNING] [vanna.BaseLLMChat] pgvector.py:674 - 问题: 
+[CONTEXT]
+User: 请问哪个服务区的档口数量最多？
+Assistant: 南城服务区的档口数量最多，共有39个。
+
+[CURRENT]
+请问这个服务区有几个餐饮档口？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:159 - 未找到相关的错误SQL示例
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a PostgreSQL expert. 
+Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+===Tables 
+-- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+create table bss_branch (
+  id varchar(32) not null,              -- 主键ID
+  version integer not null,             -- 数据版本号
+  create_ts timestamp(3),               -- 创建时间
+  created_by varchar(50),               -- 创建人
+  update_ts timestamp(3),               -- 更新时间
+  updated_by varchar(50),               -- 更新人
+  delete_ts timestamp(3),               -- 删除时间
+  deleted_by varchar(50),               -- 删除人
+  branch_name varchar(255),             -- 档口名称
+  branch_no varchar(255),               -- 档口编码
+  service_area_id varchar(32),          -- 服务区ID,外键(关联bss_service_area.id)
+  company_id varchar(32),               -- 公司ID,外键(关联bss_company.ID)
+  classify varchar(256),                -- 品类
+  product_brand varchar(256),           -- 品牌
+  category varchar(256),                -- 类别
+  section_route_id varchar(32),         -- 所属路线ID,外键(关联bss_section_route.id)
+  direction varchar(256),               -- 所在方向
+  is_manual_entry integer default 0,    -- 是否手工录入
+  co_company varchar(256)               -- 合作公司名称
+)
+
+-- 中文名: 路段路线与服务区关联表
+-- 描述: 路段路线与服务区关联表，维护路线与服务区之间的归属关系。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线经过的服务区信息
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线分段与服务区关联表
+-- 描述: 路线分段与服务区关联表，记录路线与服务区的对应关系
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 服务区基础信息表
+-- 描述: 记录服务区的基础信息，如编码、名称、公司、经纬度、状态等，是业务活动的空间节点中心。
+create table bss_service_area (
+  id varchar(32) not null,             -- 主键ID
+  version integer not null,            -- 版本号
+  create_ts timestamp(3),              -- 创建时间
+  created_by varchar(50),              -- 创建人
+  update_ts timestamp(3),              -- 更新时间
+  updated_by varchar(50),              -- 更新人
+  delete_ts timestamp(3),              -- 删除时间
+  deleted_by varchar(50),              -- 删除人
+  service_area_name varchar(255),      -- 服务区名称
+  service_area_no varchar(255),        -- 服务区编码
+  company_id varchar(32),              -- 公司ID,外键(关联bss_company.id)
+  service_position varchar(255),       -- 经纬度
+  service_area_type varchar(50),       -- 服务区类型
+  service_state varchar(50),           -- 服务区状态
+  primary key (id)
+)
+
+-- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线ID与服务区ID的对应关系，支持路径规划和资源分配。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+
+===Additional Context 
+
+## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+字段列表：
+- id (varchar(32)) - 主键ID [示例: 00904903cae681aab7a494c3e88e5acd]
+- version (integer) - 数据版本号 [示例: 1]
+- create_ts (timestamp(3)) - 创建时间 [示例: 2021-10-15 09:46:45.010]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp(3)) - 更新时间 [示例: 2021-10-15 09:46:45.010]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp(3)) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- branch_name (varchar(255)) - 档口名称 [示例: 于都驿美餐饮南区]
+- branch_no (varchar(255)) - 档口编码（唯一业务标识）[示例: 003585]
+- service_area_id (varchar(32)) - 服务区ID（外键关联bss_service_area.id）[示例: c7e2f26df373e9cb75bd24ddba57f27f]
+- company_id (varchar(32)) - 公司ID（外键关联bss_company.id）[示例: ce5e6f553513dad393694e1fa663aaf4]
+- classify (varchar(256)) - 经营品类，枚举型：餐饮、小吃、便利店、整体租赁、其他 [示例: 餐饮]
+- product_brand (varchar(256)) - 品牌名称 [示例: 驿美餐饮]
+- category (varchar(256)) - 经营类别 [示例: 混沌]
+- section_route_id (varchar(32)) - 所属路线ID（外键关联bss_section_route.id）[示例: lvkcuu94d4487c42z7qltsvxcyz0iqu5]
+- direction (varchar(256)) - 所在方向（枚举：北区/南区/西区/东区/两区）[示例: 南区]
+- is_manual_entry (integer) - 是否手工录入（0=系统自动，1=手工录入）[示例: 0]
+- co_company (varchar(256)) - 合作公司名称 [示例: 江西驿美餐饮管理有限责任公司]
+字段补充说明：
+- service_area_id 外键关联服务区基础信息表(bss_service_area)
+- company_id 外键关联服务区管理公司表(bss_company)
+- section_route_id 外键关联高速线路信息表(bss_section_route)
+- direction 表示档口在服务区内的物理位置分区,为枚举型：北区、南区、西区、东区、两区。
+- is_manual_entry 标识数据来源（系统采集或人工录入）
+- classify 表示经营品类，为枚举型：餐饮、小吃、便利店、整体租赁、其他。
+
+## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_service_area 表存储高速公路服务区基础信息及版本变更记录，支持服务区全生命周期管理。
+字段列表：
+- id (varchar(32)) - 主键标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 运营状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_service_area（存储高速公路服务区基础信息（名称、编码）及操作记录）
+bss_service_area 表存储高速公路服务区基础信息（名称、编码）及操作记录，支撑BSS系统服务区全生命周期管理
+字段列表：
+- id (varchar(32)) - 主键标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理位置坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_service_area（服务区基础信息表）
+bss_service_area 表服务区基础信息表，记录服务区名称、编码及操作审计信息
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_service_area（服务区基础信息表）
+bss_service_area 表记录高速公路服务区的基础属性，包括服务区编码、名称、方向、公司归属、地理位置、服务类型和状态，是业务分析与服务区定位的核心表。
+字段列表：
+- id (varchar(32)) - 服务区唯一标识（主键，UUID) [示例: 0271d68ef93de9684b7ad8c7aae600b6]
+- version (integer) - 版本号 [示例: 3]
+- create_ts (timestamp(3)) - 创建时间 [示例: 2021-05-21 13:26:40.589]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp(3)) - 更新时间 [示例: 2021-07-10 15:41:28.795]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp(3)) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区]
+- service_area_no (varchar(255)) - 服务区编码（业务唯一标识）[示例: H0814]
+- company_id (varchar(32)) - 公司ID（外键关联bss_company.id）[示例: b1629f07c8d9ac81494fbc1de61f1ea5]
+- service_position (varchar(255)) - 经纬度坐标 [示例: 114.574721,26.825584]
+- service_area_type (varchar(50)) - 服务区类型（枚举：信息化服务区、智能化服务区）[示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态（枚举：开放/关闭/上传数据）[示例: 开放]
+字段补充说明：
+- id 为主键，使用 UUID 编码，唯一标识每个服务区。
+- company_id 外键,关联服务区管理公司表(bss_company.id)
+- service_position 经纬度格式为"经度,纬度"
+- service_area_type 为枚举字段，包含两个取值：信息化服务区、智能化服务区。
+- 是多个表(bss_branch, bss_car_day_count等)的核心关联实体
+
+## bss_service_area（存储高速公路服务区基本信息（名称、编码等））
+bss_service_area 表存储高速公路服务区基本信息（名称、编码等），支持服务区运营管理。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 最后更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 最后更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除操作人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理位置坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+===Response Guidelines 
+**IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+
+1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+3. If the provided context is insufficient, please explain why it can't be generated. 
+4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+     interpret it as 'How many dining stalls does Nancheng Service Area have?'
+5. Please use the most relevant table(s). 
+6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+7. Ensure that the output SQL is PostgreSQL-compliant and executable, and free of syntax errors. 
+8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+   - Every column MUST use AS with a Chinese alias
+   - Raw column names without aliases are NOT acceptable
+   - Examples: 
+     * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+     * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+     * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+   - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 每个服务区的营业档口数量（曾经有交易的）？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_name, COUNT(DISTINCT branch_no) AS branch_count FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name;
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 各分公司管辖服务区的档口总数对比如何？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT c.company_name, COUNT(DISTINCT b.id) AS total_branches FROM bss_company c JOIN bss_service_area sa ON c.id = sa.company_id JOIN bss_branch b ON sa.id = b.service_area_id WHERE c.delete_ts IS NULL AND sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY c.company_name ORDER BY total_branches DESC NULLS LAST;
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 哪些服务区只有单一方向的档口？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sa.service_area_name, COUNT(DISTINCT b.direction) AS direction_count, STRING_AGG(DISTINCT b.direction, ', ') AS directions FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service_area_name HAVING COUNT(DISTINCT b.direction) = 1 ORDER BY sa.service_area_name;
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 分析各服务区关联的路段路线数量TOP10
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sa.service_area_name AS 服务区名称, COUNT(sr.id) AS 关联路段数 FROM bss_section_route_area_link link JOIN bss_service_area sa ON link.service_area_id = sa.id JOIN bss_section_route sr ON link.section_route_id = sr.id WHERE sa.delete_ts IS NULL GROUP BY sa.service_area_name ORDER BY 关联路段数 DESC LIMIT 10;
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 当前各运营状态下的服务区数量分布情况？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_state AS 运营状态, COUNT(*) AS 数量 FROM bss_service_area WHERE delete_ts IS NULL GROUP BY service_state ORDER BY 数量 DESC;
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 各服务区不同类型车辆数量分布
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT b.service_area_name AS 服务区名称, a.car_type AS 车辆类型, SUM(a.customer_count) AS 车辆总数 FROM bss_car_day_count a JOIN bss_service_area b ON a.service_area_id = b.id AND b.delete_ts IS NULL GROUP BY b.service_area_name, a.car_type ORDER BY 服务区名称, 车辆总数 DESC;
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 
+[CONTEXT]
+User: 请问哪个服务区的档口数量最多？
+Assistant: 南城服务区的档口数量最多，共有39个。
+
+[CURRENT]
+请问这个服务区有几个餐饮档口？
+2025-07-20 00:51:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:70 - [Vanna] SQL Prompt: [{'role': 'system', 'content': 'You are a PostgreSQL expert. \nPlease help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the respon...
+2025-07-20 00:51:35 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 3469.25 tokens (approx)
+2025-07-20 00:51:35 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 00:51:35 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 00:51:39 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:77 - [Vanna] LLM Response: SELECT COUNT(*) AS 餐饮档口数量 FROM bss_branch WHERE service_area_id = (SELECT id FROM bss_service_area WHERE service_area_name = '南城服务区') AND classify = '餐饮' AND delete_ts IS NULL;
+2025-07-20 00:51:39 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:80 - [Vanna] Extracted SQL: SELECT COUNT(*) AS 餐饮档口数量 FROM bss_branch WHERE service_area_id = (SELECT id FROM bss_service_area WHERE service_area_name = '南城服务区') AND classify = '餐饮' AND delete_ts IS NULL;
+2025-07-20 00:51:39 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:320 - 成功生成SQL:
+ SELECT COUNT(*) AS 餐饮档口数量 FROM bss_branch WHERE service_area_id = (SELECT id FROM bss_service_area WHERE service_area_name = '南城服务区') AND classify = '餐饮' AND delete_ts IS NULL;
+2025-07-20 00:51:39 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:476 - 生成摘要 - 问题: 请问这个服务区有几个餐饮档口？
+2025-07-20 00:51:39 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:477 - DataFrame 形状: (1, 1)
+2025-07-20 00:51:39 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a professional data analysis assistant. The user asked: '请问这个服务区有几个餐饮档口？'
+
+Here is the pandas DataFrame data from the query results:|    |   餐饮档口数量 |
+|---:|---------------:|
+|  0 |              6 |
+
+Please think and analyze in the context provided and respond accordingly.
+
+2025-07-20 00:51:39 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: Based on the user's question, please briefly summarize this data. Requirements:
+1. Provide only a brief summary without adding extra explanations
+2. If there are numbers in the data, maintain appropriate precision
+Please respond in Chinese. 
+2025-07-20 00:51:39 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 130.5 tokens (approx)
+2025-07-20 00:51:39 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 00:51:39 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 00:51:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:502 - 隐藏thinking内容 - 原始长度: 14, 处理后长度: 14
+2025-07-20 00:51:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:504 - 生成的摘要: 这个服务区共有6个餐饮档口。...
+2025-07-20 00:53:21 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: 
+你是Citu智能数据问答平台的AI助手，为用户提供全面的帮助和支持。
+
+你的职责包括：
+1. 回答关于平台功能和使用方法的问题
+2. 解释数据分析相关的概念和术语
+3. 提供操作指导和建议
+4. 进行友好的日常对话
+5. 回答用户的各类知识问题和常识咨询
+
+回答原则：
+- 保持友好、专业、热情的语调
+- 提供准确、有用的信息
+- 对于通用知识问题，尽量给出准确回答
+- 如果不确定某个问题，诚实地表达不确定性
+- 适时鼓励用户尝试数据查询功能
+- 回答要简洁明了，避免过于冗长
+- 保持中文回答，语言自然流畅
+- 以帮助用户为目标，不要过度限制回答范围
+
+2025-07-20 00:53:21 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 
+[CONTEXT]
+User: 请问哪个服务区的档口数量最多？
+Assistant: 南城服务区的档口数量最多，共有39个。
+User: 请问这个服务区有几个餐饮档口？
+Assistant: 这个服务区共有6个餐饮档口。
+
+[CURRENT]
+请问中国的CBA联赛赛季在哪几个月？
+2025-07-20 00:53:21 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 105.0 tokens (approx)
+2025-07-20 00:53:21 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 00:53:21 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 00:53:25 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:399 - chat_with_llm隐藏thinking内容 - 原始长度: 90, 处理后长度: 90
+2025-07-20 01:12:13 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:270 - 尝试为问题生成SQL: 
+[CONTEXT]
+User: 请问这个服务区有几个餐饮档口？
+Assistant: 这个服务区共有6个餐饮档口。
+User: 请问中国的CBA联赛赛季在哪几个月？
+Assistant: CBA（中国男子篮球职业联赛）通常从每年的10月开始，持续到次年的4月或5月。常规赛一般在10月至次年1月进行，随后是季后赛，可能延续到4月或5月，具体时间会根据赛季安排略有调整。
+
+[CURRENT]
+请问荔枝通常是几月份上市
+2025-07-20 01:12:14 [DEBUG] [vanna.EmbeddingFunction] embedding_function.py:169 - 成功生成embedding向量，维度: 1024
+2025-07-20 01:12:15 [DEBUG] [vanna.EmbeddingFunction] embedding_function.py:169 - 成功生成embedding向量，维度: 1024
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 每个服务区的营业档口数量（曾经有交易的）？ | similarity: 0.5485
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 计算各服务区行吧支付方式的月均交易次数 | similarity: 0.5436
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 哪些服务区受季节性影响最大？ | similarity: 0.5435
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 统计2023年春节期间各服务区节假日营收占Q1季度总营收比例 | similarity: 0.5363
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 查询2023年6月1日庐山服务区各档口订单数排名 | similarity: 0.5361
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析服务区关联路段的创建时间分布情况 | similarity: 0.5287
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - SQL 阈值过滤: 总数=6, 阈值=0.65, 最少保留=3
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:348 - SQL 过滤结果: 保留 3 条, 过滤掉 3 条 (满足阈值: 0, 强制保留: 3)
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 1: similarity=0.5485 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 2: similarity=0.5436 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 3: similarity=0.5435 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属... | similarity: 0.4857
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 档口日营业数据表
+-- 描述: 记录每天每个档口的营业情况，包含微信、支付宝、现金、... | similarity: 0.472
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 服务区基础信息表
+-- 描述: 记录服务区的基础信息，如编码、名称、公司、经纬度、状... | similarity: 0.4642
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线经过的服务区信息
+cr... | similarity: 0.4573
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路段路线与服务区关联表
+-- 描述: 路段路线与服务区关联表，维护路线与服务区之间的... | similarity: 0.4566
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 记录各服务区每日营业统计数据
+-- 描述: 记录各服务区每日营业统计数据，支持运营分... | similarity: 0.4547
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DDL 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:348 - DDL 过滤结果: 保留 3 条, 过滤掉 3 条 (满足阈值: 0, 强制保留: 3)
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 1: similarity=0.4857 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 2: similarity=0.472 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 3: similarity=0.4642 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础... | similarity: 0.506
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（服务区基础信息表）
+bss_service_area 表服务... | similarity: 0.4792
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_serv... | similarity: 0.479
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（服务区基础信息表）
+bss_service_area 表记录... | similarity: 0.4752
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息（名称、编码）及操作记录）
+bss... | similarity: 0.4732
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基本信息（名称、编码等））
+bss_ser... | similarity: 0.4689
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DOC 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:348 - DOC 过滤结果: 保留 3 条, 过滤掉 3 条 (满足阈值: 1, 强制保留: 2)
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 1: similarity=0.506 ✓
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 2: similarity=0.4792 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 3: similarity=0.479 ✗
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:104 - 开始生成SQL提示词，问题: 
+[CONTEXT]
+User: 请问这个服务区有几个餐饮档口？
+Assistant: 这个服务区共有6个餐饮档口。
+User: 请问中国的CBA联赛赛季在哪几个月？
+Assistant: CBA（中国男子篮球职业联赛）通常从每年的10月开始，持续到次年的4月或5月。常规赛一般在10月至次年1月进行，随后是季后赛，可能延续到4月或5月，具体时间会根据赛季安排略有调整。
+
+[CURRENT]
+请问荔枝通常是几月份上市
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:654 - Error SQL Match: 查询所有部门信息 | similarity: 0.2301
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:392 - Error SQL 阈值过滤: 总数=1, 阈值=0.8
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] pgvector.py:410 - Error SQL 过滤结果: 所有 1 条结果都低于阈值 0.8，返回空列表
+2025-07-20 01:12:15 [WARNING] [vanna.BaseLLMChat] pgvector.py:673 - 向量查询找到了 1 条错误SQL示例，但全部被阈值过滤掉.
+2025-07-20 01:12:15 [WARNING] [vanna.BaseLLMChat] pgvector.py:674 - 问题: 
+[CONTEXT]
+User: 请问这个服务区有几个餐饮档口？
+Assistant: 这个服务区共有6个餐饮档口。
+User: 请问中国的CBA联赛赛季在哪几个月？
+Assistant: CBA（中国男子篮球职业联赛）通常从每年的10月开始，持续到次年的4月或5月。常规赛一般在10月至次年1月进行，随后是季后赛，可能延续到4月或5月，具体时间会根据赛季安排略有调整。
+
+[CURRENT]
+请问荔枝通常是几月份上市
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:159 - 未找到相关的错误SQL示例
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a PostgreSQL expert. 
+Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+===Tables 
+-- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+create table bss_branch (
+  id varchar(32) not null,              -- 主键ID
+  version integer not null,             -- 数据版本号
+  create_ts timestamp(3),               -- 创建时间
+  created_by varchar(50),               -- 创建人
+  update_ts timestamp(3),               -- 更新时间
+  updated_by varchar(50),               -- 更新人
+  delete_ts timestamp(3),               -- 删除时间
+  deleted_by varchar(50),               -- 删除人
+  branch_name varchar(255),             -- 档口名称
+  branch_no varchar(255),               -- 档口编码
+  service_area_id varchar(32),          -- 服务区ID,外键(关联bss_service_area.id)
+  company_id varchar(32),               -- 公司ID,外键(关联bss_company.ID)
+  classify varchar(256),                -- 品类
+  product_brand varchar(256),           -- 品牌
+  category varchar(256),                -- 类别
+  section_route_id varchar(32),         -- 所属路线ID,外键(关联bss_section_route.id)
+  direction varchar(256),               -- 所在方向
+  is_manual_entry integer default 0,    -- 是否手工录入
+  co_company varchar(256)               -- 合作公司名称
+)
+
+-- 中文名: 档口日营业数据表
+-- 描述: 记录每天每个档口的营业情况，包含微信、支付宝、现金、金豆等支付方式的金额与订单数，是核心交易数据表。
+create table bss_business_day_data (
+  id varchar(32) not null,        -- 主键ID
+  version integer not null,       -- 数据版本号
+  create_ts timestamp(3),         -- 创建时间
+  created_by varchar(50),         -- 创建人
+  update_ts timestamp(3),         -- 更新时间
+  updated_by varchar(50),         -- 更新人
+  delete_ts timestamp(3),         -- 删除时间
+  deleted_by varchar(50),         -- 删除人
+  oper_date date,                 -- 统计日期
+  service_no varchar(255),        -- 服务区编码
+  service_name varchar(255),      -- 服务区名称
+  branch_no varchar(255),         -- 档口编码
+  branch_name varchar(255),       -- 档口名称
+  wx numeric(19,4),               -- 微信支付金额
+  wx_order integer,               -- 微信支付订单数量
+  zfb numeric(19,4),              -- 支付宝支付金额
+  zf_order integer,               -- 支付宝支付订单数量
+  rmb numeric(19,4),              -- 现金支付金额
+  rmb_order integer,              -- 现金支付订单数量
+  xs numeric(19,4),               -- 行吧支付金额
+  xs_order integer,               -- 行吧支付订单数量
+  jd numeric(19,4),               -- 金豆支付金额
+  jd_order integer,               -- 金豆支付订单数量
+  order_sum integer,              -- 订单总数
+  pay_sum numeric(19,4),          -- 支付总金额
+  source_type integer,            -- 数据来源类型ID
+  primary key (id)
+)
+
+-- 中文名: 服务区基础信息表
+-- 描述: 记录服务区的基础信息，如编码、名称、公司、经纬度、状态等，是业务活动的空间节点中心。
+create table bss_service_area (
+  id varchar(32) not null,             -- 主键ID
+  version integer not null,            -- 版本号
+  create_ts timestamp(3),              -- 创建时间
+  created_by varchar(50),              -- 创建人
+  update_ts timestamp(3),              -- 更新时间
+  updated_by varchar(50),              -- 更新人
+  delete_ts timestamp(3),              -- 删除时间
+  deleted_by varchar(50),              -- 删除人
+  service_area_name varchar(255),      -- 服务区名称
+  service_area_no varchar(255),        -- 服务区编码
+  company_id varchar(32),              -- 公司ID,外键(关联bss_company.id)
+  service_position varchar(255),       -- 经纬度
+  service_area_type varchar(50),       -- 服务区类型
+  service_state varchar(50),           -- 服务区状态
+  primary key (id)
+)
+
+
+===Additional Context 
+
+## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+字段列表：
+- id (varchar(32)) - 主键ID [示例: 00904903cae681aab7a494c3e88e5acd]
+- version (integer) - 数据版本号 [示例: 1]
+- create_ts (timestamp(3)) - 创建时间 [示例: 2021-10-15 09:46:45.010]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp(3)) - 更新时间 [示例: 2021-10-15 09:46:45.010]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp(3)) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- branch_name (varchar(255)) - 档口名称 [示例: 于都驿美餐饮南区]
+- branch_no (varchar(255)) - 档口编码（唯一业务标识）[示例: 003585]
+- service_area_id (varchar(32)) - 服务区ID（外键关联bss_service_area.id）[示例: c7e2f26df373e9cb75bd24ddba57f27f]
+- company_id (varchar(32)) - 公司ID（外键关联bss_company.id）[示例: ce5e6f553513dad393694e1fa663aaf4]
+- classify (varchar(256)) - 经营品类，枚举型：餐饮、小吃、便利店、整体租赁、其他 [示例: 餐饮]
+- product_brand (varchar(256)) - 品牌名称 [示例: 驿美餐饮]
+- category (varchar(256)) - 经营类别 [示例: 混沌]
+- section_route_id (varchar(32)) - 所属路线ID（外键关联bss_section_route.id）[示例: lvkcuu94d4487c42z7qltsvxcyz0iqu5]
+- direction (varchar(256)) - 所在方向（枚举：北区/南区/西区/东区/两区）[示例: 南区]
+- is_manual_entry (integer) - 是否手工录入（0=系统自动，1=手工录入）[示例: 0]
+- co_company (varchar(256)) - 合作公司名称 [示例: 江西驿美餐饮管理有限责任公司]
+字段补充说明：
+- service_area_id 外键关联服务区基础信息表(bss_service_area)
+- company_id 外键关联服务区管理公司表(bss_company)
+- section_route_id 外键关联高速线路信息表(bss_section_route)
+- direction 表示档口在服务区内的物理位置分区,为枚举型：北区、南区、西区、东区、两区。
+- is_manual_entry 标识数据来源（系统采集或人工录入）
+- classify 表示经营品类，为枚举型：餐饮、小吃、便利店、整体租赁、其他。
+
+## bss_service_area（服务区基础信息表）
+bss_service_area 表服务区基础信息表，记录服务区名称、编码及操作审计信息
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_service_area 表存储高速公路服务区基础信息及版本变更记录，支持服务区全生命周期管理。
+字段列表：
+- id (varchar(32)) - 主键标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 运营状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+===Response Guidelines 
+**IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+
+1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+3. If the provided context is insufficient, please explain why it can't be generated. 
+4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+     interpret it as 'How many dining stalls does Nancheng Service Area have?'
+5. Please use the most relevant table(s). 
+6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+7. Ensure that the output SQL is PostgreSQL-compliant and executable, and free of syntax errors. 
+8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+   - Every column MUST use AS with a Chinese alias
+   - Raw column names without aliases are NOT acceptable
+   - Examples: 
+     * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+     * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+     * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+   - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 每个服务区的营业档口数量（曾经有交易的）？
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_name, COUNT(DISTINCT branch_no) AS branch_count FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name;
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 计算各服务区行吧支付方式的月均交易次数
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_name AS 服务区名称, EXTRACT(MONTH FROM oper_date) AS 月份, AVG(xs_order) AS 月均交易次数 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY 服务区名称, 月份 ORDER BY 服务区名称, 月份;
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 哪些服务区受季节性影响最大？
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: WITH monthly_service_revenue AS (SELECT service_name, EXTRACT(MONTH FROM oper_date) AS month, SUM(pay_sum) AS monthly_revenue FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name, EXTRACT(MONTH FROM oper_date)), service_seasonality AS (SELECT service_name, MAX(monthly_revenue) AS max_monthly, MIN(monthly_revenue) AS min_monthly, ROUND((MAX(monthly_revenue) - MIN(monthly_revenue)) * 100.0 / MIN(monthly_revenue), 2) AS seasonality_index FROM monthly_service_revenue GROUP BY service_name HAVING MIN(monthly_revenue) > 0) SELECT service_name, max_monthly, min_monthly, seasonality_index FROM service_seasonality ORDER BY seasonality_index DESC NULLS LAST LIMIT 10;
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 
+[CONTEXT]
+User: 请问这个服务区有几个餐饮档口？
+Assistant: 这个服务区共有6个餐饮档口。
+User: 请问中国的CBA联赛赛季在哪几个月？
+Assistant: CBA（中国男子篮球职业联赛）通常从每年的10月开始，持续到次年的4月或5月。常规赛一般在10月至次年1月进行，随后是季后赛，可能延续到4月或5月，具体时间会根据赛季安排略有调整。
+
+[CURRENT]
+请问荔枝通常是几月份上市
+2025-07-20 01:12:15 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:70 - [Vanna] SQL Prompt: [{'role': 'system', 'content': "You are a PostgreSQL expert. \nPlease help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the respon...
+2025-07-20 01:12:15 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 2561.75 tokens (approx)
+2025-07-20 01:12:15 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 01:12:15 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 01:12:17 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:77 - [Vanna] LLM Response: 荔枝通常在每年的5月至7月期间上市，具体时间取决于产地和当年的气候条件。例如，广东、广西等主要产区的荔枝一般在6月达到上市高峰。
+2025-07-20 01:12:17 [WARNING] [vanna.BaseLLMChat] base_llm_chat.py:311 - 返回内容不像有效SQL: 荔枝通常在每年的5月至7月期间上市，具体时间取决于产地和当年的气候条件。例如，广东、广西等主要产区的荔枝一般在6月达到上市高峰。
+2025-07-20 01:12:17 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:316 - 隐藏thinking内容 - SQL生成非有效SQL内容
+2025-07-20 01:57:09 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-20 01:57:09 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 01:57:09 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-20 01:57:09 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x00000160F224B950>
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-20 01:57:09 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-20 01:57:09 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-20 01:57:10 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-20 01:57:10 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-20 01:57:10 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 01:57:10 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x00000160F242E090>
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-20 01:57:10 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-20 01:57:10 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-20 01:57:12 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-20 01:57:35 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-20 01:57:35 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 01:57:35 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x00000160F4774D40>
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-20 01:57:35 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-20 01:57:35 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-20 01:57:37 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:270 - 尝试为问题生成SQL: 请问哪个服务区的档口数量最多？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析每个服务区关联的路线数量并找出覆盖路线最多的服务区 | similarity: 0.7464
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 哪些服务区只有单一方向的档口？ | similarity: 0.7459
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析各服务区关联的路段路线数量TOP10 | similarity: 0.7405
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 每个服务区的营业档口数量（曾经有交易的）？ | similarity: 0.7326
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 最近30天中车流量最高的服务区？ | similarity: 0.7325
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 各分公司管辖服务区的档口总数对比如何？ | similarity: 0.7275
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - SQL 阈值过滤: 总数=6, 阈值=0.65, 最少保留=3
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - SQL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 1: similarity=0.7464 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 2: similarity=0.7459 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 3: similarity=0.7405 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 4: similarity=0.7326 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 5: similarity=0.7325 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 6: similarity=0.7275 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属... | similarity: 0.649
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路段路线与服务区关联表
+-- 描述: 路段路线与服务区关联表，维护路线与服务区之间的... | similarity: 0.6368
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线经过的服务区信息
+cr... | similarity: 0.6357
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线分段与服务区关联表
+-- 描述: 路线分段与服务区关联表，记录路线与服务区的对应... | similarity: 0.6313
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线ID与服务区ID的对应... | similarity: 0.626
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 存储路线段与服务区关联关系
+-- 描述: 存储路线段与服务区关联关系，管理高速线路与... | similarity: 0.6199
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DDL 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DDL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 1: similarity=0.649 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 2: similarity=0.6368 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 3: similarity=0.6357 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 4: similarity=0.6313 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 5: similarity=0.626 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 6: similarity=0.6199 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础... | similarity: 0.6543
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_serv... | similarity: 0.6345
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（存储高速公路服务区基础信息（名称、编码）及操作记录）
+bss... | similarity: 0.6339
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route_area_link（路线与服务区关联表）
+bss_sect... | similarity: 0.6287
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（服务区基础信息表）
+bss_service_area 表记录... | similarity: 0.627
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route_area_link（记录高速公路路段路线与服务区的关联关系... | similarity: 0.6263
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DOC 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DOC 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 1: similarity=0.6543 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 2: similarity=0.6345 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 3: similarity=0.6339 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 4: similarity=0.6287 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 5: similarity=0.627 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 6: similarity=0.6263 ✓
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:104 - 开始生成SQL提示词，问题: 请问哪个服务区的档口数量最多？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:654 - Error SQL Match: 查询所有部门信息 | similarity: 0.2713
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:392 - Error SQL 阈值过滤: 总数=1, 阈值=0.8
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] pgvector.py:410 - Error SQL 过滤结果: 所有 1 条结果都低于阈值 0.8，返回空列表
+2025-07-20 01:57:37 [WARNING] [vanna.BaseLLMChat] pgvector.py:673 - 向量查询找到了 1 条错误SQL示例，但全部被阈值过滤掉.
+2025-07-20 01:57:37 [WARNING] [vanna.BaseLLMChat] pgvector.py:674 - 问题: 请问哪个服务区的档口数量最多？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:159 - 未找到相关的错误SQL示例
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a PostgreSQL expert. 
+Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+===Tables 
+-- 中文名: 档口基础信息表
+-- 描述: 存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+create table bss_branch (
+  id varchar(32) not null,              -- 主键ID
+  version integer not null,             -- 数据版本号
+  create_ts timestamp(3),               -- 创建时间
+  created_by varchar(50),               -- 创建人
+  update_ts timestamp(3),               -- 更新时间
+  updated_by varchar(50),               -- 更新人
+  delete_ts timestamp(3),               -- 删除时间
+  deleted_by varchar(50),               -- 删除人
+  branch_name varchar(255),             -- 档口名称
+  branch_no varchar(255),               -- 档口编码
+  service_area_id varchar(32),          -- 服务区ID,外键(关联bss_service_area.id)
+  company_id varchar(32),               -- 公司ID,外键(关联bss_company.ID)
+  classify varchar(256),                -- 品类
+  product_brand varchar(256),           -- 品牌
+  category varchar(256),                -- 类别
+  section_route_id varchar(32),         -- 所属路线ID,外键(关联bss_section_route.id)
+  direction varchar(256),               -- 所在方向
+  is_manual_entry integer default 0,    -- 是否手工录入
+  co_company varchar(256)               -- 合作公司名称
+)
+
+-- 中文名: 路段路线与服务区关联表
+-- 描述: 路段路线与服务区关联表，维护路线与服务区之间的归属关系。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线经过的服务区信息
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线分段与服务区关联表
+-- 描述: 路线分段与服务区关联表，记录路线与服务区的对应关系
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 路线与服务区关联表
+-- 描述: 路线与服务区关联表，记录路线ID与服务区ID的对应关系，支持路径规划和资源分配。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区ID，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 存储路线段与服务区关联关系
+-- 描述: 存储路线段与服务区关联关系，管理高速线路与服务区归属
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线ID，主键,
+  service_area_id varchar(32) not null -- 服务区编码，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+
+===Additional Context 
+
+## bss_branch（档口基础信息表）
+bss_branch 表存储服务区内的档口（商铺）基础信息，如名称、编码、所属服务区、所属公司、品类、品牌等，是商业数据分析的基础实体表。
+字段列表：
+- id (varchar(32)) - 主键ID [示例: 00904903cae681aab7a494c3e88e5acd]
+- version (integer) - 数据版本号 [示例: 1]
+- create_ts (timestamp(3)) - 创建时间 [示例: 2021-10-15 09:46:45.010]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp(3)) - 更新时间 [示例: 2021-10-15 09:46:45.010]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp(3)) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- branch_name (varchar(255)) - 档口名称 [示例: 于都驿美餐饮南区]
+- branch_no (varchar(255)) - 档口编码（唯一业务标识）[示例: 003585]
+- service_area_id (varchar(32)) - 服务区ID（外键关联bss_service_area.id）[示例: c7e2f26df373e9cb75bd24ddba57f27f]
+- company_id (varchar(32)) - 公司ID（外键关联bss_company.id）[示例: ce5e6f553513dad393694e1fa663aaf4]
+- classify (varchar(256)) - 经营品类，枚举型：餐饮、小吃、便利店、整体租赁、其他 [示例: 餐饮]
+- product_brand (varchar(256)) - 品牌名称 [示例: 驿美餐饮]
+- category (varchar(256)) - 经营类别 [示例: 混沌]
+- section_route_id (varchar(32)) - 所属路线ID（外键关联bss_section_route.id）[示例: lvkcuu94d4487c42z7qltsvxcyz0iqu5]
+- direction (varchar(256)) - 所在方向（枚举：北区/南区/西区/东区/两区）[示例: 南区]
+- is_manual_entry (integer) - 是否手工录入（0=系统自动，1=手工录入）[示例: 0]
+- co_company (varchar(256)) - 合作公司名称 [示例: 江西驿美餐饮管理有限责任公司]
+字段补充说明：
+- service_area_id 外键关联服务区基础信息表(bss_service_area)
+- company_id 外键关联服务区管理公司表(bss_company)
+- section_route_id 外键关联高速线路信息表(bss_section_route)
+- direction 表示档口在服务区内的物理位置分区,为枚举型：北区、南区、西区、东区、两区。
+- is_manual_entry 标识数据来源（系统采集或人工录入）
+- classify 表示经营品类，为枚举型：餐饮、小吃、便利店、整体租赁、其他。
+
+## bss_service_area（存储高速公路服务区基础信息及版本变更记录）
+bss_service_area 表存储高速公路服务区基础信息及版本变更记录，支持服务区全生命周期管理。
+字段列表：
+- id (varchar(32)) - 主键标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 运营状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_service_area（存储高速公路服务区基础信息（名称、编码）及操作记录）
+bss_service_area 表存储高速公路服务区基础信息（名称、编码）及操作记录，支撑BSS系统服务区全生命周期管理
+字段列表：
+- id (varchar(32)) - 主键标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 地理位置坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_section_route_area_link（路线与服务区关联表）
+bss_section_route_area_link 表路线与服务区关联表，记录路线ID与服务区ID的对应关系，支持路径规划和资源分配。
+字段列表：
+- section_route_id (varchar(32)) - 路段路线ID [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
+- service_area_id (varchar(32)) - 服务区ID [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
+字段补充说明：
+- 复合主键：section_route_id, service_area_id
+
+## bss_service_area（服务区基础信息表）
+bss_service_area 表记录高速公路服务区的基础属性，包括服务区编码、名称、方向、公司归属、地理位置、服务类型和状态，是业务分析与服务区定位的核心表。
+字段列表：
+- id (varchar(32)) - 服务区唯一标识（主键，UUID) [示例: 0271d68ef93de9684b7ad8c7aae600b6]
+- version (integer) - 版本号 [示例: 3]
+- create_ts (timestamp(3)) - 创建时间 [示例: 2021-05-21 13:26:40.589]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp(3)) - 更新时间 [示例: 2021-07-10 15:41:28.795]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp(3)) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区]
+- service_area_no (varchar(255)) - 服务区编码（业务唯一标识）[示例: H0814]
+- company_id (varchar(32)) - 公司ID（外键关联bss_company.id）[示例: b1629f07c8d9ac81494fbc1de61f1ea5]
+- service_position (varchar(255)) - 经纬度坐标 [示例: 114.574721,26.825584]
+- service_area_type (varchar(50)) - 服务区类型（枚举：信息化服务区、智能化服务区）[示例: 信息化服务区]
+- service_state (varchar(50)) - 服务区状态（枚举：开放/关闭/上传数据）[示例: 开放]
+字段补充说明：
+- id 为主键，使用 UUID 编码，唯一标识每个服务区。
+- company_id 外键,关联服务区管理公司表(bss_company.id)
+- service_position 经纬度格式为"经度,纬度"
+- service_area_type 为枚举字段，包含两个取值：信息化服务区、智能化服务区。
+- 是多个表(bss_branch, bss_car_day_count等)的核心关联实体
+
+## bss_section_route_area_link（记录高速公路路段路线与服务区的关联关系）
+bss_section_route_area_link 表记录高速公路路段路线与服务区的关联关系，支撑路线规划与服务区运营管理。
+字段列表：
+- section_route_id (varchar(32)) - 路段路线ID [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
+- service_area_id (varchar(32)) - 服务区ID [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
+字段补充说明：
+- 复合主键：section_route_id, service_area_id
+
+===Response Guidelines 
+**IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+
+1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+3. If the provided context is insufficient, please explain why it can't be generated. 
+4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+     interpret it as 'How many dining stalls does Nancheng Service Area have?'
+5. Please use the most relevant table(s). 
+6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+7. Ensure that the output SQL is PostgreSQL-compliant and executable, and free of syntax errors. 
+8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+   - Every column MUST use AS with a Chinese alias
+   - Raw column names without aliases are NOT acceptable
+   - Examples: 
+     * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+     * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+     * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+   - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 分析每个服务区关联的路线数量并找出覆盖路线最多的服务区
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_area_id AS 服务区ID, COUNT(section_route_id) AS 关联路线数 FROM bss_section_route_area_link GROUP BY service_area_id ORDER BY 关联路线数 DESC LIMIT 1;
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 哪些服务区只有单一方向的档口？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sa.service_area_name, COUNT(DISTINCT b.direction) AS direction_count, STRING_AGG(DISTINCT b.direction, ', ') AS directions FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service_area_name HAVING COUNT(DISTINCT b.direction) = 1 ORDER BY sa.service_area_name;
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 分析各服务区关联的路段路线数量TOP10
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sa.service_area_name AS 服务区名称, COUNT(sr.id) AS 关联路段数 FROM bss_section_route_area_link link JOIN bss_service_area sa ON link.service_area_id = sa.id JOIN bss_section_route sr ON link.section_route_id = sr.id WHERE sa.delete_ts IS NULL GROUP BY sa.service_area_name ORDER BY 关联路段数 DESC LIMIT 10;
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 每个服务区的营业档口数量（曾经有交易的）？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_name, COUNT(DISTINCT branch_no) AS branch_count FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name;
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 最近30天中车流量最高的服务区？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT s.service_area_name, SUM(c.customer_count) AS total_cars FROM bss_car_day_count c JOIN bss_service_area s ON c.service_area_id = s.id WHERE c.count_date >= CURRENT_DATE - INTERVAL '30 day' GROUP BY s.service_area_name ORDER BY total_cars DESC NULLS LAST LIMIT 10;
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 各分公司管辖服务区的档口总数对比如何？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT c.company_name, COUNT(DISTINCT b.id) AS total_branches FROM bss_company c JOIN bss_service_area sa ON c.id = sa.company_id JOIN bss_branch b ON sa.id = b.service_area_id WHERE c.delete_ts IS NULL AND sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY c.company_name ORDER BY total_branches DESC NULLS LAST;
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 请问哪个服务区的档口数量最多？
+2025-07-20 01:57:37 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:70 - [Vanna] SQL Prompt: [{'role': 'system', 'content': 'You are a PostgreSQL expert. \nPlease help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the respon...
+2025-07-20 01:57:37 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 2977.0 tokens (approx)
+2025-07-20 01:57:37 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 01:57:37 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 01:57:41 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:77 - [Vanna] LLM Response: SELECT sa.service_area_name AS 服务区名称, COUNT(b.id) AS 档口数量 FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service...
+2025-07-20 01:57:41 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:80 - [Vanna] Extracted SQL: SELECT sa.service_area_name AS 服务区名称, COUNT(b.id) AS 档口数量 FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service_area_name ORDER BY 档口数量 DESC LIMIT 1;
+2025-07-20 01:57:41 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:320 - 成功生成SQL:
+ SELECT sa.service_area_name AS 服务区名称, COUNT(b.id) AS 档口数量 FROM bss_service_area sa JOIN bss_branch b ON sa.id = b.service_area_id WHERE sa.delete_ts IS NULL AND b.delete_ts IS NULL GROUP BY sa.service_area_name ORDER BY 档口数量 DESC LIMIT 1;
+2025-07-20 01:57:41 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:476 - 生成摘要 - 问题: 请问哪个服务区的档口数量最多？
+2025-07-20 01:57:41 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:477 - DataFrame 形状: (1, 2)
+2025-07-20 01:57:41 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a professional data analysis assistant. The user asked: '请问哪个服务区的档口数量最多？'
+
+Here is the pandas DataFrame data from the query results:|    | 服务区名称   |   档口数量 |
+|---:|:-------------|-----------:|
+|  0 | 南城服务区   |         39 |
+
+Please think and analyze in the context provided and respond accordingly.
+
+2025-07-20 01:57:41 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: Based on the user's question, please briefly summarize this data. Requirements:
+1. Provide only a brief summary without adding extra explanations
+2. If there are numbers in the data, maintain appropriate precision
+Please respond in Chinese. 
+2025-07-20 01:57:41 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 136.75 tokens (approx)
+2025-07-20 01:57:41 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-20 01:57:41 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-20 01:57:42 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:502 - 隐藏thinking内容 - 原始长度: 19, 处理后长度: 19
+2025-07-20 01:57:42 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:504 - 生成的摘要: 南城服务区的档口数量最多，共有39个。...
+2025-07-20 01:58:41 [DEBUG] [vanna.test_vanna] <string>:15 - 测试vanna模块日志 - 时间滚动配置

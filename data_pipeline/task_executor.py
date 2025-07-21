@@ -24,6 +24,11 @@ def main():
     parser.add_argument('--execution-mode', default='complete', choices=['complete', 'step'], help='执行模式')
     parser.add_argument('--step-name', help='步骤名称（当execution-mode=step时必需）')
     
+    # 新增：Vector表管理参数
+    parser.add_argument('--backup-vector-tables', action='store_true', help='备份vector表数据')
+    parser.add_argument('--truncate-vector-tables', action='store_true', help='清空vector表数据（自动启用备份）')
+    parser.add_argument('--skip-training', action='store_true', help='跳过训练文件处理，仅执行Vector表管理')
+    
     args = parser.parse_args()
     
     # 初始化日志系统（不需要，使用独立的日志系统）
@@ -35,8 +40,15 @@ def main():
         sys.exit(1)
     
     try:
-        # 执行任务
-        result = asyncio.run(execute_task(args.task_id, args.execution_mode, args.step_name))
+        # 传递新参数到execute_task
+        result = asyncio.run(execute_task(
+            args.task_id, 
+            args.execution_mode, 
+            args.step_name,
+            args.backup_vector_tables,
+            args.truncate_vector_tables,
+            args.skip_training
+        ))
         
         # 输出结果到stdout（供父进程读取）
         print(json.dumps(result, ensure_ascii=False, default=str))
@@ -55,11 +67,13 @@ def main():
         sys.exit(1)
 
 
-async def execute_task(task_id: str, execution_mode: str, step_name: str = None):
+async def execute_task(task_id: str, execution_mode: str, step_name: str = None, 
+                      backup_vector_tables: bool = False, truncate_vector_tables: bool = False,
+                      skip_training: bool = False):
     """执行任务的异步函数"""
     executor = None
     try:
-        executor = SimpleWorkflowExecutor(task_id)
+        executor = SimpleWorkflowExecutor(task_id, backup_vector_tables, truncate_vector_tables, skip_training)
         
         if execution_mode == "complete":
             return await executor.execute_complete_workflow()

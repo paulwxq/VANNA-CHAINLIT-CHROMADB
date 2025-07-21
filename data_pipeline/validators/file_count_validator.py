@@ -71,9 +71,12 @@ class FileCountValidator:
                     duplicate_tables=duplicate_tables
                 )
             
-            # 4. 统计DDL和MD文件
+            # 4. 统计DDL和MD文件（兼容数字后缀）
             ddl_files = list(output_path.glob("*.ddl"))
-            md_files = list(output_path.glob("*_detail.md"))  # 注意文件后缀格式
+            # 匹配基础格式和带数字后缀的格式
+            md_files_basic = list(output_path.glob("*_detail.md"))
+            md_files_numbered = list(output_path.glob("*_detail_*.md"))
+            md_files = md_files_basic + md_files_numbered
             
             ddl_count = len(ddl_files)
             md_count = len(md_files)

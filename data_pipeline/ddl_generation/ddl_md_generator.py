@@ -19,6 +19,9 @@ def setup_argument_parser():
   # 基本使用
   python -m data_pipeline.ddl_md_generator --db-connection "postgresql://user:pass@host:5432/db" --table-list tables.txt --business-context "电商系统"
   
+  # 使用task_id自动解析路径
+  python -m data_pipeline.ddl_md_generator --task-id manual_20250720_130541 --db-connection "..." --table-list tables.txt --business-context "电商系统"
+  
   # 指定输出目录
   python -m data_pipeline.ddl_md_generator --db-connection "..." --table-list tables.txt --business-context "电商系统" --output-dir ./data_pipeline/training_data/
   
@@ -38,6 +41,11 @@ def setup_argument_parser():
     )
     
     # 可选参数
+    parser.add_argument(
+        '--task-id',
+        help='任务ID，指定后将自动构建输出目录路径 (基础目录/task_id)'
+    )
+    
     parser.add_argument(
         '--table-list',
         help='表清单文件路径'
@@ -96,6 +104,29 @@ def setup_argument_parser():
     
     return parser
 
+def resolve_output_directory(args):
+    """解析输出目录路径"""
+    if args.output_dir:
+        # 用户明确指定了输出目录
+        return args.output_dir
+    elif args.task_id:
+        # 使用task_id构建输出目录
+        from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+        base_dir = SCHEMA_TOOLS_CONFIG.get("output_directory", "./data_pipeline/training_data/")
+        
+        # 处理相对路径
+        from pathlib import Path
+        if not Path(base_dir).is_absolute():
+            # 相对于项目根目录解析
+            project_root = Path(__file__).parent.parent.parent
+            base_dir = project_root / base_dir
+        
+        return str(Path(base_dir) / args.task_id)
+    else:
+        # 使用默认配置
+        from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+        return SCHEMA_TOOLS_CONFIG.get("output_directory", "./data_pipeline/training_data/")
+
 def load_config_with_overrides(args):
     """加载配置并应用命令行覆盖"""
     from data_pipeline.config import SCHEMA_TOOLS_CONFIG
@@ -103,8 +134,8 @@ def load_config_with_overrides(args):
     config = SCHEMA_TOOLS_CONFIG.copy()
     
     # 命令行参数覆盖配置
-    if args.output_dir:
-        config["output_directory"] = args.output_dir
+    output_dir = resolve_output_directory(args)
+    config["output_directory"] = output_dir
     
     if args.pipeline:
         config["default_pipeline"] = args.pipeline

@@ -1,0 +1,62 @@
+-- Schema Tools生成的主题元数据
+-- 业务背景: 高速公路服务区管理系统
+-- 生成时间: 2025-07-21 19:45:08
+-- 数据库: highway_db
+
+-- 创建表（如果不存在）
+CREATE TABLE IF NOT EXISTS metadata (
+    id SERIAL PRIMARY KEY,    -- 主键
+    topic_name VARCHAR(100) NOT NULL,  -- 业务主题名称
+    description TEXT,                  -- 业务主体说明
+    related_tables TEXT[],			  -- 相关表名
+    biz_entities TEXT[],               -- 主要业务实体名称
+    biz_metrics TEXT[],                -- 主要业务指标名称
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    -- 插入时间
+);
+
+-- 插入主题数据
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '日营业分析',
+  '分析各服务区每日营业收入、订单数量及支付方式分布，评估经营状况和趋势。',
+  'bss_business_day_data',
+  '服务区,档口,支付方式',
+  '总收入,订单总量,支付方式占比,日收入趋势'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '车辆流量分析',
+  '统计各服务区每日车辆数量和类型分布，为服务区资源配置和营销提供依据。',
+  'bss_car_day_count,bss_service_area',
+  '服务区,车辆类型,统计日期',
+  '车辆总数,车辆类型占比,日流量趋势'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '企业运营对比',
+  '基于所属公司维度，对比各公司管理的服务区营收及车辆流量，评估企业运营绩效。',
+  'bss_company,bss_service_area,bss_business_day_data,bss_car_day_count',
+  '公司,服务区,统计日期',
+  '平均营收,总订单数,车辆流量,公司间对比'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '服务区关联路段',
+  '分析路段与服务区的关联关系，评估不同路段对服务区流量和营收的影响。',
+  'bss_section_route,bss_section_route_area_link,bss_service_area,bss_business_day_data,bss_car_day_count',
+  '路段,路线,服务区',
+  '路段营收分布,服务区流量排名,路段对比'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '支付方式分布',
+  '分析不同支付方式在各服务区的使用情况，为支付系统优化提供数据支持。',
+  'bss_business_day_data,bss_service_area',
+  '服务区,档口,支付方式',
+  '微信占比,支付宝占比,现金占比,支付方式排名'
+);
+

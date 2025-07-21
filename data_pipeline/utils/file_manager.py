@@ -16,14 +16,15 @@ class FileNameManager:
         self._scan_existing_files()
     
     def _scan_existing_files(self):
-        """扫描输出目录中已存在的文件"""
+        """扫描输出目录中已存在的文件（不包括子目录）"""
         if not os.path.exists(self.output_dir):
             return
         
-        for root, dirs, files in os.walk(self.output_dir):
-            for file in files:
-                if file.endswith(('.ddl', '.md')):
-                    self.used_names.add(file)
+        # 只扫描根目录，不扫描子目录（避免扫描备份目录）
+        for file in os.listdir(self.output_dir):
+            file_path = os.path.join(self.output_dir, file)
+            if os.path.isfile(file_path) and file.endswith(('.ddl', '.md')):
+                self.used_names.add(file)
     
     def get_safe_filename(self, schema_name: str, table_name: str, suffix: str) -> str:
         """

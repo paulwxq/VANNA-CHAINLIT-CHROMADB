@@ -754,8 +754,11 @@ class SimpleTaskManager:
             with open(log_file_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             
-            # 日志行格式: 2025-07-01 14:30:52 [INFO] SimpleWorkflowExecutor: 任务开始执行
-            log_pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\] (.+?): (.+)$'
+            # 支持两种日志格式：
+            # 格式1: 2025-07-21 11:37:08 [INFO] TaskDir_task_20250721_113010: 任务开始执行
+            # 格式2: 2025-07-21 11:37:08 [INFO] [data_pipeline.TrainingDataLoader] run_training.py:367 - 处理DDL文件: 文件路径
+            log_pattern_1 = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\] ([^:]+): (.+)$'
+            log_pattern_2 = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\] (\[.+?\] [^:]+:\d+) - (.+)$'
             current_log = None
             line_number = 0
             
@@ -766,7 +769,8 @@ class SimpleTaskManager:
                 if not line.strip():
                     continue
                 
-                match = re.match(log_pattern, line)
+                # 先尝试格式2（带文件名行号的格式）
+                match = re.match(log_pattern_2, line)
                 if match:
                     # 如果有之前的日志，先保存
                     if current_log:
@@ -787,9 +791,31 @@ class SimpleTaskManager:
                         "line_number": line_number
                     }
                 else:
-                    # 多行日志（如异常堆栈），追加到当前日志的消息中
-                    if current_log:
-                        current_log["message"] += f"\n{line}"
+                    # 再尝试格式1（简单格式）
+                    match = re.match(log_pattern_1, line)
+                    if match:
+                        # 如果有之前的日志，先保存
+                        if current_log:
+                            logs.append(current_log)
+                        
+                        # 解析新的日志条目
+                        timestamp, level, logger_name, message = match.groups()
+                        
+                        # 尝试从日志记录器名称中提取步骤信息
+                        step_name = self._extract_step_from_logger(logger_name)
+                        
+                        current_log = {
+                            "timestamp": timestamp,
+                            "level": level,
+                            "logger": logger_name,
+                            "step": step_name,
+                            "message": message,
+                            "line_number": line_number
+                        }
+                    else:
+                        # 多行日志（如异常堆栈），追加到当前日志的消息中
+                        if current_log:
+                            current_log["message"] += f"\n{line}"
             
             # 保存最后一个日志条目
             if current_log:

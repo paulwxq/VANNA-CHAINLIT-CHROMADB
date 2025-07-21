@@ -10,7 +10,7 @@ class TableListParser:
     
     def parse_file(self, file_path: str) -> List[str]:
         """
-        解析表清单文件
+        解析表清单文件，支持换行符和逗号分隔
         
         Args:
             file_path: 表清单文件路径
@@ -39,18 +39,25 @@ class TableListParser:
                     if not line or line.startswith('#') or line.startswith('--'):
                         continue
                     
-                    # 验证表名格式
-                    if self._validate_table_name(line):
-                        # 检查是否重复
-                        if line not in seen_tables:
-                            tables.append(line)
-                            seen_tables.add(line)
-                            self.logger.debug(f"解析到表: {line}")
-                        else:
-                            duplicate_count += 1
-                            self.logger.debug(f"第 {line_num} 行: 发现重复表名: {line}")
+                    # 如果行内包含逗号，按逗号分割；否则整行作为一个表名
+                    if ',' in line:
+                        tables_in_line = [t.strip() for t in line.split(',') if t.strip()]
                     else:
-                        self.logger.warning(f"第 {line_num} 行: 无效的表名格式: {line}")
+                        tables_in_line = [line]
+                    
+                    # 验证每个表名并添加到结果中
+                    for table_name in tables_in_line:
+                        if self._validate_table_name(table_name):
+                            # 检查是否重复
+                            if table_name not in seen_tables:
+                                tables.append(table_name)
+                                seen_tables.add(table_name)
+                                self.logger.debug(f"解析到表: {table_name}")
+                            else:
+                                duplicate_count += 1
+                                self.logger.debug(f"第 {line_num} 行: 发现重复表名: {table_name}")
+                        else:
+                            self.logger.warning(f"第 {line_num} 行: 无效的表名格式: {table_name}")
             
             if not tables:
                 raise ValueError("表清单文件中没有有效的表名")
@@ -102,7 +109,7 @@ class TableListParser:
     
     def parse_string(self, tables_str: str) -> List[str]:
         """
-        解析表名字符串（用于测试或命令行输入）
+        解析表名字符串，支持换行符和逗号分隔（用于测试或命令行输入）
         
         Args:
             tables_str: 表名字符串，逗号或换行分隔
@@ -113,20 +120,28 @@ class TableListParser:
         tables = []
         seen_tables = set()
         
-        # 支持逗号和换行分隔
-        for separator in [',', '\n']:
-            if separator in tables_str:
-                parts = tables_str.split(separator)
-                break
-        else:
-            parts = [tables_str]
+        # 按换行符分割，然后处理每一行
+        lines = tables_str.split('\n')
         
-        for part in parts:
-            table_name = part.strip()
-            if table_name and self._validate_table_name(table_name):
-                if table_name not in seen_tables:
-                    tables.append(table_name)
-                    seen_tables.add(table_name)
+        for line in lines:
+            line = line.strip()
+            
+            # 跳过空行和注释行
+            if not line or line.startswith('#') or line.startswith('--'):
+                continue
+            
+            # 如果行内包含逗号，按逗号分割；否则整行作为一个表名
+            if ',' in line:
+                tables_in_line = [t.strip() for t in line.split(',') if t.strip()]
+            else:
+                tables_in_line = [line]
+            
+            # 验证每个表名并添加到结果中
+            for table_name in tables_in_line:
+                if table_name and self._validate_table_name(table_name):
+                    if table_name not in seen_tables:
+                        tables.append(table_name)
+                        seen_tables.add(table_name)
         
         return tables
     
@@ -154,12 +169,20 @@ class TableListParser:
                     if not line or line.startswith('#') or line.startswith('--'):
                         continue
                     
-                    if self._validate_table_name(line):
-                        if line not in seen_tables:
-                            unique_tables.append(line)
-                            seen_tables.add(line)
-                        else:
-                            duplicate_tables.append(line)
+                    # 如果行内包含逗号，按逗号分割；否则整行作为一个表名
+                    if ',' in line:
+                        tables_in_line = [t.strip() for t in line.split(',') if t.strip()]
+                    else:
+                        tables_in_line = [line]
+                    
+                    # 处理每个表名
+                    for table_name in tables_in_line:
+                        if self._validate_table_name(table_name):
+                            if table_name not in seen_tables:
+                                unique_tables.append(table_name)
+                                seen_tables.add(table_name)
+                            else:
+                                duplicate_tables.append(table_name)
             
             return unique_tables, duplicate_tables
             

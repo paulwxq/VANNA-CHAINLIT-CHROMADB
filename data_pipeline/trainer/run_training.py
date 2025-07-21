@@ -333,7 +333,7 @@ def train_json_question_sql_pairs(json_file):
     except Exception as e:
         print(f" 错误：处理JSON问答训练 - {e}")
 
-def process_training_files(data_path, task_id=None, backup_vector_tables=False, truncate_vector_tables=False):
+def process_training_files(data_path, task_id=None, backup_vector_tables=False, truncate_vector_tables=False, skip_training=False):
     """处理指定路径下的所有训练文件
     
     Args:
@@ -341,6 +341,10 @@ def process_training_files(data_path, task_id=None, backup_vector_tables=False, 
         task_id (str): 任务ID，用于日志记录
         backup_vector_tables (bool): 是否备份vector表数据
         truncate_vector_tables (bool): 是否清空vector表数据
+        skip_training (bool): 是否跳过训练文件处理，仅执行Vector表管理
+    
+    Returns:
+        tuple: (处理成功标志, Vector表管理统计信息)
     """
     # 初始化日志
     if task_id:
@@ -388,7 +392,16 @@ def process_training_files(data_path, task_id=None, backup_vector_tables=False, 
             
         except Exception as e:
             log_message(f"❌ Vector表管理失败: {e}", "error")
-            return False
+            return False, None
+        
+        # 如果是跳过训练模式，跳过训练文件处理
+        if skip_training:
+            log_message("✅ Vector表管理完成，跳过训练文件处理（skip_training=True）")
+            return True, vector_stats
+    elif skip_training:
+        # 如果设置了skip_training但没有Vector操作，记录警告并跳过
+        log_message("⚠️ 设置了skip_training=True但未指定Vector操作，跳过所有处理")
+        return True, None
     
     # 初始化统计计数器
     stats = {
@@ -445,7 +458,7 @@ def process_training_files(data_path, task_id=None, backup_vector_tables=False, 
                 
     except OSError as e:
         log_message(f"读取目录失败: {e}", "error")
-        return False
+        return False, vector_stats
     
     # 打印处理统计
     log_message("训练文件处理统计:")
@@ -557,7 +570,32 @@ def main():
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         return os.path.join(project_root, config_path)
     
+    def resolve_data_path_with_task_id(task_id):
+        """使用task_id构建训练数据路径"""
+        # 使用data_pipeline统一配置
+        try:
+            from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+            base_dir = SCHEMA_TOOLS_CONFIG.get("output_directory", './data_pipeline/training_data/')
+        except ImportError:
+            # 如果无法导入data_pipeline配置，使用默认路径
+            base_dir = './data_pipeline/training_data/'
+        
+        # 处理相对路径
+        from pathlib import Path
+        if not Path(base_dir).is_absolute():
+            # 相对于项目根目录解析
+            project_root = Path(__file__).parent.parent.parent
+            base_dir = project_root / base_dir
+        
+        return str(Path(base_dir) / task_id)
+    
     default_path = resolve_training_data_path()
+    
+    # 参数定义
+    parser.add_argument(
+        '--task-id',
+        help='任务ID，指定后将自动构建训练数据目录路径 (基础目录/task_id)'
+    )
     
     parser.add_argument('--data_path', type=str, default=default_path,
                         help='训练数据目录路径 (默认: 从data_pipeline.config.SCHEMA_TOOLS_CONFIG)')
@@ -568,10 +606,19 @@ def main():
     parser.add_argument('--truncate-vector-tables', action='store_true',
                         help='清空vector表数据（自动启用备份）')
     
+    parser.add_argument('--skip-training', action='store_true',
+                        help='跳过训练文件处理，仅执行Vector表管理')
+    
     args = parser.parse_args()
     
-    # 使用Path对象处理路径以确保跨平台兼容性
-    data_path = Path(args.data_path)
+    # 处理task_id和data_path的关系
+    if args.task_id:
+        # 如果指定了task_id，覆盖data_path
+        data_path = Path(resolve_data_path_with_task_id(args.task_id))
+        print(f"使用task_id构建路径: {args.task_id}")
+    else:
+        # 使用指定或默认的data_path
+        data_path = Path(args.data_path)
     
     # 显示路径解析结果
     print(f"\n===== 训练数据路径配置 =====")
@@ -581,6 +628,9 @@ def main():
         print(f"data_pipeline配置路径: {config_value}")
     except ImportError:
         print(f"data_pipeline配置: 无法导入")
+    
+    if args.task_id:
+        print(f"指定的task_id: {args.task_id}")
     print(f"解析后的绝对路径: {os.path.abspath(data_path)}")
     print("==============================")
     
@@ -636,9 +686,10 @@ def main():
         print(f"\n===== 未知的向量数据库类型: {vector_db_type} =====\n")
     
     # 处理训练文件
-    process_successful, vector_stats = process_training_files(data_path, None, 
+    process_successful, vector_stats = process_training_files(data_path, args.task_id, 
                                                              args.backup_vector_tables, 
-                                                             args.truncate_vector_tables)
+                                                             args.truncate_vector_tables,
+                                                             args.skip_training)
     
     if process_successful:
         # 训练结束，刷新和关闭批处理器

@@ -1,0 +1,51 @@
+{
+  "backup_time": "2025-07-21T12:02:36.094246",
+  "backup_directory": "file_bak_20250721_120236",
+  "moved_files": [
+    "bss_business_day_data.ddl",
+    "bss_business_day_data_1.ddl",
+    "bss_business_day_data_detail.md",
+    "bss_business_day_data_detail_1.md",
+    "bss_car_day_count.ddl",
+    "bss_car_day_count_1.ddl",
+    "bss_car_day_count_detail.md",
+    "bss_car_day_count_detail_1.md",
+    "bss_company.ddl",
+    "bss_company_1.ddl",
+    "bss_company_detail.md",
+    "bss_company_detail_1.md",
+    "bss_section_route.ddl",
+    "bss_section_route_1.ddl",
+    "bss_section_route_area_link.ddl",
+    "bss_section_route_area_link_1.ddl",
+    "bss_section_route_area_link_detail.md",
+    "bss_section_route_area_link_detail_1.md",
+    "bss_section_route_detail.md",
+    "bss_section_route_detail_1.md",
+    "bss_service_area.ddl",
+    "bss_service_area_1.ddl",
+    "bss_service_area_detail.md",
+    "bss_service_area_detail_1.md",
+    "bss_service_area_mapper.ddl",
+    "bss_service_area_mapper_1.ddl",
+    "bss_service_area_mapper_detail.md",
+    "bss_service_area_mapper_detail_1.md",
+    "db_query_decision_prompt.txt",
+    "filename_mapping.txt",
+    "file_modifications_20250721_114134.log",
+    "metadata.txt",
+    "metadata_detail.md",
+    "qs_highway_db_20250721_114123_pair.json",
+    "qs_highway_db_20250721_114123_pair.json.backup",
+    "sql_validation_20250721_114134_summary.log",
+    "task_config.json",
+    "task_result.json"
+  ],
+  "failed_files": [
+    {
+      "file": "data_pipeline.log",
+      "error": "[WinError 32] 另一个程序正在使用此文件，进程无法访问。: 'C:\\\\Projects\\\\cursor_projects\\\\Vanna-Chainlit-Chromadb\\\\data_pipeline\\\\training_data\\\\task_20250721_113010\\\\data_pipeline.log'"
+    }
+  ],
+  "task_id": "task_20250721_113010"
+}

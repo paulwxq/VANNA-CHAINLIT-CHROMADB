@@ -23,6 +23,9 @@ def setup_argument_parser():
   # 基本使用
   python -m data_pipeline.qa_generation.qs_generator --output-dir ./output --table-list ./tables.txt --business-context "高速公路服务区管理系统"
   
+  # 使用task_id自动解析路径
+  python -m data_pipeline.qa_generation.qs_generator --task-id manual_20250720_130541 --table-list ./tables.txt --business-context "高速公路服务区管理系统"
+  
   # 指定数据库名称
   python -m data_pipeline.qa_generation.qs_generator --output-dir ./output --table-list ./tables.txt --business-context "电商系统" --db-name ecommerce_db
   
@@ -31,10 +34,14 @@ def setup_argument_parser():
         """
     )
     
-    # 必需参数
+    # 可选参数（当使用task-id时，output-dir变为可选）
+    parser.add_argument(
+        '--task-id',
+        help='任务ID，指定后将自动构建输出目录路径 (基础目录/task_id)'
+    )
+    
     parser.add_argument(
         '--output-dir',
-        required=True,
         help='包含DDL和MD文件的输出目录'
     )
     
@@ -69,6 +76,28 @@ def setup_argument_parser():
     
     return parser
 
+def resolve_output_directory(args):
+    """解析输出目录路径"""
+    if args.output_dir:
+        # 用户明确指定了输出目录
+        return args.output_dir
+    elif args.task_id:
+        # 使用task_id构建输出目录
+        from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+        base_dir = SCHEMA_TOOLS_CONFIG.get("output_directory", "./data_pipeline/training_data/")
+        
+        # 处理相对路径
+        from pathlib import Path
+        if not Path(base_dir).is_absolute():
+            # 相对于项目根目录解析
+            project_root = Path(__file__).parent.parent.parent
+            base_dir = project_root / base_dir
+        
+        return str(Path(base_dir) / args.task_id)
+    else:
+        # 没有指定输出目录或task_id
+        return None
+
 
 async def main():
     """主入口函数"""
@@ -81,10 +110,18 @@ async def main():
         log_file=args.log_file
     )
     
+    # 解析输出目录
+    output_dir = resolve_output_directory(args)
+    
     # 验证参数
-    output_path = Path(args.output_dir)
+    if not output_dir:
+        print("错误: 需要指定 --output-dir 或 --task-id 参数")
+        parser.print_help()
+        sys.exit(1)
+    
+    output_path = Path(output_dir)
     if not output_path.exists():
-        print(f"错误: 输出目录不存在: {args.output_dir}")
+        print(f"错误: 输出目录不存在: {output_dir}")
         sys.exit(1)
     
     if not os.path.exists(args.table_list):
@@ -94,15 +131,16 @@ async def main():
     try:
         # 创建Agent
         agent = QuestionSQLGenerationAgent(
-            output_dir=args.output_dir,
+            output_dir=output_dir,
             table_list_file=args.table_list,
             business_context=args.business_context,
-            db_name=args.db_name
+            db_name=args.db_name,
+            task_id=args.task_id  # 传递task_id
         )
         
         # 执行生成
         print(f"🚀 开始生成Question-SQL训练数据...")
-        print(f"📁 输出目录: {args.output_dir}")
+        print(f"📁 输出目录: {output_dir}")
         print(f"📋 表清单: {args.table_list}")
         print(f"🏢 业务背景: {args.business_context}")
         

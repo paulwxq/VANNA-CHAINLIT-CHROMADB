@@ -23,6 +23,9 @@ def setup_argument_parser():
   # 基本使用（仅验证，不修改文件）
   python -m data_pipeline.validators.sql_validate_cli --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json
   
+  # 使用task_id自动查找文件
+  python -m data_pipeline.validators.sql_validate_cli --task-id manual_20250720_130541 --db-connection "postgresql://user:pass@localhost:5432/dbname"
+  
   # 启用文件修改，但禁用LLM修复（仅删除无效SQL）
   python -m data_pipeline.validators.sql_validate_cli --db-connection "postgresql://user:pass@localhost:5432/dbname" --input-file ./data.json --modify-original-file --disable-llm-repair
   
@@ -44,9 +47,14 @@ def setup_argument_parser():
         help='数据库连接字符串 (postgresql://user:pass@host:port/dbname)'
     )
     
+    # 可选参数（当使用task-id时，input-file变为可选）
+    parser.add_argument(
+        '--task-id',
+        help='任务ID，指定后将自动在任务目录中查找Question-SQL文件'
+    )
+    
     parser.add_argument(
         '--input-file',
-        required=True,
         help='输入的JSON文件路径（包含Question-SQL对）'
     )
     
@@ -193,13 +201,25 @@ async def main():
     )
     
     # 验证参数
-    if not os.path.exists(args.input_file):
-        print(f"错误: 输入文件不存在: {args.input_file}")
+    if not args.input_file and not args.task_id:
+        print("错误: 必须指定 --input-file 或 --task-id 参数")
+        parser.print_help()
         sys.exit(1)
     
-    input_path = Path(args.input_file)
+    # 解析输入文件和输出目录
+    input_file, output_dir = resolve_input_file_and_output_dir(args)
+    
+    if not input_file:
+        if args.task_id:
+            print(f"错误: 在任务目录中未找到Question-SQL文件 (*_pair.json)")
+            print(f"任务ID: {args.task_id}")
+        else:
+            print(f"错误: 输入文件不存在: {args.input_file}")
+        sys.exit(1)
+    
+    input_path = Path(input_file)
     if not input_path.suffix.lower() == '.json':
-        print(f"警告: 输入文件可能不是JSON格式: {args.input_file}")
+        print(f"警告: 输入文件可能不是JSON格式: {input_file}")
     
     # 应用配置覆盖
     apply_config_overrides(args)
@@ -208,15 +228,16 @@ async def main():
         # 创建SQL验证Agent
         agent = SQLValidationAgent(
             db_connection=args.db_connection,
-            input_file=args.input_file,
-            output_dir=args.output_dir
+            input_file=input_file,
+            output_dir=output_dir,
+            task_id=args.task_id  # 传递task_id
         )
         
         # 显示运行信息
         print(f"🚀 开始SQL验证...")
-        print(f"📁 输入文件: {args.input_file}")
-        if args.output_dir:
-            print(f"📁 输出目录: {args.output_dir}")
+        print(f"📁 输入文件: {input_file}")
+        if output_dir:
+            print(f"📁 输出目录: {output_dir}")
         print(f"🔗 数据库: {_mask_db_connection(args.db_connection)}")
         
         if args.dry_run:
@@ -266,6 +287,44 @@ def _mask_db_connection(conn_str: str) -> str:
     """隐藏数据库连接字符串中的敏感信息"""
     import re
     return re.sub(r'://[^:]+:[^@]+@', '://***:***@', conn_str)
+
+
+def resolve_input_file_and_output_dir(args):
+    """解析输入文件和输出目录路径"""
+    input_file = None
+    output_dir = None
+    
+    if args.input_file:
+        # 用户明确指定了输入文件
+        input_file = args.input_file
+        output_dir = args.output_dir or str(Path(input_file).parent)
+    elif args.task_id:
+        # 使用task_id自动查找输入文件
+        from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+        base_dir = SCHEMA_TOOLS_CONFIG.get("output_directory", "./data_pipeline/training_data/")
+        
+        # 处理相对路径
+        from pathlib import Path
+        if not Path(base_dir).is_absolute():
+            # 相对于项目根目录解析
+            project_root = Path(__file__).parent.parent.parent
+            base_dir = project_root / base_dir
+        
+        task_dir = Path(base_dir) / args.task_id
+        output_dir = args.output_dir or str(task_dir)
+        
+        # 在任务目录中查找Question-SQL文件
+        if task_dir.exists():
+            possible_files = list(task_dir.glob("*_pair.json"))
+            if possible_files:
+                # 选择最新的文件（按修改时间排序）
+                input_file = str(max(possible_files, key=lambda f: f.stat().st_mtime))
+            else:
+                input_file = None
+        else:
+            input_file = None
+    
+    return input_file, output_dir
 
 
 if __name__ == "__main__":

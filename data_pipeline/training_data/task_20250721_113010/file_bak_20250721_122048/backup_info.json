@@ -1,0 +1,29 @@
+{
+  "backup_time": "2025-07-21T12:20:48.550824",
+  "backup_directory": "file_bak_20250721_122048",
+  "moved_files": [
+    "bss_business_day_data_2.ddl",
+    "bss_business_day_data_detail_2.md",
+    "bss_car_day_count_2.ddl",
+    "bss_car_day_count_detail_2.md",
+    "bss_company_2.ddl",
+    "bss_company_detail_2.md",
+    "bss_section_route_2.ddl",
+    "bss_section_route_area_link_2.ddl",
+    "bss_section_route_area_link_detail_2.md",
+    "bss_section_route_detail_2.md",
+    "bss_service_area_2.ddl",
+    "bss_service_area_detail_2.md",
+    "bss_service_area_mapper_2.ddl",
+    "bss_service_area_mapper_detail_2.md",
+    "filename_mapping.txt",
+    "task_config.json"
+  ],
+  "failed_files": [
+    {
+      "file": "data_pipeline.log",
+      "error": "[WinError 32] 另一个程序正在使用此文件，进程无法访问。: 'C:\\\\Projects\\\\cursor_projects\\\\Vanna-Chainlit-Chromadb\\\\data_pipeline\\\\training_data\\\\task_20250721_113010\\\\data_pipeline.log'"
+    }
+  ],
+  "task_id": "task_20250721_113010"
+}
