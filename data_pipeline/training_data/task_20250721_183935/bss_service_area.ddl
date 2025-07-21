@@ -1,7 +1,7 @@
--- 中文名: `bss_service_area` 表用于存储高速公路服务区的基本信息
--- 描述: `bss_service_area` 表用于存储高速公路服务区的基本信息，包括服务区名称、编码、版本控制及操作记录，为核心业务系统提供基础数据支撑。
+-- 中文名: 高速公路服务区基础信息表
+-- 描述: 高速公路服务区基础信息表，存储服务区名称、编码及全生命周期管理数据。
 create table public.bss_service_area (
-  id varchar(32) not null     -- 主键ID，主键,
+  id varchar(32) not null     -- 服务区唯一标识，主键,
   version integer not null    -- 数据版本号,
   create_ts timestamp         -- 创建时间,
   created_by varchar(50)      -- 创建人,
@@ -12,7 +12,7 @@ create table public.bss_service_area (
   service_area_name varchar(255) -- 服务区名称,
   service_area_no varchar(255) -- 服务区编码,
   company_id varchar(32)      -- 所属公司ID,
-  service_position varchar(255) -- 服务区经纬度坐标,
+  service_position varchar(255) -- 经纬度坐标,
   service_area_type varchar(50) -- 服务区类型,
   service_state varchar(50)   -- 服务区状态,
   primary key (id)

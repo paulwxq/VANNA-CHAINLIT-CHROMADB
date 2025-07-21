@@ -1,0 +1,11 @@
+=== Vector Table Backup Log ===
+Backup Time: 2025-07-21 20:35:39
+Task ID: task_20250721_202929
+Duration: 0.00s
+
+Tables Backup Status:
+✓ langchain_pg_collection: 4 rows -> langchain_pg_collection_20250721_203539.csv (209.0 B)
+✓ langchain_pg_embedding: 0 rows -> langchain_pg_embedding_20250721_203539.csv (47.0 B)
+
+Truncate Status:
+✓ langchain_pg_embedding: TRUNCATED (0 rows removed)

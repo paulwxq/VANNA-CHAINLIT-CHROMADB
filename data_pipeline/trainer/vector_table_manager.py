@@ -34,7 +34,7 @@ class VectorTableManager:
             import logging
             self.logger = logging.getLogger("VectorTableManager")
     
-    async def execute_vector_management(self, backup: bool, truncate: bool) -> Dict[str, Any]:
+    def execute_vector_management(self, backup: bool, truncate: bool) -> Dict[str, Any]:
         """执行vector表管理操作的主流程"""
         
         start_time = time.time()
@@ -70,7 +70,7 @@ class VectorTableManager:
             # 4. 执行备份操作
             if backup:
                 self.logger.info("🗂️ 开始备份vector表...")
-                backup_results = await self.backup_vector_tables()
+                backup_results = self.backup_vector_tables()
                 result["tables_backed_up"] = backup_results
                 
                 # 检查备份是否全部成功
@@ -85,7 +85,7 @@ class VectorTableManager:
             # 5. 执行清空操作（仅在备份成功时）
             if truncate:
                 self.logger.info("🗑️ 开始清空vector表...")
-                truncate_results = await self.truncate_vector_tables()
+                truncate_results = self.truncate_vector_tables()
                 result["truncate_results"] = truncate_results
                 
                 # 检查清空是否成功
@@ -114,7 +114,7 @@ class VectorTableManager:
             self.logger.error(f"❌ Vector表管理失败: {e}")
             raise
     
-    async def backup_vector_tables(self) -> Dict[str, Any]:
+    def backup_vector_tables(self) -> Dict[str, Any]:
         """备份vector表数据"""
         
         # 1. 创建备份目录
@@ -226,7 +226,7 @@ class VectorTableManager:
         
         return results
     
-    async def truncate_vector_tables(self) -> Dict[str, Any]:
+    def truncate_vector_tables(self) -> Dict[str, Any]:
         """清空vector表数据（只清空langchain_pg_embedding）"""
         
         results = {}

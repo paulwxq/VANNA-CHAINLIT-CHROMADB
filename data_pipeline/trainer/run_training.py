@@ -386,7 +386,7 @@ def process_training_files(data_path, task_id=None, backup_vector_tables=False, 
             log_message("🗂️ 开始执行Vector表管理...")
             
             vector_manager = VectorTableManager(data_path, task_id)
-            vector_stats = asyncio.run(vector_manager.execute_vector_management(backup_vector_tables, truncate_vector_tables))
+            vector_stats = vector_manager.execute_vector_management(backup_vector_tables, truncate_vector_tables)
             
             log_message("✅ Vector表管理完成")
             

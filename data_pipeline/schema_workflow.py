@@ -403,7 +403,7 @@ class SchemaWorkflowOrchestrator:
             )
             
             # 执行vector表管理
-            vector_stats = await vector_manager.execute_vector_management(
+            vector_stats = vector_manager.execute_vector_management(
                 backup=self.backup_vector_tables,
                 truncate=self.truncate_vector_tables
             )

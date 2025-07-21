@@ -1,5 +1,5 @@
-## bss_car_day_count（`bss_car_day_count` 表用于按日统计进入高速公路服务区的车辆数量）
-bss_car_day_count 表`bss_car_day_count` 表用于按日统计进入高速公路服务区的车辆数量，按车辆类型分类，支持车流分析与运营决策。
+## bss_car_day_count（高速公路服务区每日车辆分类统计表）
+bss_car_day_count 表高速公路服务区每日车辆分类统计表，记录各类型车辆流量数据。
 字段列表：
 - id (varchar(32)) - 主键ID [主键, 非空] [示例: 00022c1c99ff11ec86d4fa163ec0f8fc, 00022caa99ff11ec86d4fa163ec0f8fc]
 - version (integer) - 数据版本号 [非空] [示例: 1]

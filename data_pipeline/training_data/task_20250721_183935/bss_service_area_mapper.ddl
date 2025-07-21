@@ -1,8 +1,8 @@
 -- 中文名: 服务区信息映射表
--- 描述: 服务区信息映射表，用于管理高速公路上各服务区的编码与名称对应关系。
+-- 描述: 服务区信息映射表，用于管理高速公路服务区的基础数据与变更记录。
 create table public.bss_service_area_mapper (
   id varchar(32) not null     -- 主键ID，主键,
-  version integer not null    -- 版本号,
+  version integer not null    -- 数据版本号,
   create_ts timestamp         -- 创建时间,
   created_by varchar(50)      -- 创建人,
   update_ts timestamp         -- 更新时间,
@@ -11,8 +11,8 @@ create table public.bss_service_area_mapper (
   deleted_by varchar(50)      -- 删除人,
   service_name varchar(255)   -- 服务区名称,
   service_no varchar(255)     -- 服务区编码,
-  service_area_id varchar(32) -- 服务区ID,
-  source_system_type varchar(50) -- 数据来源类别名称,
-  source_type integer         -- 数据来源类别ID,
+  service_area_id varchar(32) -- 服务区业务ID,
+  source_system_type varchar(50) -- 数据来源系统名称,
+  source_type integer         -- 数据来源系统编码,
   primary key (id)
 );

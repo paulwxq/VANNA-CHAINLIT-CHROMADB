@@ -1,0 +1,177 @@
+{
+  "success": true,
+  "workflow_state": {
+    "start_time": null,
+    "end_time": null,
+    "current_step": "training_data_load",
+    "completed_steps": [
+      "ddl_md_generation",
+      "question_sql_generation",
+      "sql_validation",
+      "training_data_load"
+    ],
+    "failed_steps": [],
+    "artifacts": {
+      "ddl_md_generation": {
+        "total_tables": 7,
+        "processed_successfully": 7,
+        "failed": 0,
+        "files_generated": 14,
+        "duration": 94.89018130302429
+      },
+      "question_sql_generation": {
+        "output_file": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_202929\\qs_highway_db_20250721_203452_pair.json",
+        "total_questions": 50,
+        "total_themes": 5,
+        "successful_themes": 5,
+        "failed_themes": [],
+        "duration": 173.30390071868896
+      },
+      "sql_validation": {
+        "original_sql_count": 50,
+        "valid_sql_count": 45,
+        "invalid_sql_count": 5,
+        "success_rate": 0.9,
+        "repair_stats": {
+          "attempted": 9,
+          "successful": 4,
+          "failed": 5
+        },
+        "file_modification_stats": {
+          "modified": 4,
+          "deleted": 5,
+          "failed_modifications": 0
+        },
+        "average_execution_time": 0.024708290100097657,
+        "total_retries": 0,
+        "duration": 29.800068616867065
+      },
+      "vector_management": {
+        "backup_performed": true,
+        "truncate_performed": true,
+        "tables_backed_up": {
+          "langchain_pg_collection": {
+            "success": true,
+            "row_count": 4,
+            "file_size": "209.0 B",
+            "backup_file": "langchain_pg_collection_20250721_203539.csv",
+            "duration": 0.02439570426940918
+          },
+          "langchain_pg_embedding": {
+            "success": true,
+            "row_count": 0,
+            "file_size": "47.0 B",
+            "backup_file": "langchain_pg_embedding_20250721_203539.csv",
+            "duration": 0.02391791343688965
+          }
+        },
+        "truncate_results": {
+          "langchain_pg_embedding": {
+            "success": true,
+            "rows_before": 0,
+            "rows_after": 0,
+            "duration": 0.02629232406616211
+          }
+        },
+        "errors": [],
+        "backup_directory": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_202929\\vector_bak",
+        "duration": 0.07828950881958008
+      },
+      "training_data_load": {
+        "training_data_dir": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_202929",
+        "load_successful": true,
+        "total_records": 58,
+        "data_type_counts": {
+          "sql": 43,
+          "documentation": 8,
+          "ddl": 7
+        },
+        "duration": 69.35857605934143
+      }
+    },
+    "statistics": {
+      "step1_duration": 94.89018130302429,
+      "step2_duration": 173.30390071868896,
+      "step3_duration": 29.800068616867065,
+      "step4_duration": 69.35857605934143
+    }
+  },
+  "artifacts": {
+    "ddl_md_generation": {
+      "total_tables": 7,
+      "processed_successfully": 7,
+      "failed": 0,
+      "files_generated": 14,
+      "duration": 94.89018130302429
+    },
+    "question_sql_generation": {
+      "output_file": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_202929\\qs_highway_db_20250721_203452_pair.json",
+      "total_questions": 50,
+      "total_themes": 5,
+      "successful_themes": 5,
+      "failed_themes": [],
+      "duration": 173.30390071868896
+    },
+    "sql_validation": {
+      "original_sql_count": 50,
+      "valid_sql_count": 45,
+      "invalid_sql_count": 5,
+      "success_rate": 0.9,
+      "repair_stats": {
+        "attempted": 9,
+        "successful": 4,
+        "failed": 5
+      },
+      "file_modification_stats": {
+        "modified": 4,
+        "deleted": 5,
+        "failed_modifications": 0
+      },
+      "average_execution_time": 0.024708290100097657,
+      "total_retries": 0,
+      "duration": 29.800068616867065
+    },
+    "vector_management": {
+      "backup_performed": true,
+      "truncate_performed": true,
+      "tables_backed_up": {
+        "langchain_pg_collection": {
+          "success": true,
+          "row_count": 4,
+          "file_size": "209.0 B",
+          "backup_file": "langchain_pg_collection_20250721_203539.csv",
+          "duration": 0.02439570426940918
+        },
+        "langchain_pg_embedding": {
+          "success": true,
+          "row_count": 0,
+          "file_size": "47.0 B",
+          "backup_file": "langchain_pg_embedding_20250721_203539.csv",
+          "duration": 0.02391791343688965
+        }
+      },
+      "truncate_results": {
+        "langchain_pg_embedding": {
+          "success": true,
+          "rows_before": 0,
+          "rows_after": 0,
+          "duration": 0.02629232406616211
+        }
+      },
+      "errors": [],
+      "backup_directory": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_202929\\vector_bak",
+      "duration": 0.07828950881958008
+    },
+    "training_data_load": {
+      "training_data_dir": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_202929",
+      "load_successful": true,
+      "total_records": 58,
+      "data_type_counts": {
+        "sql": 43,
+        "documentation": 8,
+        "ddl": 7
+      },
+      "duration": 69.35857605934143
+    }
+  }
+}

@@ -1,0 +1,62 @@
+-- Schema Tools生成的主题元数据
+-- 业务背景: 高速公路服务区管理系统
+-- 生成时间: 2025-07-21 20:34:52
+-- 数据库: highway_db
+
+-- 创建表（如果不存在）
+CREATE TABLE IF NOT EXISTS metadata (
+    id SERIAL PRIMARY KEY,    -- 主键
+    topic_name VARCHAR(100) NOT NULL,  -- 业务主题名称
+    description TEXT,                  -- 业务主体说明
+    related_tables TEXT[],			  -- 相关表名
+    biz_entities TEXT[],               -- 主要业务实体名称
+    biz_metrics TEXT[],                -- 主要业务指标名称
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP    -- 插入时间
+);
+
+-- 插入主题数据
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '日营业分析',
+  '基于bss_business_day_data表分析各服务区每日营收、订单量及支付方式结构，辅助经营决策和档口优化。',
+  'bss_business_day_data',
+  '服务区,档口,支付方式',
+  '收入趋势,订单数量变化,支付方式占比'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '车流特征分析',
+  '结合bss_car_day_count表统计不同类型车辆在各服务区的通行频次及时序分布，识别高峰规律与用户群体特征。',
+  'bss_car_day_count,bss_service_area',
+  '车辆类型,服务区,日期',
+  '车流量趋势,车型占比,服务区车流排名'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '公司绩效对比',
+  '关联bss_service_area和bss_company表，按所属公司汇总营收与车流数据，评估不同区域公司的运营效率差异。',
+  'bss_service_area,bss_company,bss_business_day_data',
+  '公司,服务区,日期',
+  '平均日收入,公司间对比,单位车流转化收入'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '路段流量关联',
+  '通过bss_section_route_area_link和bss_section_route表分析各路段下辖服务区的车流分布，发现热点路线与潜力区域。',
+  'bss_section_route,bss_section_route_area_link,bss_car_day_count',
+  '路段名称,路线名称,服务区',
+  '路段总车流,服务区密度分布,路段间对比'
+);
+
+INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
+(
+  '数据来源质量',
+  '利用bss_service_area_mapper表统计不同系统来源的服务区数据占比及更新频率，识别主数据一致性问题。',
+  'bss_service_area_mapper,bss_service_area',
+  '数据来源系统,服务区,编码一致性',
+  '来源分布,编码覆盖率,多源冲突识别'
+);
+

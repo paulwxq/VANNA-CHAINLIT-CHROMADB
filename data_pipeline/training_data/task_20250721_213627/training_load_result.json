@@ -1,0 +1,11 @@
+{
+  "training_data_dir": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_213627",
+  "load_successful": true,
+  "total_records": 62,
+  "data_type_counts": {
+    "sql": 47,
+    "documentation": 8,
+    "ddl": 7
+  },
+  "duration": 81.33194875717163
+}

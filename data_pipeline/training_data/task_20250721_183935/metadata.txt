@@ -1,6 +1,6 @@
 -- Schema Tools生成的主题元数据
 -- 业务背景: 高速公路服务区管理系统
--- 生成时间: 2025-07-21 19:51:31
+-- 生成时间: 2025-07-21 20:13:55
 -- 数据库: highway_db
 
 -- 创建表（如果不存在）
@@ -17,46 +17,46 @@ CREATE TABLE IF NOT EXISTS metadata (
 -- 插入主题数据
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '日营业数据分析',
-  '基于 bss_business_day_data 表，分析每个服务区和档口每天的营业收入、订单数量、支付方式等经营情况，帮助优化运营策略。',
-  'bss_business_day_data,bss_service_area',
-  '服务区,档口,支付方式,营收',
-  '收入趋势,服务区对比,支付方式分布'
+  '日营业分析',
+  '基于每日经营数据，分析各服务区及档口的收入趋势、订单结构和支付方式分布，辅助运营决策优化。',
+  'bss_business_day_data',
+  '服务区,档口,支付方式',
+  '总收入,订单总数,支付方式占比,日环比增长'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '车流统计分析',
-  '基于 bss_car_day_count 表，按日期和车辆类型分析各服务区的车辆通行量，辅助车流高峰期的资源配置与营销决策。',
+  '车流特征分析',
+  '结合车辆类型与日期维度，识别不同服务区过境、城际等车流变化规律，支撑资源调度与服务配置。',
   'bss_car_day_count,bss_service_area',
-  '服务区,车辆类型,日期,车流量',
-  '车流趋势,车型占比,服务区车流排名'
+  '车辆类型,服务区,统计日期',
+  '车流量趋势,车型占比,服务区车流排名'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '公司营收对比',
-  '结合 bss_company 和 bss_service_area 表，分析不同公司下属服务区的营业收入情况，支持公司层级的业绩评估。',
-  'bss_company,bss_service_area,bss_business_day_data',
-  '公司,服务区,日期,营收',
-  '公司营收排名,月度对比,日均营收'
+  '公司业绩对比',
+  '按所属公司汇总营收和订单数据，横向比较各分公司经营能力，支持绩效考核与资源倾斜策略制定。',
+  'bss_business_day_data,bss_service_area,bss_company',
+  '公司,服务区,支付方式',
+  '总营收,订单量,人均消费,公司间对比'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '路段车流与营收关联',
-  '结合 bss_section_route 和 bss_car_day_count、bss_business_day_data 表，分析不同路段对应服务区的车流与营收关系，支持路段运营优化。',
+  '路段流量关联',
+  '通过路段-服务区映射关系，分析不同高速路段下辖服务区的车流与消费关联性，挖掘潜力区域。',
   'bss_section_route,bss_section_route_area_link,bss_car_day_count,bss_business_day_data',
-  '路段,路线,车流量,营收',
-  '车流营收相关性,路段营收排名,车流营收趋势'
+  '路段名称,路线名称,服务区',
+  '平均车流量,单位车流转化收入,路段综合活跃度'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '服务区状态与营收',
-  '基于 bss_service_area 和 bss_business_day_data 表，分析不同状态（开放/关闭）的服务区对营收的影响，支持资源调度决策。',
-  'bss_service_area,bss_business_day_data',
-  '服务区,服务状态,日期,营收',
-  '状态营收对比,开放服务区排名,关闭影响分析'
+  '数据来源质量',
+  '评估不同系统（如驿购、驿美）提供的经营数据在数量、完整性上的差异，提升数据治理水平。',
+  'bss_service_area_mapper,bss_business_day_data',
+  '数据来源系统,服务区,统计日期',
+  '记录数分布,数据更新频率,来源系统覆盖率'
 );
 

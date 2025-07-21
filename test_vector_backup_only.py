@@ -38,7 +38,7 @@ async def test_vector_backup():
         
         # 4. 执行备份（只备份，不清空）
         print("\n🗂️ 开始执行备份...")
-        result = await vector_manager.execute_vector_management(
+        result = vector_manager.execute_vector_management(
             backup=True,    # 执行备份
             truncate=False  # 不清空表
         )
