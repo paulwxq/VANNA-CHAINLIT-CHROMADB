@@ -73,7 +73,10 @@ class QuestionSQLGenerationAgent:
         try:
             self.logger.info("🚀 开始生成Question-SQL训练数据")
             
-            # 1. 验证文件数量
+            # 1. 重命名现有文件
+            await self._rename_existing_files()
+            
+            # 2. 验证文件数量
             self.logger.info("📋 验证文件数量...")
             validation_result = self.validator.validate(self.table_list_file, str(self.output_dir))
             
@@ -167,6 +170,28 @@ class QuestionSQLGenerationAgent:
             
             raise
     
+    async def _rename_existing_files(self):
+        """重命名现有的输出文件"""
+        try:
+            # 查找现有的 *_pair.json 文件
+            pair_files = list(self.output_dir.glob("*_pair.json"))
+            
+            for pair_file in pair_files:
+                old_name = f"{pair_file}_old"
+                pair_file.rename(old_name)
+                self.logger.info(f"重命名文件: {pair_file.name} → {Path(old_name).name}")
+            
+            # 查找现有的 backup 文件
+            backup_files = list(self.output_dir.glob("*_pair.json.backup"))
+            
+            for backup_file in backup_files:
+                old_name = f"{backup_file}_old"
+                backup_file.rename(old_name)
+                self.logger.info(f"重命名备份文件: {backup_file.name} → {Path(old_name).name}")
+                
+        except Exception as e:
+            self.logger.warning(f"重命名现有文件时出错: {e}")
+
     def _initialize_llm_components(self):
         """初始化LLM相关组件"""
         if not self.vn:

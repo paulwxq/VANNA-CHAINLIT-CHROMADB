@@ -315,7 +315,11 @@ def resolve_input_file_and_output_dir(args):
         
         # 在任务目录中查找Question-SQL文件
         if task_dir.exists():
-            possible_files = list(task_dir.glob("*_pair.json"))
+            # 只搜索标准命名的文件，排除 _old 后缀
+            possible_files = [
+                f for f in task_dir.glob("*_pair.json") 
+                if not f.name.endswith('_old') and '.backup' not in f.name
+            ]
             if possible_files:
                 # 选择最新的文件（按修改时间排序）
                 input_file = str(max(possible_files, key=lambda f: f.stat().st_mtime))

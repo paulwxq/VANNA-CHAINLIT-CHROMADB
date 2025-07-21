@@ -101,12 +101,11 @@ class FileNameManager:
         if filename not in self.used_names:
             return filename
         
-        # 如果重名，添加数字后缀
-        base, ext = os.path.splitext(filename)
+        # 如果重名，在扩展名后添加数字后缀
         counter = 1
         
         while True:
-            unique_name = f"{base}_{counter}{ext}"
+            unique_name = f"{filename}_{counter}"
             if unique_name not in self.used_names:
                 self.logger.warning(f"文件名冲突，'{filename}' 重命名为 '{unique_name}'")
                 return unique_name

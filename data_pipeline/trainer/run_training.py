@@ -262,6 +262,25 @@ def train_formatted_question_sql_pairs(formatted_file):
     
     print(f"格式化问答训练完成，共成功处理 {successfully_processed} 对问答（总计 {len(pairs)} 对）")
 
+def _is_valid_training_file(filename: str) -> bool:
+    """判断是否为有效的训练文件"""
+    import re
+    filename_lower = filename.lower()
+    
+    # 排除带数字后缀的文件
+    if re.search(r'\.(ddl|md)_\d+$', filename_lower):
+        return False
+    
+    # 排除 _old 后缀的文件
+    if filename_lower.endswith('_old'):
+        return False
+    
+    # 排除 .backup 相关文件
+    if '.backup' in filename_lower:
+        return False
+    
+    return True
+
 def train_json_question_sql_pairs(json_file):
     """训练JSON格式的问答对
     
@@ -427,6 +446,11 @@ def process_training_files(data_path, task_id=None, backup_vector_tables=False, 
             
             # 根据文件类型调用相应的处理函数
             try:
+                # 检查是否为有效的训练文件
+                if not _is_valid_training_file(item):
+                    log_message(f"跳过无效训练文件: {item}")
+                    continue
+                    
                 if file_lower.endswith(".ddl"):
                     log_message(f"处理DDL文件: {item_path}")
                     train_ddl_statements(item_path)
