@@ -1,0 +1,202 @@
+[
+  {
+    "question": "查询2023年4月1日各服务区的总营收和订单总数，并按总营收降序排列。",
+    "sql": "SELECT service_name AS 服务区名称, pay_sum AS 总营收, order_sum AS 订单总数 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND delete_ts IS NULL ORDER BY pay_sum DESC;"
+  },
+  {
+    "question": "统计2023年4月1日各支付方式的总金额，包括微信、支付宝、现金、行吧、金豆。",
+    "sql": "SELECT SUM(wx) AS 微信总金额, SUM(zfb) AS 支付宝总金额, SUM(rmb) AS 现金总金额, SUM(xs) AS 行吧总金额, SUM(jd) AS 金豆总金额 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND delete_ts IS NULL;"
+  },
+  {
+    "question": "查询2023年4月1日各服务区的单均消费（总营收/订单总数），并取前5名。",
+    "sql": "SELECT service_name AS 服务区名称, (pay_sum / order_sum) AS 单均消费 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND delete_ts IS NULL ORDER BY 单均消费 DESC LIMIT 5;"
+  },
+  {
+    "question": "查询2023年4月1日微信支付金额大于1000元的服务区，并按微信支付金额升序排列。",
+    "sql": "SELECT service_name AS 服务区名称, wx AS 微信支付金额 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND wx > 1000 AND delete_ts IS NULL ORDER BY wx ASC;"
+  },
+  {
+    "question": "查询2023年4月1日各服务区不同支付方式的订单数量，包括微信、支付宝、现金、行吧、金豆。",
+    "sql": "SELECT service_name AS 服务区名称, wx_order AS 微信订单数, zf_order AS 支付宝订单数, rmb_order AS 现金订单数, xs_order AS 行吧订单数, jd_order AS 金豆订单数 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND delete_ts IS NULL;"
+  },
+  {
+    "question": "统计2023年4月1日各服务区现金支付金额占比，并按占比降序排列。",
+    "sql": "SELECT service_name AS 服务区名称, (rmb / pay_sum) * 100 AS 现金支付占比 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND pay_sum > 0 AND delete_ts IS NULL ORDER BY 现金支付占比 DESC;"
+  },
+  {
+    "question": "查询2023年4月1日微信支付订单数最多的前3个服务区。",
+    "sql": "SELECT service_name AS 服务区名称, wx_order AS 微信订单数 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND delete_ts IS NULL ORDER BY wx_order DESC LIMIT 3;"
+  },
+  {
+    "question": "查询2023年4月1日各服务区的支付宝支付金额和订单数，并筛选订单数大于10的服务区。",
+    "sql": "SELECT service_name AS 服务区名称, zfb AS 支付宝支付金额, zf_order AS 支付宝订单数 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND zf_order > 10 AND delete_ts IS NULL;"
+  },
+  {
+    "question": "查询2023年4月1日各服务区总营收、订单总数和单均消费，并按单均消费排序。",
+    "sql": "SELECT service_name AS 服务区名称, pay_sum AS 总营收, order_sum AS 订单总数, (pay_sum / order_sum) AS 单均消费 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND delete_ts IS NULL ORDER BY 单均消费 DESC;"
+  },
+  {
+    "question": "查询2023年4月1日行吧支付金额为0的服务区明细。",
+    "sql": "SELECT service_name AS 服务区名称, xs AS 行吧支付金额 FROM bss_business_day_data WHERE oper_date = '2023-04-01' AND xs = 0 AND delete_ts IS NULL;"
+  },
+  {
+    "question": "统计最近一周各服务区每日车辆总数，展示流量趋势",
+    "sql": "SELECT count_date AS 统计日期, service_area_id AS 服务区ID, SUM(customer_count) AS 车辆总数 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date >= CURRENT_DATE - 7 GROUP BY count_date, service_area_id ORDER BY count_date DESC;"
+  },
+  {
+    "question": "查询2023年10月1日各服务区车辆数量，用于区域流量对比分析",
+    "sql": "SELECT service_area_id AS 服务区ID, SUM(customer_count) AS 车辆总数 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date = '2023-10-01' GROUP BY service_area_id;"
+  },
+  {
+    "question": "找出2023年9月车辆流量最高的前5个服务区",
+    "sql": "SELECT service_area_id AS 服务区ID, SUM(customer_count) AS 总流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date BETWEEN '2023-09-01' AND '2023-09-30' GROUP BY service_area_id ORDER BY 总流量 DESC LIMIT 5;"
+  },
+  {
+    "question": "统计各车辆类别在所有服务区的占比情况",
+    "sql": "SELECT car_type AS 车辆类别, SUM(customer_count) * 100.0 / (SELECT SUM(customer_count) FROM bss_car_day_count WHERE delete_ts IS NULL) AS 占比百分比 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY car_type;"
+  },
+  {
+    "question": "查询宜春服务区2023年每日车辆流量趋势，用于分析节假日效应",
+    "sql": "SELECT count_date AS 统计日期, customer_count AS 车辆数量 FROM bss_car_day_count INNER JOIN bss_service_area ON bss_car_day_count.service_area_id = bss_service_area.id WHERE delete_ts IS NULL AND service_area_name = '宜春服务区' AND count_date BETWEEN '2023-01-01' AND '2023-12-31' ORDER BY count_date;"
+  },
+  {
+    "question": "列出2023年8月车辆流量最低的3个服务区",
+    "sql": "SELECT service_area_id AS 服务区ID, SUM(customer_count) AS 总流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date BETWEEN '2023-08-01' AND '2023-08-31' GROUP BY service_area_id ORDER BY 总流量 ASC LIMIT 3;"
+  },
+  {
+    "question": "统计各服务区不同车辆类别的日均流量，用于资源调度分析",
+    "sql": "SELECT service_area_id AS 服务区ID, car_type AS 车辆类别, AVG(customer_count) AS 日均流量 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY service_area_id, car_type;"
+  },
+  {
+    "question": "查询2023年国庆假期期间（10月1日至10月7日）车辆总数及同比增长率",
+    "sql": "WITH current_period AS (SELECT SUM(customer_count) AS current_total FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date BETWEEN '2023-10-01' AND '2023-10-07'), previous_period AS (SELECT SUM(customer_count) AS previous_total FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date BETWEEN '2022-10-01' AND '2022-10-07') SELECT current_total AS 当前周期总量, previous_total AS 去年周期总量, (current_total - previous_total) * 100.0 / previous_total AS 同比增长率 FROM current_period, previous_period;"
+  },
+  {
+    "question": "查询各车辆类别在不同服务区的总流量排名",
+    "sql": "SELECT car_type AS 车辆类别, service_area_id AS 服务区ID, SUM(customer_count) AS 总流量, RANK() OVER (PARTITION BY car_type ORDER BY SUM(customer_count) DESC) AS 排名 FROM bss_car_day_count WHERE delete_ts IS NULL GROUP BY car_type, service_area_id;"
+  },
+  {
+    "question": "统计各服务区在2023年季度车辆流量，用于季度趋势分析",
+    "sql": "SELECT service_area_id AS 服务区ID, EXTRACT(QUARTER FROM count_date) AS 季度, SUM(customer_count) AS 总流量 FROM bss_car_day_count WHERE delete_ts IS NULL AND count_date BETWEEN '2023-01-01' AND '2023-12-31' GROUP BY service_area_id, 季度 ORDER BY service_area_id, 季度;"
+  },
+  {
+    "question": "统计各公司2023年4月1日当天的总营收金额，并按公司名称分组汇总。",
+    "sql": "SELECT c.company_name AS 公司名称, SUM(d.pay_sum) AS 总营收金额 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date = '2023-04-01' AND d.delete_ts IS NULL GROUP BY c.company_name;"
+  },
+  {
+    "question": "找出2023年4月1日单均消费最高的前5个服务区，并显示其所属公司。",
+    "sql": "SELECT s.service_name AS 服务区名称, c.company_name AS 公司名称, (SUM(d.pay_sum) / SUM(d.order_sum)) AS 单均消费 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date = '2023-04-01' AND d.delete_ts IS NULL GROUP BY s.service_name, c.company_name ORDER BY 单均消费 DESC LIMIT 5;"
+  },
+  {
+    "question": "统计各公司微信支付金额占比，并按公司名称排序。",
+    "sql": "SELECT c.company_name AS 公司名称, (SUM(d.wx) / SUM(d.pay_sum)) * 100 AS 微信支付占比 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.delete_ts IS NULL GROUP BY c.company_name ORDER BY 公司名称;"
+  },
+  {
+    "question": "统计2023年4月1日各公司支付宝订单数量总和，并筛选出总订单数超过1000的公司。",
+    "sql": "SELECT c.company_name AS 公司名称, SUM(d.zf_order) AS 支付宝订单总数 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date = '2023-04-01' AND d.delete_ts IS NULL GROUP BY c.company_name HAVING SUM(d.order_sum) > 1000;"
+  },
+  {
+    "question": "统计各公司最近一个月（2023年4月）的总营收金额，并按金额降序排列。",
+    "sql": "SELECT c.company_name AS 公司名称, SUM(d.pay_sum) AS 总营收金额 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND d.delete_ts IS NULL GROUP BY c.company_name ORDER BY 总营收金额 DESC;"
+  },
+  {
+    "question": "统计各公司2023年4月的营收增长率（环比3月）。",
+    "sql": "WITH apr_data AS (SELECT c.company_name, SUM(d.pay_sum) AS total_apr FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND d.delete_ts IS NULL GROUP BY c.company_name), mar_data AS (SELECT c.company_name, SUM(d.pay_sum) AS total_mar FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date BETWEEN '2023-03-01' AND '2023-03-31' AND d.delete_ts IS NULL GROUP BY c.company_name) SELECT a.company_name AS 公司名称, ((a.total_apr - m.total_mar) / m.total_mar) * 100 AS 营收增长率 FROM apr_data a JOIN mar_data m ON a.company_name = m.company_name;"
+  },
+  {
+    "question": "统计各公司现金支付金额占比超过10%的服务区数量。",
+    "sql": "SELECT c.company_name AS 公司名称, COUNT(*) AS 服务区数量 FROM (SELECT s.company_id, s.service_name, (SUM(d.rmb) / SUM(d.pay_sum)) * 100 AS 现金占比 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no WHERE d.delete_ts IS NULL GROUP BY s.company_id, s.service_name HAVING (SUM(d.rmb) / SUM(d.pay_sum)) * 100 > 10) t JOIN bss_company c ON t.company_id = c.id GROUP BY c.company_name;"
+  },
+  {
+    "question": "列出2023年4月1日所有公司总营收金额及订单总数，并计算整体平均单均消费。",
+    "sql": "SELECT c.company_name AS 公司名称, SUM(d.pay_sum) AS 总营收金额, SUM(d.order_sum) AS 订单总数, (SUM(d.pay_sum) / SUM(d.order_sum)) AS 单均消费 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date = '2023-04-01' AND d.delete_ts IS NULL GROUP BY c.company_name;"
+  },
+  {
+    "question": "统计2023年4月各公司行吧支付金额排名前3的服务区。",
+    "sql": "SELECT * FROM (SELECT c.company_name AS 公司名称, s.service_name AS 服务区名称, SUM(d.xs) AS 行吧支付金额, RANK() OVER (PARTITION BY c.company_name ORDER BY SUM(d.xs) DESC) AS 排名 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND d.delete_ts IS NULL GROUP BY c.company_name, s.service_name) t WHERE 排名 <= 3;"
+  },
+  {
+    "question": "找出2023年4月各公司中单日营收最高的服务区及其最高营收日期。",
+    "sql": "SELECT * FROM (SELECT c.company_name AS 公司名称, s.service_name AS 服务区名称, d.oper_date AS 日期, d.pay_sum AS 营收金额, RANK() OVER (PARTITION BY c.company_name ORDER BY d.pay_sum DESC) AS 排名 FROM bss_business_day_data d JOIN bss_service_area s ON d.service_no = s.service_area_no JOIN bss_company c ON s.company_id = c.id WHERE d.oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND d.delete_ts IS NULL) t WHERE 排名 = 1;"
+  },
+  {
+    "question": "统计2023年4月1日各路段的总车流量，并按车流量从高到低排序前5名。",
+    "sql": "SELECT s.section_name AS 路段名称, SUM(c.customer_count) AS 总车流量 FROM bss_car_day_count c JOIN bss_section_route_area_link l ON c.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE c.count_date = '2023-04-01' AND c.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.section_name ORDER BY 总车流量 DESC LIMIT 5;"
+  },
+  {
+    "question": "统计2023年4月1日各路线的总营收金额，并按路线名称排序。",
+    "sql": "SELECT s.route_name AS 路线名称, SUM(b.pay_sum) AS 总营收金额 FROM bss_business_day_data b JOIN bss_service_area_mapper m ON b.service_no = m.service_no JOIN bss_section_route_area_link l ON m.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE b.oper_date = '2023-04-01' AND b.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.route_name;"
+  },
+  {
+    "question": "分析2023年4月1日各路段的车流量与营收总额对比，找出运营效率较低的路段。",
+    "sql": "SELECT s.section_name AS 路段名称, SUM(c.customer_count) AS 车流量, SUM(b.pay_sum) AS 营收总额 FROM bss_car_day_count c JOIN bss_section_route_area_link l ON c.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id JOIN bss_business_day_data b ON l.service_area_id = b.service_area_id WHERE c.count_date = '2023-04-01' AND b.oper_date = '2023-04-01' AND c.delete_ts IS NULL AND b.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.section_name;"
+  },
+  {
+    "question": "统计2023年4月1日各路段的平均车流量，用于评估整体运营情况。",
+    "sql": "SELECT s.section_name AS 路段名称, AVG(c.customer_count) AS 平均车流量 FROM bss_car_day_count c JOIN bss_section_route_area_link l ON c.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE c.count_date = '2023-04-01' AND c.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.section_name;"
+  },
+  {
+    "question": "统计2023年4月1日各路线的总车流量，并按路线名称排序。",
+    "sql": "SELECT s.route_name AS 路线名称, SUM(c.customer_count) AS 总车流量 FROM bss_car_day_count c JOIN bss_section_route_area_link l ON c.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE c.count_date = '2023-04-01' AND c.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.route_name;"
+  },
+  {
+    "question": "统计2023年4月1日各路段的营收总额，并按营收从高到低排序前5名。",
+    "sql": "SELECT s.section_name AS 路段名称, SUM(b.pay_sum) AS 营收总额 FROM bss_business_day_data b JOIN bss_service_area_mapper m ON b.service_no = m.service_no JOIN bss_section_route_area_link l ON m.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE b.oper_date = '2023-04-01' AND b.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.section_name ORDER BY 营收总额 DESC LIMIT 5;"
+  },
+  {
+    "question": "统计2023年4月1日各路线的平均营收金额，并按路线名称排序。",
+    "sql": "SELECT s.route_name AS 路线名称, AVG(b.pay_sum) AS 平均营收金额 FROM bss_business_day_data b JOIN bss_service_area_mapper m ON b.service_no = m.service_no JOIN bss_section_route_area_link l ON m.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE b.oper_date = '2023-04-01' AND b.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.route_name;"
+  },
+  {
+    "question": "找出2023年4月1日营收总额最低的3个路段。",
+    "sql": "SELECT s.section_name AS 路段名称, SUM(b.pay_sum) AS 营收总额 FROM bss_business_day_data b JOIN bss_service_area_mapper m ON b.service_no = m.service_no JOIN bss_section_route_area_link l ON m.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE b.oper_date = '2023-04-01' AND b.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.section_name ORDER BY 营收总额 ASC LIMIT 3;"
+  },
+  {
+    "question": "找出2023年4月1日车流量最高的3个路段。",
+    "sql": "SELECT s.section_name AS 路段名称, SUM(c.customer_count) AS 总车流量 FROM bss_car_day_count c JOIN bss_section_route_area_link l ON c.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id WHERE c.count_date = '2023-04-01' AND c.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.section_name ORDER BY 总车流量 DESC LIMIT 3;"
+  },
+  {
+    "question": "统计2023年4月1日各路段的车流量和营收总额，并按路段名称排序。",
+    "sql": "SELECT s.section_name AS 路段名称, SUM(c.customer_count) AS 车流量, SUM(b.pay_sum) AS 营收总额 FROM bss_car_day_count c JOIN bss_section_route_area_link l ON c.service_area_id = l.service_area_id JOIN bss_section_route s ON l.section_route_id = s.id JOIN bss_business_day_data b ON l.service_area_id = b.service_area_id WHERE c.count_date = '2023-04-01' AND b.oper_date = '2023-04-01' AND c.delete_ts IS NULL AND b.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.section_name;"
+  },
+  {
+    "question": "统计当前所有开放状态的服务区数量和关闭状态的服务区数量",
+    "sql": "SELECT service_state AS 运营状态, COUNT(*) AS 服务区数量 FROM bss_service_area WHERE delete_ts IS NULL GROUP BY service_state;"
+  },
+  {
+    "question": "计算最近一天所有开放状态的服务区的总营收金额，并与关闭状态的服务区进行对比",
+    "sql": "SELECT sa.service_state AS 运营状态, COALESCE(SUM(bd.pay_sum), 0) AS 总营收金额 FROM bss_service_area sa LEFT JOIN bss_business_day_data bd ON sa.service_area_no = bd.service_no AND bd.oper_date = CURRENT_DATE - INTERVAL '1 day' WHERE sa.delete_ts IS NULL GROUP BY sa.service_state;"
+  },
+  {
+    "question": "分析最近一天不同运营状态的服务区的总车辆流量分布情况",
+    "sql": "SELECT sa.service_state AS 运营状态, COALESCE(SUM(cc.customer_count), 0) AS 车辆总数 FROM bss_service_area sa LEFT JOIN bss_car_day_count cc ON sa.id = cc.service_area_id AND cc.count_date = CURRENT_DATE - INTERVAL '1 day' WHERE sa.delete_ts IS NULL GROUP BY sa.service_state;"
+  },
+  {
+    "question": "计算最近一周各服务区的平均营收，并列出排名前五的运营服务区",
+    "sql": "SELECT bd.service_name AS 服务区名称, AVG(bd.pay_sum) AS 平均营收 FROM bss_business_day_data bd JOIN bss_service_area sa ON bd.service_no = sa.service_area_no WHERE sa.service_state = '开放' AND bd.oper_date >= CURRENT_DATE - INTERVAL '7 days' AND sa.delete_ts IS NULL GROUP BY bd.service_name ORDER BY 平均营收 DESC LIMIT 5;"
+  },
+  {
+    "question": "查询最近一天开放状态服务区的营收金额、订单总数，并计算其占整体的比例",
+    "sql": "WITH total AS (SELECT SUM(pay_sum) AS 总营收, SUM(order_sum) AS 总订单数 FROM bss_business_day_data WHERE oper_date = CURRENT_DATE - INTERVAL '1 day'), open AS (SELECT SUM(bd.pay_sum) AS 开放营收, SUM(bd.order_sum) AS 开放订单数 FROM bss_business_day_data bd JOIN bss_service_area sa ON bd.service_no = sa.service_area_no WHERE sa.service_state = '开放' AND bd.oper_date = CURRENT_DATE - INTERVAL '1 day') SELECT open.开放营收 AS 运营营收, open.开放订单数 AS 运营订单数, (open.开放营收 / total.总营收) * 100 AS 运营营收占比, (open.开放订单数 / total.总订单数) * 100 AS 运营订单占比 FROM open, total;"
+  },
+  {
+    "question": "列出最近一天各运营状态服务区的车辆流量占比",
+    "sql": "WITH total AS (SELECT SUM(customer_count) AS 总流量 FROM bss_car_day_count WHERE count_date = CURRENT_DATE - INTERVAL '1 day'), state_flow AS (SELECT sa.service_state AS 运营状态, SUM(cc.customer_count) AS 流量 FROM bss_car_day_count cc JOIN bss_service_area sa ON cc.service_area_id = sa.id WHERE cc.count_date = CURRENT_DATE - INTERVAL '1 day' GROUP BY sa.service_state) SELECT state_flow.运营状态, state_flow.流量, (state_flow.流量 / total.总流量) * 100 AS 流量占比 FROM state_flow, total;"
+  },
+  {
+    "question": "查询最近一个月每日开放状态服务区的总营收金额，用于分析营收趋势",
+    "sql": "SELECT oper_date AS 统计日期, SUM(pay_sum) AS 总营收 FROM bss_business_day_data WHERE service_no IN (SELECT service_area_no FROM bss_service_area WHERE service_state = '开放' AND delete_ts IS NULL) AND oper_date >= CURRENT_DATE - INTERVAL '1 month' GROUP BY oper_date ORDER BY 统计日期;"
+  },
+  {
+    "question": "找出最近一天营收最高的五个服务区及其营收金额",
+    "sql": "SELECT service_name AS 服务区名称, pay_sum AS 营收金额 FROM bss_business_day_data WHERE oper_date = CURRENT_DATE - INTERVAL '1 day' ORDER BY pay_sum DESC LIMIT 5;"
+  },
+  {
+    "question": "查询最近一周各公司下属服务区的平均营收金额，并按公司分组展示排名",
+    "sql": "SELECT c.company_name AS 公司名称, AVG(bd.pay_sum) AS 平均营收 FROM bss_business_day_data bd JOIN bss_service_area sa ON bd.service_no = sa.service_area_no JOIN bss_company c ON sa.company_id = c.id WHERE sa.delete_ts IS NULL AND bd.oper_date >= CURRENT_DATE - INTERVAL '7 days' GROUP BY c.company_name ORDER BY 平均营收 DESC;"
+  },
+  {
+    "question": "列出最近一天各服务区的车辆流量，并按流量从高到低排序",
+    "sql": "SELECT sa.service_area_name AS 服务区名称, cc.customer_count AS 车辆数量 FROM bss_car_day_count cc JOIN bss_service_area sa ON cc.service_area_id = sa.id WHERE cc.count_date = CURRENT_DATE - INTERVAL '1 day' ORDER BY 车辆数量 DESC;"
+  }
+]

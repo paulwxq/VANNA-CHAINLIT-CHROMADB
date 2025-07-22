@@ -15,6 +15,7 @@ import pytz
 from typing import Optional, Dict, Any, TYPE_CHECKING, Union
 import signal
 from threading import Thread
+from pathlib import Path
 
 if TYPE_CHECKING:
     from react_agent.agent import CustomReactAgent
@@ -3819,6 +3820,7 @@ def get_table_list_info(task_id):
             "file_size_formatted": "1.0 KB",
             "uploaded_at": "2025-07-01T12:34:56",
             "table_count": 5,
+            "table_names": ["table_name_1", "table_name_2", "table_name_3", "table_name_4", "table_name_5"],
             "is_readable": true
         }
     }
@@ -4440,6 +4442,198 @@ def signal_handler(signum, frame):
     cleanup_resources()
     sys.exit(0)
 
+@app.route('/api/v0/data_pipeline/vector/backup', methods=['POST'])
+def backup_pgvector_tables():
+    """专用的pgvector表备份API - 直接复用VectorTableManager"""
+    try:
+        # 支持空参数调用 {}
+        req = request.get_json(force=True) if request.is_json else {}
+        
+        # 解析参数（全部可选）
+        task_id = req.get('task_id')
+        pg_conn = req.get('pg_conn')
+        truncate_vector_tables = req.get('truncate_vector_tables', False)
+        backup_vector_tables = req.get('backup_vector_tables', True)
+        
+        # 参数验证
+        if task_id and not re.match(r'^[a-zA-Z0-9_]+$', task_id):
+            return jsonify(bad_request_response(
+                "无效的task_id格式，只能包含字母、数字和下划线"
+            )), 400
+        
+        # 确定备份目录
+        if task_id:
+            # 验证task_id目录是否存在
+            task_dir = Path(f"data_pipeline/training_data/{task_id}")
+            if not task_dir.exists():
+                return jsonify(not_found_response(
+                    f"指定的任务目录不存在: {task_id}"
+                )), 404
+            backup_base_dir = str(task_dir)
+        else:
+            # 使用training_data根目录（支持空参数调用）
+            backup_base_dir = "data_pipeline/training_data"
+        
+        # 直接使用现有的VectorTableManager
+        from data_pipeline.trainer.vector_table_manager import VectorTableManager
+        
+        # 临时修改数据库连接配置（如果提供了自定义连接）
+        original_config = None
+        if pg_conn:
+            from data_pipeline.config import SCHEMA_TOOLS_CONFIG
+            original_config = SCHEMA_TOOLS_CONFIG.get("default_db_connection")
+            SCHEMA_TOOLS_CONFIG["default_db_connection"] = pg_conn
+        
+        try:
+            # 使用现有的成熟管理器
+            vector_manager = VectorTableManager(
+                task_output_dir=backup_base_dir,
+                task_id=task_id or "vector_bak"
+            )
+            
+            # 执行备份（完全复用现有逻辑）
+            result = vector_manager.execute_vector_management(
+                backup=backup_vector_tables,
+                truncate=truncate_vector_tables
+            )
+            
+            # 使用 common/result.py 的标准格式
+            return jsonify(success_response(
+                response_text="Vector表备份完成",
+                data=result
+            )), 200
+            
+        finally:
+            # 恢复原始配置
+            if original_config is not None:
+                SCHEMA_TOOLS_CONFIG["default_db_connection"] = original_config
+        
+    except Exception as e:
+        logger.error(f"Vector表备份失败: {str(e)}")
+        return jsonify(internal_error_response(
+            "Vector表备份失败，请稍后重试"
+        )), 500
+
+
+# ====================================================================
+# Vector表恢复备份API
+# ====================================================================
+
+@app.route('/api/v0/data_pipeline/vector/restore/list', methods=['GET'])
+def list_vector_backups():
+    """列出可用的vector表备份文件"""
+    try:
+        # 解析查询参数
+        global_only = request.args.get('global_only', 'false').lower() == 'true'
+        task_id = request.args.get('task_id')
+        
+        # 参数验证
+        if task_id and not re.match(r'^[a-zA-Z0-9_]+$', task_id):
+            return jsonify(bad_request_response(
+                "无效的task_id格式，只能包含字母、数字和下划线"
+            )), 400
+        
+        # 使用VectorRestoreManager扫描
+        from data_pipeline.api.vector_restore_manager import VectorRestoreManager
+        restore_manager = VectorRestoreManager()
+        result = restore_manager.scan_backup_files(global_only, task_id)
+        
+        # 构建响应文本
+        total_locations = result['summary']['total_locations']
+        total_backup_sets = result['summary']['total_backup_sets']
+        if total_backup_sets == 0:
+            response_text = "未找到任何可用的备份文件"
+        else:
+            response_text = f"成功扫描到 {total_locations} 个备份位置，共 {total_backup_sets} 个备份集"
+        
+        # 返回标准格式
+        return jsonify(success_response(
+            response_text=response_text,
+            data=result
+        )), 200
+        
+    except Exception as e:
+        logger.error(f"扫描备份文件失败: {str(e)}")
+        return jsonify(internal_error_response(
+            "扫描备份文件失败，请稍后重试"
+        )), 500
+
+
+@app.route('/api/v0/data_pipeline/vector/restore', methods=['POST'])
+def restore_vector_tables():
+    """恢复vector表数据"""
+    try:
+        # 解析请求参数
+        req = request.get_json(force=True) if request.is_json else {}
+        
+        # 必需参数验证
+        backup_path = req.get('backup_path')
+        timestamp = req.get('timestamp')
+        
+        if not backup_path or not timestamp:
+            missing_params = []
+            if not backup_path:
+                missing_params.append('backup_path')
+            if not timestamp:
+                missing_params.append('timestamp')
+            
+            return jsonify(bad_request_response(
+                f"缺少必需参数: {', '.join(missing_params)}",
+                missing_params
+            )), 400
+        
+        # 可选参数
+        tables = req.get('tables')
+        pg_conn = req.get('pg_conn')
+        truncate_before_restore = req.get('truncate_before_restore', False)
+        
+        # 参数验证
+        if tables is not None and not isinstance(tables, list):
+            return jsonify(bad_request_response(
+                "tables参数必须是数组格式"
+            )), 400
+        
+        # 验证时间戳格式
+        if not re.match(r'^\d{8}_\d{6}$', timestamp):
+            return jsonify(bad_request_response(
+                "无效的timestamp格式，应为YYYYMMDD_HHMMSS"
+            )), 400
+        
+        # 执行恢复
+        from data_pipeline.api.vector_restore_manager import VectorRestoreManager
+        restore_manager = VectorRestoreManager()
+        
+        result = restore_manager.restore_from_backup(
+            backup_path=backup_path,
+            timestamp=timestamp,
+            tables=tables,
+            pg_conn=pg_conn,
+            truncate_before_restore=truncate_before_restore
+        )
+        
+        # 构建响应文本
+        if result.get("errors"):
+            response_text = "Vector表恢复部分完成，部分表恢复失败"
+        else:
+            response_text = "Vector表恢复完成"
+        
+        # 返回结果
+        return jsonify(success_response(
+            response_text=response_text,
+            data=result
+        )), 200
+        
+    except FileNotFoundError as e:
+        return jsonify(not_found_response(str(e))), 404
+    except ValueError as e:
+        return jsonify(bad_request_response(str(e))), 400
+    except Exception as e:
+        logger.error(f"Vector表恢复失败: {str(e)}")
+        return jsonify(internal_error_response(
+            "Vector表恢复失败，请稍后重试"
+        )), 500
+
+
 if __name__ == '__main__':
     # 注册信号处理器
     signal.signal(signal.SIGINT, signal_handler)
@@ -4450,6 +4644,9 @@ if __name__ == '__main__':
     logger.info("🔗 健康检查: http://localhost:8084/health")
     logger.info("📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent")
     logger.info("📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent")
+    logger.info("💾 Vector备份API: http://localhost:8084/api/v0/data_pipeline/vector/backup")
+    logger.info("📥 Vector恢复API: http://localhost:8084/api/v0/data_pipeline/vector/restore")
+    logger.info("📋 备份列表API: http://localhost:8084/api/v0/data_pipeline/vector/restore/list")
     
     try:
         # 尝试使用ASGI模式启动（推荐）

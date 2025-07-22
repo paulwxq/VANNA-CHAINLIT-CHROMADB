@@ -537,6 +537,7 @@ class SimpleFileManager:
                 "uploaded_at": datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
                 "created_at": datetime.fromtimestamp(file_stat.st_ctime).isoformat(),
                 "table_count": len(valid_tables),
+                "table_names": valid_tables,  # 新增：返回解析出的表名列表
                 "is_readable": os.access(file_path, os.R_OK)
             }
             

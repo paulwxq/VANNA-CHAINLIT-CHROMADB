@@ -1,0 +1,360 @@
+2025-07-21 08:21:18 [INFO] [app.UnifiedApp] unified_api.py:2771 - 接收到信号 2，准备退出...
+2025-07-21 08:21:18 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 08:21:57 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 08:21:57 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 08:21:57 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 08:21:57 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 08:21:57 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 08:21:57 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 08:21:57 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 08:21:59 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 08:21:59 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 08:21:59 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 08:21:59 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 08:21:59 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 08:21:59 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 08:21:59 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 08:21:59 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 08:22:01 [INFO] [app.UnifiedApp] unified_api.py:2780 - 🚀 启动统一API服务...
+2025-07-21 08:22:01 [INFO] [app.UnifiedApp] unified_api.py:2781 - 📍 服务地址: http://localhost:8084
+2025-07-21 08:22:01 [INFO] [app.UnifiedApp] unified_api.py:2782 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 08:22:01 [INFO] [app.UnifiedApp] unified_api.py:2783 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 08:22:01 [INFO] [app.UnifiedApp] unified_api.py:2784 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 08:22:01 [INFO] [app.UnifiedApp] unified_api.py:2791 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 08:22:01 [INFO] [app.UnifiedApp] unified_api.py:2792 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 08:30:25 [INFO] [app.UnifiedApp] unified_api.py:2771 - 接收到信号 2，准备退出...
+2025-07-21 08:30:25 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 08:31:38 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 08:31:38 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 08:31:38 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 08:31:38 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 08:31:38 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 08:31:38 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 08:31:38 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 08:31:40 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 08:31:40 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 08:31:40 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 08:31:40 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 08:31:40 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 08:31:40 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 08:31:40 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 08:31:40 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 08:31:42 [INFO] [app.UnifiedApp] unified_api.py:2780 - 🚀 启动统一API服务...
+2025-07-21 08:31:42 [INFO] [app.UnifiedApp] unified_api.py:2781 - 📍 服务地址: http://localhost:8084
+2025-07-21 08:31:42 [INFO] [app.UnifiedApp] unified_api.py:2782 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 08:31:42 [INFO] [app.UnifiedApp] unified_api.py:2783 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 08:31:42 [INFO] [app.UnifiedApp] unified_api.py:2784 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 08:31:42 [INFO] [app.UnifiedApp] unified_api.py:2791 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 08:31:42 [INFO] [app.UnifiedApp] unified_api.py:2792 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 08:34:45 [INFO] [app.UnifiedApp] unified_api.py:2771 - 接收到信号 2，准备退出...
+2025-07-21 08:34:45 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 08:35:04 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 08:35:04 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 08:35:04 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 08:35:04 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 08:35:04 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 08:35:04 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 08:35:04 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 08:35:06 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 08:35:06 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 08:35:06 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 08:35:06 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 08:35:06 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 08:35:06 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 08:35:06 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 08:35:06 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 08:35:08 [INFO] [app.UnifiedApp] unified_api.py:4421 - 🚀 启动统一API服务...
+2025-07-21 08:35:08 [INFO] [app.UnifiedApp] unified_api.py:4422 - 📍 服务地址: http://localhost:8084
+2025-07-21 08:35:08 [INFO] [app.UnifiedApp] unified_api.py:4423 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 08:35:08 [INFO] [app.UnifiedApp] unified_api.py:4424 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 08:35:08 [INFO] [app.UnifiedApp] unified_api.py:4425 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 08:35:08 [INFO] [app.UnifiedApp] unified_api.py:4432 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 08:35:08 [INFO] [app.UnifiedApp] unified_api.py:4433 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 09:07:50 [INFO] [app.UnifiedApp] unified_api.py:4412 - 接收到信号 2，准备退出...
+2025-07-21 09:07:50 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 09:08:07 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 09:08:07 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 09:08:07 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 09:08:07 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 09:08:07 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 09:08:07 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 09:08:07 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 09:08:09 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 09:08:09 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 09:08:09 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 09:08:09 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 09:08:09 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 09:08:09 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 09:08:09 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 09:08:09 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 09:08:11 [INFO] [app.UnifiedApp] unified_api.py:4421 - 🚀 启动统一API服务...
+2025-07-21 09:08:11 [INFO] [app.UnifiedApp] unified_api.py:4422 - 📍 服务地址: http://localhost:8084
+2025-07-21 09:08:11 [INFO] [app.UnifiedApp] unified_api.py:4423 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 09:08:11 [INFO] [app.UnifiedApp] unified_api.py:4424 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 09:08:11 [INFO] [app.UnifiedApp] unified_api.py:4425 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 09:08:11 [INFO] [app.UnifiedApp] unified_api.py:4432 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 09:08:11 [INFO] [app.UnifiedApp] unified_api.py:4433 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 09:18:48 [INFO] [app.UnifiedApp] unified_api.py:3141 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_083557 --execution-mode complete
+2025-07-21 09:18:49 [INFO] [app.UnifiedApp] unified_api.py:3152 - 任务进程已启动: PID=31888, task_id=task_20250721_083557
+2025-07-21 09:49:07 [INFO] [app.UnifiedApp] unified_api.py:4412 - 接收到信号 2，准备退出...
+2025-07-21 09:49:07 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 09:49:24 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 09:49:24 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 09:49:24 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 09:49:24 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 09:49:24 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 09:49:24 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 09:49:24 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 09:49:27 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 09:49:27 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 09:49:27 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 09:49:27 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 09:49:27 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 09:49:27 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 09:49:27 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 09:49:27 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 09:49:28 [INFO] [app.UnifiedApp] unified_api.py:4421 - 🚀 启动统一API服务...
+2025-07-21 09:49:28 [INFO] [app.UnifiedApp] unified_api.py:4422 - 📍 服务地址: http://localhost:8084
+2025-07-21 09:49:28 [INFO] [app.UnifiedApp] unified_api.py:4423 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 09:49:28 [INFO] [app.UnifiedApp] unified_api.py:4424 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 09:49:28 [INFO] [app.UnifiedApp] unified_api.py:4425 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 09:49:28 [INFO] [app.UnifiedApp] unified_api.py:4432 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 09:49:28 [INFO] [app.UnifiedApp] unified_api.py:4433 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 11:28:18 [INFO] [app.UnifiedApp] unified_api.py:4412 - 接收到信号 2，准备退出...
+2025-07-21 11:28:18 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 11:28:44 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 11:28:44 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 11:28:44 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 11:28:44 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 11:28:44 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 11:28:44 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 11:28:44 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 11:28:47 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 11:28:47 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 11:28:47 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 11:28:47 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 11:28:47 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 11:28:47 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 11:28:47 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 11:28:47 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 11:28:49 [INFO] [app.UnifiedApp] unified_api.py:4421 - 🚀 启动统一API服务...
+2025-07-21 11:28:49 [INFO] [app.UnifiedApp] unified_api.py:4422 - 📍 服务地址: http://localhost:8084
+2025-07-21 11:28:49 [INFO] [app.UnifiedApp] unified_api.py:4423 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 11:28:49 [INFO] [app.UnifiedApp] unified_api.py:4424 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 11:28:49 [INFO] [app.UnifiedApp] unified_api.py:4425 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 11:28:49 [INFO] [app.UnifiedApp] unified_api.py:4432 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 11:28:49 [INFO] [app.UnifiedApp] unified_api.py:4433 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 11:36:52 [INFO] [app.UnifiedApp] unified_api.py:3141 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_113010 --execution-mode complete
+2025-07-21 11:36:52 [INFO] [app.UnifiedApp] unified_api.py:3152 - 任务进程已启动: PID=13848, task_id=task_20250721_113010
+2025-07-21 11:43:42 [INFO] [app.UnifiedApp] unified_api.py:4412 - 接收到信号 2，准备退出...
+2025-07-21 11:43:42 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 11:53:52 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 11:53:52 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 11:53:52 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 11:53:52 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 11:53:52 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 11:53:52 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 11:53:52 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 11:53:54 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 11:53:54 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 11:53:54 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 11:53:54 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 11:53:54 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 11:53:54 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 11:53:54 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 11:53:54 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 11:53:56 [INFO] [app.UnifiedApp] unified_api.py:4421 - 🚀 启动统一API服务...
+2025-07-21 11:53:56 [INFO] [app.UnifiedApp] unified_api.py:4422 - 📍 服务地址: http://localhost:8084
+2025-07-21 11:53:56 [INFO] [app.UnifiedApp] unified_api.py:4423 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 11:53:56 [INFO] [app.UnifiedApp] unified_api.py:4424 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 11:53:56 [INFO] [app.UnifiedApp] unified_api.py:4425 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 11:53:56 [INFO] [app.UnifiedApp] unified_api.py:4432 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 11:53:56 [INFO] [app.UnifiedApp] unified_api.py:4433 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 11:54:28 [INFO] [app.UnifiedApp] unified_api.py:3141 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_113010 --execution-mode complete
+2025-07-21 11:54:28 [INFO] [app.UnifiedApp] unified_api.py:3152 - 任务进程已启动: PID=45604, task_id=task_20250721_113010
+2025-07-21 12:01:49 [INFO] [app.UnifiedApp] unified_api.py:4412 - 接收到信号 2，准备退出...
+2025-07-21 12:01:49 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 12:02:06 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 12:02:06 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 12:02:06 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 12:02:06 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 12:02:06 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 12:02:06 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 12:02:06 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 12:02:08 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 12:02:08 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 12:02:08 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 12:02:08 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 12:02:08 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 12:02:08 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 12:02:08 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 12:02:08 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 12:02:10 [INFO] [app.UnifiedApp] unified_api.py:4421 - 🚀 启动统一API服务...
+2025-07-21 12:02:10 [INFO] [app.UnifiedApp] unified_api.py:4422 - 📍 服务地址: http://localhost:8084
+2025-07-21 12:02:10 [INFO] [app.UnifiedApp] unified_api.py:4423 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 12:02:10 [INFO] [app.UnifiedApp] unified_api.py:4424 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 12:02:10 [INFO] [app.UnifiedApp] unified_api.py:4425 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 12:02:10 [INFO] [app.UnifiedApp] unified_api.py:4432 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 12:02:10 [INFO] [app.UnifiedApp] unified_api.py:4433 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 12:02:19 [INFO] [app.UnifiedApp] unified_api.py:3141 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_113010 --execution-mode complete
+2025-07-21 12:02:19 [INFO] [app.UnifiedApp] unified_api.py:3152 - 任务进程已启动: PID=26376, task_id=task_20250721_113010
+2025-07-21 12:20:29 [INFO] [app.UnifiedApp] unified_api.py:3141 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_113010 --execution-mode complete
+2025-07-21 12:20:29 [INFO] [app.UnifiedApp] unified_api.py:3152 - 任务进程已启动: PID=44784, task_id=task_20250721_113010
+2025-07-21 18:36:33 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 18:36:33 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 18:36:33 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 18:36:33 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 18:36:33 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 18:36:33 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 18:36:33 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 18:37:42 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 18:37:42 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 18:37:42 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 18:37:42 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 18:37:42 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 18:37:42 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 18:37:42 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 18:37:43 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 18:37:43 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 18:37:43 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 18:37:43 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 18:37:43 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 18:37:43 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 18:37:43 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 18:37:43 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 18:37:45 [INFO] [app.UnifiedApp] unified_api.py:4448 - 🚀 启动统一API服务...
+2025-07-21 18:37:45 [INFO] [app.UnifiedApp] unified_api.py:4449 - 📍 服务地址: http://localhost:8084
+2025-07-21 18:37:45 [INFO] [app.UnifiedApp] unified_api.py:4450 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 18:37:45 [INFO] [app.UnifiedApp] unified_api.py:4451 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 18:37:45 [INFO] [app.UnifiedApp] unified_api.py:4452 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 18:37:45 [INFO] [app.UnifiedApp] unified_api.py:4459 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 18:37:45 [INFO] [app.UnifiedApp] unified_api.py:4460 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 18:44:40 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_183935 --execution-mode complete --backup-vector-tables --truncate-vector-tables --skip-training
+2025-07-21 18:44:40 [INFO] [app.UnifiedApp] unified_api.py:3186 - 📋 API请求包含Vector表管理参数: backup=True, truncate=True
+2025-07-21 18:44:40 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=10516, task_id=task_20250721_183935
+2025-07-21 19:39:39 [INFO] [app.UnifiedApp] unified_api.py:4439 - 接收到信号 2，准备退出...
+2025-07-21 19:39:39 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 19:39:54 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 19:39:54 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 19:39:54 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 19:39:54 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 19:39:54 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 19:39:54 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 19:39:54 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 19:39:56 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 19:39:56 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 19:39:56 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 19:39:56 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 19:39:56 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 19:39:56 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 19:39:56 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 19:39:56 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 19:39:57 [INFO] [app.UnifiedApp] unified_api.py:4448 - 🚀 启动统一API服务...
+2025-07-21 19:39:57 [INFO] [app.UnifiedApp] unified_api.py:4449 - 📍 服务地址: http://localhost:8084
+2025-07-21 19:39:57 [INFO] [app.UnifiedApp] unified_api.py:4450 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 19:39:57 [INFO] [app.UnifiedApp] unified_api.py:4451 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 19:39:57 [INFO] [app.UnifiedApp] unified_api.py:4452 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 19:39:57 [INFO] [app.UnifiedApp] unified_api.py:4459 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 19:39:57 [INFO] [app.UnifiedApp] unified_api.py:4460 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 19:40:53 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_183935 --execution-mode complete --backup-vector-tables --truncate-vector-tables --skip-training
+2025-07-21 19:40:53 [INFO] [app.UnifiedApp] unified_api.py:3186 - 📋 API请求包含Vector表管理参数: backup=True, truncate=True
+2025-07-21 19:40:53 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=12948, task_id=task_20250721_183935
+2025-07-21 19:46:22 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_183935 --execution-mode complete --backup-vector-tables --truncate-vector-tables --skip-training
+2025-07-21 19:46:22 [INFO] [app.UnifiedApp] unified_api.py:3186 - 📋 API请求包含Vector表管理参数: backup=True, truncate=True
+2025-07-21 19:46:22 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=21180, task_id=task_20250721_183935
+2025-07-21 20:00:03 [INFO] [app.UnifiedApp] unified_api.py:4439 - 接收到信号 2，准备退出...
+2025-07-21 20:00:03 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 20:09:09 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 20:09:09 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 20:09:09 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 20:09:09 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 20:09:09 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 20:09:09 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 20:09:09 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 20:09:11 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 20:09:11 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 20:09:11 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 20:09:11 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 20:09:11 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 20:09:11 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 20:09:11 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 20:09:11 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 20:09:13 [INFO] [app.UnifiedApp] unified_api.py:4448 - 🚀 启动统一API服务...
+2025-07-21 20:09:13 [INFO] [app.UnifiedApp] unified_api.py:4449 - 📍 服务地址: http://localhost:8084
+2025-07-21 20:09:13 [INFO] [app.UnifiedApp] unified_api.py:4450 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 20:09:13 [INFO] [app.UnifiedApp] unified_api.py:4451 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 20:09:13 [INFO] [app.UnifiedApp] unified_api.py:4452 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 20:09:13 [INFO] [app.UnifiedApp] unified_api.py:4459 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 20:09:13 [INFO] [app.UnifiedApp] unified_api.py:4460 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 20:09:17 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_183935 --execution-mode complete --backup-vector-tables --truncate-vector-tables --skip-training
+2025-07-21 20:09:17 [INFO] [app.UnifiedApp] unified_api.py:3186 - 📋 API请求包含Vector表管理参数: backup=True, truncate=True
+2025-07-21 20:09:17 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=3772, task_id=task_20250721_183935
+2025-07-21 20:30:26 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_202929 --execution-mode complete --truncate-vector-tables
+2025-07-21 20:30:26 [INFO] [app.UnifiedApp] unified_api.py:3186 - 📋 API请求包含Vector表管理参数: backup=False, truncate=True
+2025-07-21 20:30:26 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=20732, task_id=task_20250721_202929
+2025-07-21 21:37:15 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_213627 --execution-mode step --step-name ddl_generation
+2025-07-21 21:37:15 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=31584, task_id=task_20250721_213627
+2025-07-21 21:40:25 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_213627 --execution-mode step --step-name qa_generation
+2025-07-21 21:40:25 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=36728, task_id=task_20250721_213627
+2025-07-21 21:48:41 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_213627 --execution-mode step --step-name sql_validation
+2025-07-21 21:48:41 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=39320, task_id=task_20250721_213627
+2025-07-21 21:57:42 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_213627 --execution-mode step --step-name training_load --truncate-vector-tables
+2025-07-21 21:57:42 [INFO] [app.UnifiedApp] unified_api.py:3186 - 📋 API请求包含Vector表管理参数: backup=False, truncate=True
+2025-07-21 21:57:42 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=30656, task_id=task_20250721_213627
+2025-07-21 22:02:31 [INFO] [app.UnifiedApp] unified_api.py:4439 - 接收到信号 2，准备退出...
+2025-07-21 22:02:31 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 23:16:59 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 23:16:59 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 23:16:59 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 23:16:59 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 23:16:59 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 23:16:59 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 23:16:59 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 23:17:00 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 23:17:00 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 23:17:00 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 23:17:00 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 23:17:00 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 23:17:00 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 23:17:00 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 23:17:00 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 23:17:02 [INFO] [app.UnifiedApp] unified_api.py:4448 - 🚀 启动统一API服务...
+2025-07-21 23:17:02 [INFO] [app.UnifiedApp] unified_api.py:4449 - 📍 服务地址: http://localhost:8084
+2025-07-21 23:17:02 [INFO] [app.UnifiedApp] unified_api.py:4450 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 23:17:02 [INFO] [app.UnifiedApp] unified_api.py:4451 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 23:17:02 [INFO] [app.UnifiedApp] unified_api.py:4452 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 23:17:02 [INFO] [app.UnifiedApp] unified_api.py:4459 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 23:17:02 [INFO] [app.UnifiedApp] unified_api.py:4460 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存
+2025-07-21 23:17:06 [WARNING] [app.UnifiedApp] unified_api.py:3120 - ⚠️ Vector表管理参数仅在training_load步骤有效，当前步骤: ddl_generation，忽略参数
+2025-07-21 23:17:06 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_213627 --execution-mode step --step-name ddl_generation
+2025-07-21 23:17:06 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=38096, task_id=task_20250721_213627
+2025-07-21 23:20:45 [WARNING] [app.UnifiedApp] unified_api.py:3120 - ⚠️ Vector表管理参数仅在training_load步骤有效，当前步骤: qa_generation，忽略参数
+2025-07-21 23:20:45 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_213627 --execution-mode step --step-name qa_generation
+2025-07-21 23:20:45 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=14012, task_id=task_20250721_213627
+2025-07-21 23:46:21 [WARNING] [app.UnifiedApp] unified_api.py:3120 - ⚠️ Vector表管理参数仅在training_load步骤有效，当前步骤: qa_generation，忽略参数
+2025-07-21 23:46:21 [INFO] [app.UnifiedApp] unified_api.py:3164 - 启动任务进程: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\.venv\Scripts\python.exe C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\data_pipeline\task_executor.py --task-id task_20250721_213627 --execution-mode step --step-name qa_generation
+2025-07-21 23:46:21 [INFO] [app.UnifiedApp] unified_api.py:3175 - 任务进程已启动: PID=26292, task_id=task_20250721_213627
+2025-07-21 23:57:49 [INFO] [app.UnifiedApp] unified_api.py:4439 - 接收到信号 2，准备退出...
+2025-07-21 23:57:49 [ERROR] [app.UnifiedApp] unified_api.py:521 - 清理资源失败: asyncio.run() cannot be called from a running event loop
+2025-07-21 23:58:03 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 23:58:03 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 23:58:03 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 23:58:03 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 23:58:03 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 23:58:03 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 23:58:03 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 23:58:05 [INFO] [app.RedisConversationManager] redis_conversation_manager.py:35 - Redis连接成功: localhost:6379
+2025-07-21 23:58:05 [INFO] [app.ConfigUtils] utils.py:187 - === 当前模型配置 ===
+2025-07-21 23:58:05 [INFO] [app.ConfigUtils] utils.py:188 - LLM提供商: api
+2025-07-21 23:58:05 [INFO] [app.ConfigUtils] utils.py:189 - LLM模型: qianwen
+2025-07-21 23:58:05 [INFO] [app.ConfigUtils] utils.py:190 - Embedding提供商: api
+2025-07-21 23:58:05 [INFO] [app.ConfigUtils] utils.py:191 - Embedding模型: text-embedding-v4
+2025-07-21 23:58:05 [INFO] [app.ConfigUtils] utils.py:192 - 向量数据库: pgvector
+2025-07-21 23:58:05 [INFO] [app.ConfigUtils] utils.py:193 - ==================
+2025-07-21 23:58:06 [INFO] [app.UnifiedApp] unified_api.py:4449 - 🚀 启动统一API服务...
+2025-07-21 23:58:06 [INFO] [app.UnifiedApp] unified_api.py:4450 - 📍 服务地址: http://localhost:8084
+2025-07-21 23:58:06 [INFO] [app.UnifiedApp] unified_api.py:4451 - 🔗 健康检查: http://localhost:8084/health
+2025-07-21 23:58:06 [INFO] [app.UnifiedApp] unified_api.py:4452 - 📘 React Agent API: http://localhost:8084/api/v0/ask_react_agent
+2025-07-21 23:58:06 [INFO] [app.UnifiedApp] unified_api.py:4453 - 📘 LangGraph Agent API: http://localhost:8084/api/v0/ask_agent
+2025-07-21 23:58:06 [INFO] [app.UnifiedApp] unified_api.py:4460 - 🚀 使用ASGI模式启动异步Flask应用...
+2025-07-21 23:58:06 [INFO] [app.UnifiedApp] unified_api.py:4461 -    这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存

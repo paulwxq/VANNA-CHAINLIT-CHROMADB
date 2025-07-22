@@ -3847,6 +3847,7 @@ def get_table_list_info(task_id):
             "file_size_formatted": "1.0 KB",
             "uploaded_at": "2025-07-01T12:34:56",
             "table_count": 5,
+            "table_names": ["table_name_1", "table_name_2", "table_name_3", "table_name_4", "table_name_5"],
             "is_readable": true
         }
     }

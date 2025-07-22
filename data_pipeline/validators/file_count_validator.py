@@ -71,35 +71,27 @@ class FileCountValidator:
                     duplicate_tables=duplicate_tables
                 )
             
-            # 4. 统计DDL和MD文件（兼容数字后缀）
-            ddl_files = list(output_path.glob("*.ddl"))
-            # 匹配基础格式和带数字后缀的格式
-            md_files_basic = list(output_path.glob("*_detail.md"))
-            md_files_numbered = list(output_path.glob("*_detail_*.md"))
-            md_files = md_files_basic + md_files_numbered
+            # 4. 精确验证每个表对应的文件
+            missing_ddl, missing_md = self._find_missing_files_precise(tables, output_path)
             
-            ddl_count = len(ddl_files)
-            md_count = len(md_files)
+            # 计算实际存在的文件数量
+            ddl_count = table_count - len(missing_ddl)
+            md_count = table_count - len(missing_md)
             
-            self.logger.info(f"文件统计 - 表: {table_count}, DDL: {ddl_count}, MD: {md_count}")
+            self.logger.info(f"文件统计 - 表: {table_count}, 存在DDL: {ddl_count}, 存在MD: {md_count}")
             if duplicate_tables:
                 self.logger.info(f"表清单中存在 {len(duplicate_tables)} 个重复项")
             
-            # 5. 验证数量一致性
-            if ddl_count != table_count or md_count != table_count:
-                # 查找缺失的文件
-                missing_ddl, missing_md = self._find_missing_files(tables, ddl_files, md_files)
-                
+            # 5. 验证文件完整性
+            if missing_ddl or missing_md:
                 error_parts = []
-                if ddl_count != table_count:
-                    error_parts.append(f"DDL文件数量({ddl_count})与表数量({table_count})不一致")
-                    if missing_ddl:
-                        self.logger.error(f"缺失的DDL文件对应的表: {', '.join(missing_ddl)}")
+                if missing_ddl:
+                    error_parts.append(f"缺失{len(missing_ddl)}个DDL文件")
+                    self.logger.error(f"缺失的DDL文件对应的表: {', '.join(missing_ddl)}")
                 
-                if md_count != table_count:
-                    error_parts.append(f"MD文件数量({md_count})与表数量({table_count})不一致")
-                    if missing_md:
-                        self.logger.error(f"缺失的MD文件对应的表: {', '.join(missing_md)}")
+                if missing_md:
+                    error_parts.append(f"缺失{len(missing_md)}个MD文件")
+                    self.logger.error(f"缺失的MD文件对应的表: {', '.join(missing_md)}")
                 
                 return ValidationResult(
                     is_valid=False,
@@ -132,6 +124,68 @@ class FileCountValidator:
                 md_count=0,
                 error=f"验证过程发生异常: {str(e)}"
             )
+    
+    def _find_missing_files_precise(self, tables: List[str], output_path: Path) -> Tuple[List[str], List[str]]:
+        """精确查找缺失的文件，基于表名生成期望的文件名"""
+        missing_ddl = []
+        missing_md = []
+        
+        for table_spec in tables:
+            # 根据FileNameManager的命名规则生成期望的文件名
+            expected_filename = self._get_expected_filename(table_spec)
+            
+            # 检查DDL文件
+            ddl_file = output_path / f"{expected_filename}.ddl"
+            if not ddl_file.exists():
+                missing_ddl.append(table_spec)
+                self.logger.debug(f"缺失DDL文件: {ddl_file.name} (表: {table_spec})")
+            
+            # 检查MD文件
+            md_file = output_path / f"{expected_filename}_detail.md"
+            if not md_file.exists():
+                missing_md.append(table_spec)
+                self.logger.debug(f"缺失MD文件: {md_file.name} (表: {table_spec})")
+        
+        return missing_ddl, missing_md
+    
+    def _get_expected_filename(self, table_spec: str) -> str:
+        """根据表名生成期望的文件名（复制FileNameManager的逻辑）"""
+        # 解析表名
+        if '.' in table_spec:
+            schema, table = table_spec.split('.', 1)
+        else:
+            schema, table = 'public', table_spec
+        
+        # 生成基础文件名（遵循FileNameManager的规则）
+        if schema.lower() == 'public':
+            safe_name = table
+        else:
+            safe_name = f"{schema}__{table}"
+        
+        # 替换特殊字符（遵循FileNameManager的规则）
+        replacements = {
+            '.': '__',
+            '-': '_',
+            ' ': '_',
+            '/': '_',
+            '\\': '_',
+            ':': '_',
+            '*': '_',
+            '?': '_',
+            '"': '_',
+            '<': '_',
+            '>': '_',
+            '|': '_'
+        }
+        
+        for old_char, new_char in replacements.items():
+            safe_name = safe_name.replace(old_char, new_char)
+        
+        # 移除连续的下划线
+        while '__' in safe_name:
+            safe_name = safe_name.replace('__', '_')
+        
+        return safe_name
     
     def _find_missing_files(self, tables: List[str], ddl_files: List[Path], md_files: List[Path]) -> Tuple[List[str], List[str]]:
         """查找缺失的文件"""

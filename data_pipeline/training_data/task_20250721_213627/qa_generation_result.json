@@ -1,8 +1,8 @@
 {
-  "output_file": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_213627\\qs_highway_db_20250721_214405_pair.json",
+  "output_file": "C:\\Projects\\cursor_projects\\Vanna-Chainlit-Chromadb\\data_pipeline\\training_data\\task_20250721_213627\\qs_highway_db_20250721_234914_pair.json",
   "total_questions": 50,
   "total_themes": 5,
   "successful_themes": 5,
   "failed_themes": [],
-  "duration": 216.95046639442444
+  "duration": 164.57776308059692
 }

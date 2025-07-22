@@ -1,6 +1,6 @@
 -- Schema Tools生成的主题元数据
 -- 业务背景: 高速公路服务区管理系统
--- 生成时间: 2025-07-21 21:44:05
+-- 生成时间: 2025-07-21 23:49:14
 -- 数据库: highway_db
 
 -- 创建表（如果不存在）
@@ -17,46 +17,46 @@ CREATE TABLE IF NOT EXISTS metadata (
 -- 插入主题数据
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '日营业分析',
-  '基于经营明细表分析各服务区及档口的日收入、订单量和支付方式分布，辅助运营决策与资源调配。',
-  'bss_business_day_data',
-  '服务区,档口,支付方式',
-  '总收入,订单数趋势,支付方式占比'
+  '日营业数据分析',
+  '分析每个服务区和档口的每日营业收入、订单数量及支付方式分布，掌握经营动态。',
+  'bss_business_day_data,bss_service_area,bss_branch',
+  '服务区,档口,支付方式,营收',
+  '收入趋势,服务区对比,支付方式分布,单均消费'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '车流特征洞察',
-  '结合车辆类型和日期分析服务区车流量变化，识别高峰时段和主力车型，优化服务供给结构。',
-  'bss_car_day_count',
-  '车辆类别,服务区',
-  '日均车流量,车型占比,周同比变化'
+  '车辆流量分析',
+  '基于 bss_car_day_count 表，统计各服务区每日车辆流量及车型分布，为运营和安全管理提供数据支持。',
+  'bss_car_day_count,bss_service_area',
+  '服务区,车辆类别,日期',
+  '车辆总数,车型占比,日流量趋势,区域流量对比'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '公司绩效对比',
-  '按所属公司统计旗下服务区营收与车流数据，评估不同区域公司的整体运营效率和服务能力差异。',
-  'bss_business_day_data,bss_service_area,bss_company',
+  '公司营收对比',
+  '结合公司信息和服务区经营数据，分析不同公司下属服务区的营收表现和支付方式偏好。',
+  'bss_company,bss_service_area,bss_business_day_data',
   '公司,服务区,支付方式',
-  '平均日营收,订单增长率,车流转化率'
+  '公司营收对比,单均消费排名,支付方式占比,营收增长率'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '路段关联分析',
-  '通过路段-服务区关联关系，分析不同高速路段的车流与消费行为差异，支持路网级资源投放策略。',
+  '路段流量与营收',
+  '关联路段与服务区数据，分析不同路段的车流量和消费情况，评估路段运营效率。',
   'bss_section_route,bss_section_route_area_link,bss_car_day_count,bss_business_day_data',
-  '路段名称,路线名称,服务区',
-  '路段总车流,路段消费总额,单均消费排名'
+  '路段,路线,服务区,日期',
+  '路段车流量,路段营收总额,流量与营收对比,路段排名'
 );
 
 INSERT INTO metadata(topic_name, description, related_tables, biz_entities, biz_metrics) VALUES
 (
-  '状态效能评估',
-  '对比开放、关闭等不同运营状态的服务区在车流和营收上的表现，为动态调整运营策略提供依据。',
-  'bss_service_area,bss_car_day_count,bss_business_day_data',
-  '运营状态,服务区类型,服务区',
-  '日均营收对比,车流活跃度,状态影响指数'
+  '服务区运营状态分析',
+  '分析不同运营状态（开放/关闭）的服务区数量、营收及流量，评估整体运营健康度。',
+  'bss_service_area,bss_business_day_data,bss_car_day_count',
+  '服务区,运营状态,日期',
+  '运营服务区数量,关闭服务区数量,运营营收占比,流量分布'
 );
 
