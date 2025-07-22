@@ -897,6 +897,12 @@ def setup_argument_parser():
     )
     
     parser.add_argument(
+        "--skip-training",
+        action="store_true",
+        help="跳过训练文件处理，仅执行Vector表管理"
+    )
+    
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="启用详细日志输出"
@@ -947,7 +953,8 @@ async def main():
             modify_original_file=not args.no_modify_file,
             enable_training_data_load=True,
             backup_vector_tables=args.backup_vector_tables,
-            truncate_vector_tables=args.truncate_vector_tables
+            truncate_vector_tables=args.truncate_vector_tables,
+            skip_training=args.skip_training
         )
         
         # 获取logger用于启动信息
@@ -964,7 +971,7 @@ async def main():
         logger.info(f"💾 数据库: {orchestrator.db_name}")
         logger.info(f"🔍 SQL验证: {'启用' if not args.skip_validation else '禁用'}")
         logger.info(f"🔧 LLM修复: {'启用' if not args.disable_llm_repair else '禁用'}")
-        logger.info(f"🎯 训练数据加载: {'启用' if not args.skip_training_load else '禁用'}")
+        logger.info(f"🎯 训练数据加载: {'启用' if not args.skip_training else '禁用'}")
         
         # 执行完整工作流程
         report = await orchestrator.execute_complete_workflow()

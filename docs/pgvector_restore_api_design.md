@@ -205,7 +205,7 @@ curl "http://localhost:8084/api/v0/data_pipeline/vector/restore/list?task_id=tas
 | `backup_path` | string | 是 | - | 备份文件所在的目录路径（相对路径） |
 | `timestamp` | string | 是 | - | 备份文件的时间戳（用于确定具体文件） |
 | `tables` | array[string] | 否 | ["langchain_pg_collection", "langchain_pg_embedding"] | 要恢复的表名列表 |
-| `pg_conn` | string | 否 | null | PostgreSQL连接字符串，不提供则从config获取 |
+| `db_connection` | string | 否 | null | PostgreSQL连接字符串，不提供则从config获取 |
 | `truncate_before_restore` | boolean | 否 | false | 恢复前是否清空目标表 |
 
 ### 请求示例
@@ -240,7 +240,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/restore \
   -d '{
     "backup_path": "./data_pipeline/training_data/vector_bak",
     "timestamp": "20250722_010318",
-    "pg_conn": "postgresql://user:password@localhost:5432/target_db",
+    "db_connection": "postgresql://user:password@localhost:5432/target_db",
     "truncate_before_restore": true
   }'
 ```
@@ -481,7 +481,7 @@ def find_backup_sets(backup_dir):
 ### 3. 数据库连接管理
 
 #### 连接优先级
-1. **显式连接**: 请求参数中的 `pg_conn`
+1. **显式连接**: 请求参数中的 `db_connection`
 2. **配置连接**: `data_pipeline.config.SCHEMA_TOOLS_CONFIG.default_db_connection`
 3. **默认连接**: `app_config.PGVECTOR_CONFIG`
 
@@ -494,10 +494,10 @@ postgresql://username:password@host:port/database
 ```python
 # 临时修改数据库连接（恢复API中使用）
 original_config = None
-if pg_conn:
+if db_connection:
     from data_pipeline.config import SCHEMA_TOOLS_CONFIG
     original_config = SCHEMA_TOOLS_CONFIG.get("default_db_connection")
-    SCHEMA_TOOLS_CONFIG["default_db_connection"] = pg_conn
+    SCHEMA_TOOLS_CONFIG["default_db_connection"] = db_connection
 
 try:
     # 执行恢复操作
@@ -583,7 +583,7 @@ class VectorRestoreManager:
         """扫描可用的备份文件"""
         
     def restore_from_backup(self, backup_path: str, timestamp: str, 
-                          tables: List[str] = None, pg_conn: str = None,
+                          tables: List[str] = None, db_connection: str = None,
                           truncate_before_restore: bool = False) -> Dict[str, Any]:
         """从备份文件恢复数据"""
         

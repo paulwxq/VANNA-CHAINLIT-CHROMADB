@@ -41,7 +41,7 @@
 | 参数名 | 类型 | 必需 | 默认值 | 说明 |
 |--------|------|------|--------|------|
 | `task_id` | string | 否 | null | 任务ID，如果提供则在该task目录下创建备份 |
-| `pg_conn` | string | 否 | null | PostgreSQL连接字符串，不提供则从config.py获取 |
+| `db_connection` | string | 否 | null | PostgreSQL连接字符串，不提供则从config.py获取 |
 | `truncate_vector_tables` | boolean | 否 | false | 备份完成后是否清空vector表 |
 | `backup_vector_tables` | boolean | 否 | true | 是否执行备份操作（默认为true，不需要显式设置） |
 
@@ -90,7 +90,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/backup \
   -H "Content-Type: application/json" \
   -d '{
     "task_id": "task_20250721_213627",
-    "pg_conn": "postgresql://user:password@localhost:5432/dbname",
+    "db_connection": "postgresql://user:password@localhost:5432/dbname",
     "truncate_vector_tables": false
   }'
 ```
@@ -220,7 +220,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/backup \
 ### 3. 数据库连接处理
 
 API支持两种连接方式：
-1. **自定义连接**: 在请求中提供 `pg_conn` 参数
+1. **自定义连接**: 在请求中提供 `db_connection` 参数
 2. **默认连接**: 使用现有系统的配置（由 `VectorTableManager` 自动处理）
 
 #### 连接字符串格式
@@ -272,7 +272,7 @@ def backup_pgvector_tables():
         
         # 解析参数（全部可选）
         task_id = req.get('task_id')
-        pg_conn = req.get('pg_conn')
+        db_connection = req.get('db_connection')
         truncate_vector_tables = req.get('truncate_vector_tables', False)
         backup_vector_tables = req.get('backup_vector_tables', True)
         
@@ -300,10 +300,10 @@ def backup_pgvector_tables():
         
         # 临时修改数据库连接配置（如果提供了自定义连接）
         original_config = None
-        if pg_conn:
+        if db_connection:
             from data_pipeline.config import SCHEMA_TOOLS_CONFIG
             original_config = SCHEMA_TOOLS_CONFIG.get("default_db_connection")
-            SCHEMA_TOOLS_CONFIG["default_db_connection"] = pg_conn
+            SCHEMA_TOOLS_CONFIG["default_db_connection"] = db_connection
         
         try:
             # 使用现有的成熟管理器
@@ -436,7 +436,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/backup \
 curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/backup \
   -H "Content-Type: application/json" \
   -d '{
-    "pg_conn": "postgresql://source_user:pass@source_host:5432/source_db"
+    "db_connection": "postgresql://source_user:pass@source_host:5432/source_db"
   }'
 ```
 

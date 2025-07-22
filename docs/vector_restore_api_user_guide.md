@@ -141,7 +141,7 @@ curl "http://localhost:8084/api/v0/data_pipeline/vector/restore/list?task_id=tas
 | `backup_path` | string | ✅ | - | 备份文件目录路径（相对路径） |
 | `timestamp` | string | ✅ | - | 备份时间戳（YYYYMMDD_HHMMSS格式） |
 | `tables` | array | 否 | null | 要恢复的表名列表，空则恢复所有表 |
-| `pg_conn` | string | 否 | null | 自定义PostgreSQL连接字符串 |
+| `db_connection` | string | 否 | null | 自定义PostgreSQL连接字符串 |
 | `truncate_before_restore` | boolean | 否 | false | 恢复前是否清空目标表 |
 
 ### 参数详细说明
@@ -161,7 +161,7 @@ curl "http://localhost:8084/api/v0/data_pipeline/vector/restore/list?task_id=tas
 - **可选值**: `["langchain_pg_collection"]`, `["langchain_pg_embedding"]`, `["langchain_pg_collection", "langchain_pg_embedding"]`
 - **默认**: `null`（恢复所有表）
 
-#### pg_conn（可选）
+#### db_connection（可选）
 - **格式**: PostgreSQL连接字符串
 - **示例**: `"postgresql://user:password@host:port/database"`
 - **默认**: 使用配置文件中的连接信息
@@ -205,7 +205,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/restore \
   -d '{
     "backup_path": "./data_pipeline/training_data/vector_bak",
     "timestamp": "20250722_010318",
-    "pg_conn": "postgresql://user:password@localhost:5432/target_db",
+    "db_connection": "postgresql://user:password@localhost:5432/target_db",
     "truncate_before_restore": true
   }'
 ```
@@ -396,7 +396,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/restore \
 - **生产环境**: 建议使用 `truncate_before_restore: true` 确保数据干净
 - **测试环境**: 可以使用 `truncate_before_restore: false` 进行数据叠加测试
 - **部分恢复**: 仅在明确知道影响范围时使用 `tables` 参数
-- **跨环境**: 使用 `pg_conn` 参数指定目标数据库
+- **跨环境**: 使用 `db_connection` 参数指定目标数据库
 
 ### 3. 监控和验证
 - 📊 关注恢复操作的 `duration` 字段，了解性能表现

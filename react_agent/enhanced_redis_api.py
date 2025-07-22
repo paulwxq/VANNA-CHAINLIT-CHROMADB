@@ -106,7 +106,7 @@ def get_conversation_detail_from_redis(thread_id: str, include_tools: bool = Fal
         logger.info(f"🔍 找到 {len(messages)} 条原始消息")
         
         # 🔑 关键改进：构建消息ID到时间戳的映射（模仿LangGraph API）
-        logger.info(f"🔍 开始构建消息时间戳映射...")
+        logger.debug(f"🔍 开始构建消息时间戳映射...")
         message_timestamps = _build_message_timestamp_map_from_redis(redis_client, thread_id)
         
         # 提取最新checkpoint时间戳作为备用
@@ -125,7 +125,7 @@ def get_conversation_detail_from_redis(thread_id: str, include_tools: bool = Fal
                     china_tz = pytz.timezone('Asia/Shanghai')
                     china_dt = dt.astimezone(china_tz)
                     checkpoint_ts = china_dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                    logger.info(f"🕒 备用checkpoint时间戳: {checkpoint_ts}")
+                    logger.debug(f"🕒 备用checkpoint时间戳: {checkpoint_ts}")
                 except Exception as e:
                     logger.warning(f"⚠️ 时间戳转换失败: {e}")
         
@@ -288,7 +288,7 @@ def _build_message_timestamp_map_from_redis(redis_client, thread_id: str) -> Dic
         # 按时间戳排序（最早的在前）
         checkpoints_with_ts.sort(key=lambda x: x['raw_ts'])
         
-        logger.info(f"🔍 找到 {len(checkpoints_with_ts)} 个有效checkpoint，按时间排序")
+        logger.debug(f"🔍 找到 {len(checkpoints_with_ts)} 个有效checkpoint，按时间排序")
         
         # 遍历每个checkpoint，为新消息分配时间戳
         for checkpoint_info in checkpoints_with_ts:
@@ -306,7 +306,7 @@ def _build_message_timestamp_map_from_redis(redis_client, thread_id: str) -> Dic
                         message_timestamps[msg_id] = checkpoint_ts
                         logger.debug(f"🕒 消息 {msg_id} 分配时间戳: {checkpoint_ts}")
         
-        logger.info(f"✅ 成功构建消息时间戳映射，包含 {len(message_timestamps)} 条消息")
+        logger.debug(f"✅ 成功构建消息时间戳映射，包含 {len(message_timestamps)} 条消息")
         
     except Exception as e:
         logger.error(f"❌ 构建消息时间戳映射失败: {e}")
@@ -464,7 +464,7 @@ def clean_ai_message_for_simple_mode(ai_msg: Dict[str, Any]) -> Dict[str, Any]:
     调试版本：清理AI消息用于简化模式
     """
     original_content = ai_msg.get("content", "")
-    logger.info(f"🔍 清理AI消息，原始内容: '{original_content}', 长度: {len(original_content)}")
+    logger.debug(f"🔍 清理AI消息，原始内容: '{original_content}', 长度: {len(original_content)}")
     
     cleaned_msg = {
         "role": ai_msg["role"],  # 使用新的字段名
@@ -495,14 +495,14 @@ def clean_ai_message_for_simple_mode(ai_msg: Dict[str, Any]) -> Dict[str, Any]:
     
     # 如果清理后内容为空或只有空白，标记为中间步骤
     if not content.strip():
-        logger.info(f"🔍 内容为空，标记为中间步骤")
+        logger.debug(f"🔍 内容为空，标记为中间步骤")
         cleaned_msg["is_intermediate_step"] = True
         cleaned_msg["content"] = ""
     
     # 添加简化模式标记
     cleaned_msg["simplified"] = True
     
-    logger.info(f"🔍 清理结果: '{cleaned_msg['content']}', 是否中间步骤: {cleaned_msg.get('is_intermediate_step', False)}")
+    logger.debug(f"🔍 清理结果: '{cleaned_msg['content']}', 是否中间步骤: {cleaned_msg.get('is_intermediate_step', False)}")
     
     return cleaned_msg
 

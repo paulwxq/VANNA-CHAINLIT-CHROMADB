@@ -34,7 +34,7 @@
 ### 备份恢复API  
 - **端点**: `POST /api/v0/data_pipeline/vector/restore`
 - **功能**: 执行备份数据恢复操作
-- **参数**: `backup_path`, `timestamp`, `tables`, `pg_conn`, `truncate_before_restore`
+- **参数**: `backup_path`, `timestamp`, `tables`, `db_connection`, `truncate_before_restore`
 - **实现**: 使用 PostgreSQL COPY FROM STDIN 高效导入
 
 ## 🎯 核心特性
@@ -92,7 +92,7 @@
 ## 🔧 技术实现细节
 
 ### 数据库连接策略
-1. **显式连接**: 请求参数中的 `pg_conn`
+1. **显式连接**: 请求参数中的 `db_connection`
 2. **配置连接**: `data_pipeline.config.SCHEMA_TOOLS_CONFIG`
 3. **默认连接**: `app_config.PGVECTOR_CONFIG`
 

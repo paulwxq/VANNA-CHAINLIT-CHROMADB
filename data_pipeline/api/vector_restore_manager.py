@@ -99,7 +99,7 @@ class VectorRestoreManager:
             raise
     
     def restore_from_backup(self, backup_path: str, timestamp: str, 
-                          tables: List[str] = None, pg_conn: str = None,
+                          tables: List[str] = None, db_connection: str = None,
                           truncate_before_restore: bool = False) -> Dict[str, Any]:
         """
         从备份文件恢复数据
@@ -108,7 +108,7 @@ class VectorRestoreManager:
             backup_path: 备份文件所在的目录路径（相对路径）
             timestamp: 备份文件的时间戳
             tables: 要恢复的表名列表，None表示恢复所有表
-            pg_conn: PostgreSQL连接字符串，None则从config获取
+            db_connection: PostgreSQL连接字符串，None则从config获取
             truncate_before_restore: 恢复前是否清空目标表
             
         Returns:
@@ -165,10 +165,10 @@ class VectorRestoreManager:
         
         # 临时修改数据库连接配置
         original_config = None
-        if pg_conn:
+        if db_connection:
             from data_pipeline.config import SCHEMA_TOOLS_CONFIG
             original_config = SCHEMA_TOOLS_CONFIG.get("default_db_connection")
-            SCHEMA_TOOLS_CONFIG["default_db_connection"] = pg_conn
+            SCHEMA_TOOLS_CONFIG["default_db_connection"] = db_connection
         
         try:
             # 执行清空操作（如果需要）

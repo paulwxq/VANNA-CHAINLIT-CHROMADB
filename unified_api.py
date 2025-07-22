@@ -4444,15 +4444,18 @@ def signal_handler(signum, frame):
 
 @app.route('/api/v0/data_pipeline/vector/backup', methods=['POST'])
 def backup_pgvector_tables():
-    """专用的pgvector表备份API - 直接复用VectorTableManager"""
+    """专用的pgvector表备份API - 纯备份功能，不执行truncate操作
+    
+    注意：truncate功能已移除，如需清空表请使用 /api/v0/data_pipeline/vector/restore 的 truncate_before_restore 参数
+    """
     try:
         # 支持空参数调用 {}
         req = request.get_json(force=True) if request.is_json else {}
         
         # 解析参数（全部可选）
         task_id = req.get('task_id')
-        pg_conn = req.get('pg_conn')
-        truncate_vector_tables = req.get('truncate_vector_tables', False)
+        db_connection = req.get('db_connection')
+        # truncate_vector_tables = req.get('truncate_vector_tables', False)  # 已注释：备份API不应执行truncate操作
         backup_vector_tables = req.get('backup_vector_tables', True)
         
         # 参数验证
@@ -4479,10 +4482,10 @@ def backup_pgvector_tables():
         
         # 临时修改数据库连接配置（如果提供了自定义连接）
         original_config = None
-        if pg_conn:
+        if db_connection:
             from data_pipeline.config import SCHEMA_TOOLS_CONFIG
             original_config = SCHEMA_TOOLS_CONFIG.get("default_db_connection")
-            SCHEMA_TOOLS_CONFIG["default_db_connection"] = pg_conn
+            SCHEMA_TOOLS_CONFIG["default_db_connection"] = db_connection
         
         try:
             # 使用现有的成熟管理器
@@ -4491,10 +4494,10 @@ def backup_pgvector_tables():
                 task_id=task_id or "vector_bak"
             )
             
-            # 执行备份（完全复用现有逻辑）
+            # 执行备份（纯备份操作，不执行truncate）
             result = vector_manager.execute_vector_management(
                 backup=backup_vector_tables,
-                truncate=truncate_vector_tables
+                truncate=False  # 强制设为False，备份API不执行truncate操作
             )
             
             # 使用 common/result.py 的标准格式
@@ -4584,7 +4587,7 @@ def restore_vector_tables():
         
         # 可选参数
         tables = req.get('tables')
-        pg_conn = req.get('pg_conn')
+        db_connection = req.get('db_connection')
         truncate_before_restore = req.get('truncate_before_restore', False)
         
         # 参数验证
@@ -4607,7 +4610,7 @@ def restore_vector_tables():
             backup_path=backup_path,
             timestamp=timestamp,
             tables=tables,
-            pg_conn=pg_conn,
+            db_connection=db_connection,
             truncate_before_restore=truncate_before_restore
         )
         

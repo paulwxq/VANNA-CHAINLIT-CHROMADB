@@ -43,7 +43,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/restore \
 ### 恢复API参数（可选）
 - `truncate_before_restore: true` - 清空后恢复（推荐）
 - `tables: ["langchain_pg_embedding"]` - 仅恢复指定表
-- `pg_conn: "postgresql://..."` - 自定义数据库连接
+- `db_connection: "postgresql://..."` - 自定义数据库连接
 
 ## 📝 常用命令
 
@@ -76,7 +76,7 @@ curl -X POST http://localhost:8084/api/v0/data_pipeline/vector/restore \
   -d '{
     "backup_path": "./data_pipeline/training_data/vector_bak",
     "timestamp": "20250722_010318",
-    "pg_conn": "postgresql://user:password@localhost:5432/target_db",
+    "db_connection": "postgresql://user:password@localhost:5432/target_db",
     "truncate_before_restore": true
   }'
 ```
