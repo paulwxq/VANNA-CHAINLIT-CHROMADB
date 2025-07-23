@@ -164,7 +164,7 @@ DEFAULT_ANONYMOUS_USER = "guest"        # 匿名用户统一ID
 # Redis配置
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
-REDIS_DB = 0
+REDIS_DB = 1
 REDIS_PASSWORD = None
 
 # 缓存开关配置

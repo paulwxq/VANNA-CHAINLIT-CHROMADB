@@ -8,6 +8,12 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
 
+# 导入配置
+try:
+    from . import config
+except ImportError:
+    import config
+
 logger = logging.getLogger(__name__)
 
 def get_conversation_detail_from_redis(thread_id: str, include_tools: bool = False) -> Dict[str, Any]:
@@ -25,7 +31,13 @@ def get_conversation_detail_from_redis(thread_id: str, include_tools: bool = Fal
     """
     try:
         # 创建Redis连接
-        redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        redis_client = redis.Redis(
+            host=config.REDIS_HOST,
+            port=config.REDIS_PORT,
+            db=config.REDIS_DB,
+            password=config.REDIS_PASSWORD,
+            decode_responses=True
+        )
         redis_client.ping()
         
         # 扫描该thread的所有checkpoint keys

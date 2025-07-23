@@ -21,10 +21,12 @@ import redis.asyncio as redis
 try:
     # 尝试相对导入（当作为模块导入时）
     from .agent import CustomReactAgent
+    from . import config
     from core.logging import get_react_agent_logger
 except ImportError:
     # 如果相对导入失败，尝试绝对导入（直接运行时）
     from agent import CustomReactAgent
+    import config
     from core.logging import get_react_agent_logger
 
 # 使用独立日志系统
@@ -95,10 +97,10 @@ async def initialize_agent():
         logger.info("🚀 正在异步初始化 Custom React Agent...")
         try:
             # 设置环境变量（checkpointer内部需要）
-            os.environ['REDIS_URL'] = 'redis://localhost:6379'
+            os.environ['REDIS_URL'] = config.REDIS_URL
             
             # 初始化共享的Redis客户端
-            _redis_client = redis.from_url('redis://localhost:6379', decode_responses=True)
+            _redis_client = redis.from_url(config.REDIS_URL, decode_responses=True)
             await _redis_client.ping()
             logger.info("✅ Redis客户端连接成功")
             
@@ -415,7 +417,13 @@ def get_user_conversations_simple_sync(user_id: str, limit: int = 10):
     
     try:
         # 创建Redis连接
-        redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        redis_client = redis.Redis(
+            host=config.REDIS_HOST,
+            port=config.REDIS_PORT,
+            db=config.REDIS_DB,
+            password=config.REDIS_PASSWORD,
+            decode_responses=True
+        )
         redis_client.ping()
         
         # 扫描用户的checkpoint keys
@@ -595,7 +603,13 @@ def test_redis_connection():
         import redis
         
         # 创建Redis连接
-        r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        r = redis.Redis(
+            host=config.REDIS_HOST,
+            port=config.REDIS_PORT,
+            db=config.REDIS_DB,
+            password=config.REDIS_PASSWORD,
+            decode_responses=True
+        )
         r.ping()
         
         # 扫描checkpoint keys

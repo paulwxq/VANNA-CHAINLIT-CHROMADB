@@ -20,9 +20,21 @@ QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 QWEN_MODEL = "qwen3-235b-a22b"
 
 # --- Redis 配置 ---
-# 如果存储到 DB3: REDIS_URL = "redis://localhost:6379/3"
-REDIS_URL = "redis://localhost:6379"
-REDIS_ENABLED = True
+REDIS_HOST = "localhost"
+REDIS_PORT = 6379
+REDIS_DB = 0
+REDIS_PASSWORD = None
+REDIS_ENABLED = True  # 是否启用Redis状态持久化（LangGraph的AsyncRedisSaver），用于保存对话历史和状态
+
+# 兼容性：保留REDIS_URL用于AsyncRedisSaver
+def _build_redis_url():
+    """构建Redis连接URL"""
+    if REDIS_PASSWORD:
+        return f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    else:
+        return f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+REDIS_URL = _build_redis_url()
 
 # --- 日志配置 ---
 LOG_LEVEL = logging.INFO

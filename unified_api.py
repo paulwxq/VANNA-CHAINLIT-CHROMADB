@@ -70,14 +70,17 @@ logger = get_app_logger("UnifiedApp")
 try:
     from react_agent.agent import CustomReactAgent
     from react_agent.enhanced_redis_api import get_conversation_detail_from_redis
+    from react_agent import config as react_agent_config
 except ImportError:
     try:
         from test.custom_react_agent.agent import CustomReactAgent
         from test.custom_react_agent.enhanced_redis_api import get_conversation_detail_from_redis
+        from test.custom_react_agent import config as react_agent_config
     except ImportError:
         logger.warning("无法导入 CustomReactAgent，React Agent功能将不可用")
         CustomReactAgent = None
         get_conversation_detail_from_redis = None
+        react_agent_config = None
 
 # 初始化核心组件
 vn = create_vanna_instance()
@@ -281,11 +284,13 @@ async def get_react_agent() -> Any:
             
         logger.info("🚀 正在异步初始化 Custom React Agent...")
         try:
+            # 使用React Agent配置中的Redis URL
+            redis_url = react_agent_config.REDIS_URL if react_agent_config else 'redis://localhost:6379'
             # 设置环境变量
-            os.environ['REDIS_URL'] = 'redis://localhost:6379'
+            os.environ['REDIS_URL'] = redis_url
             
             # 初始化共享的Redis客户端
-            _redis_client = redis.from_url('redis://localhost:6379', decode_responses=True)
+            _redis_client = redis.from_url(redis_url, decode_responses=True)
             await _redis_client.ping()
             logger.info("✅ Redis客户端连接成功")
             
@@ -321,7 +326,16 @@ def get_user_conversations_simple_sync(user_id: str, limit: int = 10):
     
     try:
         # 创建Redis连接
-        redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        if react_agent_config:
+            redis_client = redis.Redis(
+                host=react_agent_config.REDIS_HOST,
+                port=react_agent_config.REDIS_PORT,
+                db=react_agent_config.REDIS_DB,
+                password=react_agent_config.REDIS_PASSWORD,
+                decode_responses=True
+            )
+        else:
+            redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
         redis_client.ping()
         
         # 扫描用户的checkpoint keys
@@ -2443,7 +2457,16 @@ def test_redis_connection():
         import redis
         
         # 创建Redis连接
-        r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+        if react_agent_config:
+            r = redis.Redis(
+                host=react_agent_config.REDIS_HOST,
+                port=react_agent_config.REDIS_PORT,
+                db=react_agent_config.REDIS_DB,
+                password=react_agent_config.REDIS_PASSWORD,
+                decode_responses=True
+            )
+        else:
+            r = redis.Redis(host='localhost', port=6379, decode_responses=True)
         r.ping()
         
         # 扫描checkpoint keys
