@@ -20,6 +20,7 @@ QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 QWEN_MODEL = "qwen3-235b-a22b"
 
 # --- Redis 配置 ---
+# 如果存储到 DB3: REDIS_URL = "redis://localhost:6379/3"
 REDIS_URL = "redis://localhost:6379"
 REDIS_ENABLED = True
 
