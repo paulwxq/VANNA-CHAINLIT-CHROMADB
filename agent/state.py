@@ -20,7 +20,6 @@ class AgentState(TypedDict):
     
     # 数据库查询流程状态
     sql: Optional[str]
-    sql_generation_attempts: int
     query_result: Optional[Dict[str, Any]]
     summary: Optional[str]
     
@@ -45,11 +44,6 @@ class AgentState(TypedDict):
     # 流程控制
     current_step: str
     execution_path: List[str]
-    retry_count: int
-    max_retries: int
-    
-    # 调试信息
-    debug_info: Dict[str, Any]
     
     # 路由模式相关
     routing_mode: Optional[str]  # 记录使用的路由模式

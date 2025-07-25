@@ -776,7 +776,6 @@ class CituLangGraphAgent:
             
             # 数据库查询流程状态
             sql=None,
-            sql_generation_attempts=0,
             query_result=None,
             summary=None,
             
@@ -801,11 +800,6 @@ class CituLangGraphAgent:
             # 流程控制
             current_step="initialized",
             execution_path=["start"],
-            retry_count=0,
-            max_retries=3,
-            
-            # 调试信息
-            debug_info={},
             
             # 路由模式
             routing_mode=effective_routing_mode
