@@ -1,0 +1,1486 @@
+2025-07-22 01:03:06 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 01:03:06 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 01:03:06 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 01:03:07 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000022E4EDBB830>
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 01:03:07 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 01:03:07 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 01:03:08 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 01:03:08 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 01:03:08 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 01:03:08 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000022E4F300350>
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 01:03:08 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 01:03:08 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 01:03:09 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 11:33:44 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 11:33:44 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:33:44 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 11:33:44 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001F8D8D51D90>
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 11:33:44 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 11:33:44 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 11:33:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 11:33:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 11:33:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:33:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001F8D97D3230>
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 11:33:46 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 11:33:46 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 11:33:47 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 11:53:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 11:53:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:53:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 11:53:46 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000024333E01DC0>
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 11:53:46 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 11:53:46 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 11:53:47 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 11:53:47 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 11:53:47 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:53:47 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000024335C330B0>
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 11:53:47 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 11:53:47 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 11:53:49 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 11:56:58 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 11:56:58 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:56:58 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 11:56:59 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x00000281E9462A20>
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 11:56:59 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 11:56:59 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 11:57:00 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 11:57:00 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 11:57:00 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:57:00 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x00000281E9B23080>
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 11:57:01 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 11:57:01 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 11:57:02 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 12:08:43 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 12:08:43 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:08:43 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 12:08:43 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000002198FF31D60>
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 12:08:43 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 12:08:43 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 12:08:45 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 12:08:45 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 12:08:45 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:08:45 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000021991D13170>
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 12:08:45 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 12:08:45 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 12:08:47 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 12:26:17 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 12:26:17 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:26:17 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 12:26:17 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000025BB4681D60>
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 12:26:17 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 12:26:17 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 12:26:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 12:26:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 12:26:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:26:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000025BB5F38050>
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 12:26:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 12:26:19 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 12:26:20 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 13:24:45 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 13:24:45 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:24:45 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 13:24:45 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001C7F90D1D30>
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 13:24:45 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 13:24:45 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 13:24:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 13:24:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 13:24:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:24:46 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001C7FAAF3080>
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 13:24:46 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 13:24:46 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 13:24:48 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 13:32:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 13:32:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:32:18 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 13:32:18 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001438F619A00>
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 13:32:18 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 13:32:18 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 13:32:19 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 13:32:19 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 13:32:19 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:32:19 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x000001438FDA3080>
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 13:32:20 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 13:32:20 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 13:32:21 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 17:38:36 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 17:38:36 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 17:38:36 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 17:38:36 [DEBUG] [vanna.PromptLoader] load_prompts.py:37 - 成功加载提示词配置: C:\Projects\cursor_projects\Vanna-Chainlit-Chromadb\customllm\llm_prompts.yaml
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000023E05F45FA0>
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 17:38:36 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 17:38:36 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 17:38:37 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 17:38:37 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 17:38:37 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 17:38:37 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000023E07CF30B0>
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 17:38:38 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 17:38:38 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 17:38:39 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 20:45:56 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:55 - 创建QIANWEN+PGVECTOR实例
+2025-07-22 20:45:56 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:74 - 已配置使用PgVector，连接字符串: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 20:45:56 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:79 - 已配置使用API嵌入模型: text-embedding-v4
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:29 - 传入的 config 参数如下：
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   api_key: sk-db68e37f00974031935395315bfe07f0
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   model: qwen-plus-latest
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   allow_llm_to_see_data: True
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   temperature: 0.6
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   n_results: 6
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   language: Chinese
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   stream: False
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   enable_thinking: False
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   connection_string: postgresql://postgres:postgres@192.168.67.1:5432/highway_pgvector_db
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:31 -   embedding_function: <core.embedding_function.EmbeddingFunction object at 0x0000023E09531AF0>
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:37 - temperature is changed to: 0.6
+2025-07-22 20:45:56 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:48 - 错误SQL提示配置: ENABLE_ERROR_SQL_PROMPT = True
+2025-07-22 20:45:56 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:11 - QianWenChat init
+2025-07-22 20:45:57 [INFO] [vanna.VannaFactory] vanna_llm_factory.py:86 - 已连接到业务数据库: 192.168.67.1:6432/highway_db
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:270 - 尝试为问题生成SQL: 请问系统中哪个服务区档口最多？
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 最近一周哪个服务区总车流量最高？取前5名。 | similarity: 0.6381
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 统计每个路线名称下服务区的数量，并按服务区数量降序排列。 | similarity: 0.6209
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 找出2023年4月平均每日订单数最高的服务区TOP3？ | similarity: 0.6178
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 昨日车流量最低的服务区是哪一个？ | similarity: 0.6156
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 查询2023年4月订单数环比增长最快的服务区（相比3月）？ | similarity: 0.6115
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 查询2023年4月1日各服务区总收入排名前5的明细（包含订单总数）？ | similarity: 0.6092
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - SQL 阈值过滤: 总数=6, 阈值=0.65, 最少保留=3
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:348 - SQL 过滤结果: 保留 3 条, 过滤掉 3 条 (满足阈值: 0, 强制保留: 3)
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 1: similarity=0.6381 ✗
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 2: similarity=0.6209 ✗
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 3: similarity=0.6178 ✗
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区每日经营数据统计表
+-- 描述: 高速公路服务区每日经营数据统计表，记... | similarity: 0.5484
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路路线与服务区关联表
+-- 描述: 高速公路路线与服务区关联表，用于管理各路段... | similarity: 0.5339
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 服务区信息映射表
+-- 描述: 服务区信息映射表，用于管理高速公路上各服务区的编码与... | similarity: 0.5318
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区基础信息表
+-- 描述: 高速公路服务区基础信息表，存储服务区名称、编... | similarity: 0.5285
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路段路线信息表
+-- 描述: 路段路线信息表，记录服务区所属路段及路线名称，支撑高速... | similarity: 0.5115
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区每日车辆流量统计表
+-- 描述: 高速公路服务区每日车辆流量统计表，记... | similarity: 0.4766
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DDL 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DDL 过滤结果: 保留 5 条, 过滤掉 1 条 (全部满足阈值)
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 1: similarity=0.5484 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 2: similarity=0.5339 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 3: similarity=0.5318 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 4: similarity=0.5285 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 5: similarity=0.5115 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area_mapper（服务区信息映射表）
+bss_service_a... | similarity: 0.5681
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route_area_link（高速公路路线与服务区关联表）
+bss_... | similarity: 0.5468
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_business_day_data（高速公路服务区每日经营数据统计表）
+bss_bus... | similarity: 0.5467
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（高速公路服务区基础信息表）
+bss_service_area... | similarity: 0.5392
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route（路段路线信息表）
+bss_section_route 表路... | similarity: 0.5061
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_car_day_count（高速公路服务区每日车辆流量统计表）
+bss_car_day... | similarity: 0.5058
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DOC 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DOC 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 1: similarity=0.5681 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 2: similarity=0.5468 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 3: similarity=0.5467 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 4: similarity=0.5392 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 5: similarity=0.5061 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 6: similarity=0.5058 ✓
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:104 - 开始生成SQL提示词，问题: 请问系统中哪个服务区档口最多？
+2025-07-22 20:45:57 [WARNING] [vanna.BaseLLMChat] pgvector.py:666 - 向量查询未找到任何相关的错误SQL示例，问题: 请问系统中哪个服务区档口最多？
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:159 - 未找到相关的错误SQL示例
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a PostgreSQL expert. 
+Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+===Tables 
+-- 中文名: 高速公路服务区每日经营数据统计表
+-- 描述: 高速公路服务区每日经营数据统计表，记录各服务区按日维度的业务指标及操作信息。
+create table public.bss_business_day_data (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  oper_date date              -- 统计日期,
+  service_no varchar(255)     -- 服务区编码,
+  service_name varchar(255)   -- 服务区名称,
+  branch_no varchar(255)      -- 档口编码,
+  branch_name varchar(255)    -- 档口名称,
+  wx numeric(19,4)            -- 微信支付金额,
+  wx_order integer            -- 微信订单数量,
+  zfb numeric(19,4)           -- 支付宝支付金额,
+  zf_order integer            -- 支付宝订单数量,
+  rmb numeric(19,4)           -- 现金支付金额,
+  rmb_order integer           -- 现金订单数量,
+  xs numeric(19,4)            -- 行吧支付金额,
+  xs_order integer            -- 行吧支付订单数,
+  jd numeric(19,4)            -- 金豆支付金额,
+  jd_order integer            -- 金豆支付订单数,
+  order_sum integer           -- 订单总数,
+  pay_sum numeric(19,4)       -- 总支付金额,
+  source_type integer         -- 数据来源类型,
+  primary key (id)
+)
+
+-- 中文名: 高速公路路线与服务区关联表
+-- 描述: 高速公路路线与服务区关联表，用于管理各路段所属的服务区信息。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线唯一标识，主键,
+  service_area_id varchar(32) not null -- 服务区唯一标识，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 服务区信息映射表
+-- 描述: 服务区信息映射表，用于管理高速公路上各服务区的编码与名称对应关系。
+create table public.bss_service_area_mapper (
+  id varchar(32) not null     -- 唯一标识符，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  service_name varchar(255)   -- 服务区名称,
+  service_no varchar(255)     -- 服务区编码,
+  service_area_id varchar(32) -- 服务区业务ID,
+  source_system_type varchar(50) -- 数据来源系统,
+  source_type integer         -- 来源系统类型ID,
+  primary key (id)
+)
+
+-- 中文名: 高速公路服务区基础信息表
+-- 描述: 高速公路服务区基础信息表，存储服务区名称、编码及全生命周期管理数据。
+create table public.bss_service_area (
+  id varchar(32) not null     -- 唯一标识符，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  service_area_name varchar(255) -- 服务区名称,
+  service_area_no varchar(255) -- 服务区编码,
+  company_id varchar(32)      -- 所属公司ID,
+  service_position varchar(255) -- 经纬度坐标,
+  service_area_type varchar(50) -- 服务区类型,
+  service_state varchar(50)   -- 运营状态,
+  primary key (id)
+)
+
+-- 中文名: 路段路线信息表
+-- 描述: 路段路线信息表，记录服务区所属路段及路线名称，支撑高速路网运营管理。
+create table public.bss_section_route (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  section_name varchar(255)   -- 路段名称,
+  route_name varchar(255)     -- 路线名称,
+  code varchar(255)           -- 路段编号,
+  primary key (id)
+)
+
+
+===Additional Context 
+
+## bss_service_area_mapper（服务区信息映射表）
+bss_service_area_mapper 表服务区信息映射表，用于管理高速公路上各服务区的编码与名称对应关系。
+字段列表：
+- id (varchar(32)) - 唯一标识符 [主键, 非空] [示例: 00e1e893909211ed8ee6fa163eaf653f, 013867f5962211ed8ee6fa163eaf653f]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2023-01-10 10:54:03, 2023-01-17 12:47:29]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2023-01-10 10:54:07, 2023-01-17 12:47:32]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- service_name (varchar(255)) - 服务区名称 [示例: 信丰西服务区, 南康北服务区]
+- service_no (varchar(255)) - 服务区编码 [示例: 1067, 1062]
+- service_area_id (varchar(32)) - 服务区业务ID [示例: 97cd6cd516a551409a4d453a58f9e170, fdbdd042962011ed8ee6fa163eaf653f]
+- source_system_type (varchar(50)) - 数据来源系统 [示例: 驿美, 驿购]
+- source_type (integer) - 来源系统类型ID [示例: 3, 1]
+字段补充说明：
+- id 为主键
+- source_system_type 为枚举字段，包含取值：司乘管理、商业管理、驿购、驿美、手工录入
+- source_type 为枚举字段，包含取值：5、0、1、3、4
+
+## bss_section_route_area_link（高速公路路线与服务区关联表）
+bss_section_route_area_link 表高速公路路线与服务区关联表，用于管理各路段所属的服务区信息。
+字段列表：
+- section_route_id (varchar(32)) - 路段路线唯一标识 [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
+- service_area_id (varchar(32)) - 服务区唯一标识 [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
+字段补充说明：
+- 复合主键：section_route_id, service_area_id
+
+## bss_business_day_data（高速公路服务区每日经营数据统计表）
+bss_business_day_data 表高速公路服务区每日经营数据统计表，记录各服务区按日维度的业务指标及操作信息。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 00827DFF993D415488EA1F07CAE6C440, 00e799048b8cbb8ee758eac9c8b4b820]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2023-04-02 08:31:51, 2023-04-02 02:30:08]
+- created_by (varchar(50)) - 创建人 [示例: xingba]
+- update_ts (timestamp) - 更新时间 [示例: 2023-04-02 08:31:51, 2023-04-02 02:30:08]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- oper_date (date) - 统计日期 [示例: 2023-04-01]
+- service_no (varchar(255)) - 服务区编码 [示例: 1028, H0501]
+- service_name (varchar(255)) - 服务区名称 [示例: 宜春服务区, 庐山服务区]
+- branch_no (varchar(255)) - 档口编码 [示例: 1, H05016]
+- branch_name (varchar(255)) - 档口名称 [示例: 宜春南区, 庐山鲜徕客东区]
+- wx (numeric(19,4)) - 微信支付金额 [示例: 4790.0000, 2523.0000]
+- wx_order (integer) - 微信订单数量 [示例: 253, 133]
+- zfb (numeric(19,4)) - 支付宝支付金额 [示例: 229.0000, 0.0000]
+- zf_order (integer) - 支付宝订单数量 [示例: 15, 0]
+- rmb (numeric(19,4)) - 现金支付金额 [示例: 1058.5000, 124.0000]
+- rmb_order (integer) - 现金订单数量 [示例: 56, 12]
+- xs (numeric(19,4)) - 行吧支付金额 [示例: 0.0000, 40.0000]
+- xs_order (integer) - 行吧支付订单数 [示例: 0, 1]
+- jd (numeric(19,4)) - 金豆支付金额 [示例: 0.0000]
+- jd_order (integer) - 金豆支付订单数 [示例: 0]
+- order_sum (integer) - 订单总数 [示例: 324, 146]
+- pay_sum (numeric(19,4)) - 总支付金额 [示例: 6077.5000, 2687.0000]
+- source_type (integer) - 数据来源类型 [示例: 1, 0, 4]
+字段补充说明：
+- id 为主键
+- source_type 为枚举字段，包含取值：0、4、1、2、3
+
+## bss_service_area（高速公路服务区基础信息表）
+bss_service_area 表高速公路服务区基础信息表，存储服务区名称、编码及全生命周期管理数据。
+字段列表：
+- id (varchar(32)) - 唯一标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 数据版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 经纬度坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 运营状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_section_route（路段路线信息表）
+bss_section_route 表路段路线信息表，记录服务区所属路段及路线名称，支撑高速路网运营管理。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 04ri3j67a806uw2c6o6dwdtz4knexczh, 0g5mnefxxtukql2cq6acul7phgskowy7]
+- version (integer) - 数据版本号 [非空] [示例: 1, 0]
+- create_ts (timestamp) - 创建时间 [示例: 2021-10-29 19:43:50, 2022-03-04 16:07:16]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- section_name (varchar(255)) - 路段名称 [示例: 昌栗, 昌宁]
+- route_name (varchar(255)) - 路线名称 [示例: 昌栗, 昌韶]
+- code (varchar(255)) - 路段编号 [示例: SR0001, SR0002]
+字段补充说明：
+- id 为主键
+- created_by 为枚举字段，包含取值：admin
+
+## bss_car_day_count（高速公路服务区每日车辆流量统计表）
+bss_car_day_count 表高速公路服务区每日车辆流量统计表，记录各类型车辆数量及变更历史。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 00022c1c99ff11ec86d4fa163ec0f8fc, 00022caa99ff11ec86d4fa163ec0f8fc]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2022-03-02 16:01:43, 2022-02-02 14:18:55]
+- created_by (varchar(50)) - 创建人
+- update_ts (timestamp) - 更新时间 [示例: 2022-03-02 16:01:43, 2022-02-02 14:18:55]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- customer_count (bigint) - 车辆数量 [示例: 1114, 295]
+- car_type (varchar(100)) - 车辆类别 [示例: 其他]
+- count_date (date) - 统计日期 [示例: 2022-03-02, 2022-02-02]
+- service_area_id (varchar(32)) - 服务区ID [示例: 17461166e7fa3ecda03534a5795ce985, 81f4eb731fb0728aef17ae61f1f1daef]
+字段补充说明：
+- id 为主键
+- car_type 为枚举字段，包含取值：其他、危化品、城际、过境
+
+===Response Guidelines 
+**IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+
+1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+3. If the provided context is insufficient, please explain why it can't be generated. 
+4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+     interpret it as 'How many dining stalls does Nancheng Service Area have?'
+5. Please use the most relevant table(s). 
+6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+7. Ensure that the output SQL is PostgreSQL-compliant and executable, and free of syntax errors. 
+8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+   - Every column MUST use AS with a Chinese alias
+   - Raw column names without aliases are NOT acceptable
+   - Examples: 
+     * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+     * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+     * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+   - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 最近一周哪个服务区总车流量最高？取前5名。
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT s.service_area_name AS 服务区名称, SUM(c.customer_count) AS 总车流量 FROM bss_car_day_count c JOIN bss_service_area s ON c.service_area_id = s.id WHERE c.count_date >= CURRENT_DATE - 7 AND c.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.service_area_name ORDER BY 总车流量 DESC LIMIT 5;
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 统计每个路线名称下服务区的数量，并按服务区数量降序排列。
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sr.route_name AS 路线名称, COUNT(DISTINCT link.service_area_id) AS 服务区数量 FROM bss_section_route sr JOIN bss_section_route_area_link link ON sr.id = link.section_route_id WHERE sr.delete_ts IS NULL GROUP BY sr.route_name ORDER BY 服务区数量 DESC;
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 找出2023年4月平均每日订单数最高的服务区TOP3？
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT service_name AS 服务区名称, AVG(order_sum) AS 日均订单数 FROM bss_business_day_data WHERE oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND delete_ts IS NULL GROUP BY service_name ORDER BY 日均订单数 DESC LIMIT 3;
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 请问系统中哪个服务区档口最多？
+2025-07-22 20:45:57 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:70 - [Vanna] SQL Prompt: [{'role': 'system', 'content': "You are a PostgreSQL expert. \nPlease help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the respon...
+2025-07-22 20:45:57 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 2957.0 tokens (approx)
+2025-07-22 20:45:57 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-22 20:45:57 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-22 20:46:00 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:77 - [Vanna] LLM Response: SELECT service_name AS 服务区名称, COUNT(DISTINCT branch_no) AS 档口数量 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY 档口数量 DESC LIMIT 1;
+2025-07-22 20:46:00 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:80 - [Vanna] Extracted SQL: SELECT service_name AS 服务区名称, COUNT(DISTINCT branch_no) AS 档口数量 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY 档口数量 DESC LIMIT 1;
+2025-07-22 20:46:00 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:320 - 成功生成SQL:
+ SELECT service_name AS 服务区名称, COUNT(DISTINCT branch_no) AS 档口数量 FROM bss_business_day_data WHERE delete_ts IS NULL GROUP BY service_name ORDER BY 档口数量 DESC LIMIT 1;
+2025-07-22 20:54:14 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:270 - 尝试为问题生成SQL: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:16 [DEBUG] [vanna.EmbeddingFunction] embedding_function.py:169 - 成功生成embedding向量，维度: 1024
+2025-07-22 20:54:19 [DEBUG] [vanna.EmbeddingFunction] embedding_function.py:169 - 成功生成embedding向量，维度: 1024
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 统计每个路线名称下服务区的数量，并按服务区数量降序排列。 | similarity: 0.6985
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析庐山服务区2023年4月各档口收入占比（仅显示前3名）？ | similarity: 0.6528
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 最近一周哪个服务区总车流量最高？取前5名。 | similarity: 0.6383
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 查询2023年4月1日各服务区总收入排名前5的明细（包含订单总数）？ | similarity: 0.636
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 找出2023年4月平均每日订单数最高的服务区TOP3？ | similarity: 0.6116
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 计算每个服务区的“状态影响指数”=日均营收 × 平均车流量，并按此指数排序TOP 10？ | similarity: 0.6106
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - SQL 阈值过滤: 总数=6, 阈值=0.65, 最少保留=3
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:348 - SQL 过滤结果: 保留 3 条, 过滤掉 3 条 (满足阈值: 2, 强制保留: 1)
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 1: similarity=0.6985 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 2: similarity=0.6528 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 3: similarity=0.6383 ✗
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区每日经营数据统计表
+-- 描述: 高速公路服务区每日经营数据统计表，记... | similarity: 0.6253
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路路线与服务区关联表
+-- 描述: 高速公路路线与服务区关联表，用于管理各路段... | similarity: 0.5987
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区基础信息表
+-- 描述: 高速公路服务区基础信息表，存储服务区名称、编... | similarity: 0.5917
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 服务区信息映射表
+-- 描述: 服务区信息映射表，用于管理高速公路上各服务区的编码与... | similarity: 0.574
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路段路线信息表
+-- 描述: 路段路线信息表，记录服务区所属路段及路线名称，支撑高速... | similarity: 0.5615
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区每日车辆流量统计表
+-- 描述: 高速公路服务区每日车辆流量统计表，记... | similarity: 0.5517
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DDL 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DDL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 1: similarity=0.6253 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 2: similarity=0.5987 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 3: similarity=0.5917 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 4: similarity=0.574 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 5: similarity=0.5615 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 6: similarity=0.5517 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_business_day_data（高速公路服务区每日经营数据统计表）
+bss_bus... | similarity: 0.6161
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area_mapper（服务区信息映射表）
+bss_service_a... | similarity: 0.6125
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（高速公路服务区基础信息表）
+bss_service_area... | similarity: 0.6007
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route_area_link（高速公路路线与服务区关联表）
+bss_... | similarity: 0.5907
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_car_day_count（高速公路服务区每日车辆流量统计表）
+bss_car_day... | similarity: 0.5816
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route（路段路线信息表）
+bss_section_route 表路... | similarity: 0.5589
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DOC 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DOC 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 1: similarity=0.6161 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 2: similarity=0.6125 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 3: similarity=0.6007 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 4: similarity=0.5907 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 5: similarity=0.5816 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 6: similarity=0.5589 ✓
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:104 - 开始生成SQL提示词，问题: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:19 [WARNING] [vanna.BaseLLMChat] pgvector.py:666 - 向量查询未找到任何相关的错误SQL示例，问题: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:159 - 未找到相关的错误SQL示例
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a PostgreSQL expert. 
+Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+===Tables 
+-- 中文名: 高速公路服务区每日经营数据统计表
+-- 描述: 高速公路服务区每日经营数据统计表，记录各服务区按日维度的业务指标及操作信息。
+create table public.bss_business_day_data (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  oper_date date              -- 统计日期,
+  service_no varchar(255)     -- 服务区编码,
+  service_name varchar(255)   -- 服务区名称,
+  branch_no varchar(255)      -- 档口编码,
+  branch_name varchar(255)    -- 档口名称,
+  wx numeric(19,4)            -- 微信支付金额,
+  wx_order integer            -- 微信订单数量,
+  zfb numeric(19,4)           -- 支付宝支付金额,
+  zf_order integer            -- 支付宝订单数量,
+  rmb numeric(19,4)           -- 现金支付金额,
+  rmb_order integer           -- 现金订单数量,
+  xs numeric(19,4)            -- 行吧支付金额,
+  xs_order integer            -- 行吧支付订单数,
+  jd numeric(19,4)            -- 金豆支付金额,
+  jd_order integer            -- 金豆支付订单数,
+  order_sum integer           -- 订单总数,
+  pay_sum numeric(19,4)       -- 总支付金额,
+  source_type integer         -- 数据来源类型,
+  primary key (id)
+)
+
+-- 中文名: 高速公路路线与服务区关联表
+-- 描述: 高速公路路线与服务区关联表，用于管理各路段所属的服务区信息。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线唯一标识，主键,
+  service_area_id varchar(32) not null -- 服务区唯一标识，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 高速公路服务区基础信息表
+-- 描述: 高速公路服务区基础信息表，存储服务区名称、编码及全生命周期管理数据。
+create table public.bss_service_area (
+  id varchar(32) not null     -- 唯一标识符，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  service_area_name varchar(255) -- 服务区名称,
+  service_area_no varchar(255) -- 服务区编码,
+  company_id varchar(32)      -- 所属公司ID,
+  service_position varchar(255) -- 经纬度坐标,
+  service_area_type varchar(50) -- 服务区类型,
+  service_state varchar(50)   -- 运营状态,
+  primary key (id)
+)
+
+-- 中文名: 服务区信息映射表
+-- 描述: 服务区信息映射表，用于管理高速公路上各服务区的编码与名称对应关系。
+create table public.bss_service_area_mapper (
+  id varchar(32) not null     -- 唯一标识符，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  service_name varchar(255)   -- 服务区名称,
+  service_no varchar(255)     -- 服务区编码,
+  service_area_id varchar(32) -- 服务区业务ID,
+  source_system_type varchar(50) -- 数据来源系统,
+  source_type integer         -- 来源系统类型ID,
+  primary key (id)
+)
+
+-- 中文名: 路段路线信息表
+-- 描述: 路段路线信息表，记录服务区所属路段及路线名称，支撑高速路网运营管理。
+create table public.bss_section_route (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  section_name varchar(255)   -- 路段名称,
+  route_name varchar(255)     -- 路线名称,
+  code varchar(255)           -- 路段编号,
+  primary key (id)
+)
+
+-- 中文名: 高速公路服务区每日车辆流量统计表
+-- 描述: 高速公路服务区每日车辆流量统计表，记录各类型车辆数量及变更历史。
+create table public.bss_car_day_count (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  customer_count bigint       -- 车辆数量,
+  car_type varchar(100)       -- 车辆类别,
+  count_date date             -- 统计日期,
+  service_area_id varchar(32) -- 服务区ID,
+  primary key (id)
+)
+
+
+===Additional Context 
+
+## bss_business_day_data（高速公路服务区每日经营数据统计表）
+bss_business_day_data 表高速公路服务区每日经营数据统计表，记录各服务区按日维度的业务指标及操作信息。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 00827DFF993D415488EA1F07CAE6C440, 00e799048b8cbb8ee758eac9c8b4b820]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2023-04-02 08:31:51, 2023-04-02 02:30:08]
+- created_by (varchar(50)) - 创建人 [示例: xingba]
+- update_ts (timestamp) - 更新时间 [示例: 2023-04-02 08:31:51, 2023-04-02 02:30:08]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- oper_date (date) - 统计日期 [示例: 2023-04-01]
+- service_no (varchar(255)) - 服务区编码 [示例: 1028, H0501]
+- service_name (varchar(255)) - 服务区名称 [示例: 宜春服务区, 庐山服务区]
+- branch_no (varchar(255)) - 档口编码 [示例: 1, H05016]
+- branch_name (varchar(255)) - 档口名称 [示例: 宜春南区, 庐山鲜徕客东区]
+- wx (numeric(19,4)) - 微信支付金额 [示例: 4790.0000, 2523.0000]
+- wx_order (integer) - 微信订单数量 [示例: 253, 133]
+- zfb (numeric(19,4)) - 支付宝支付金额 [示例: 229.0000, 0.0000]
+- zf_order (integer) - 支付宝订单数量 [示例: 15, 0]
+- rmb (numeric(19,4)) - 现金支付金额 [示例: 1058.5000, 124.0000]
+- rmb_order (integer) - 现金订单数量 [示例: 56, 12]
+- xs (numeric(19,4)) - 行吧支付金额 [示例: 0.0000, 40.0000]
+- xs_order (integer) - 行吧支付订单数 [示例: 0, 1]
+- jd (numeric(19,4)) - 金豆支付金额 [示例: 0.0000]
+- jd_order (integer) - 金豆支付订单数 [示例: 0]
+- order_sum (integer) - 订单总数 [示例: 324, 146]
+- pay_sum (numeric(19,4)) - 总支付金额 [示例: 6077.5000, 2687.0000]
+- source_type (integer) - 数据来源类型 [示例: 1, 0, 4]
+字段补充说明：
+- id 为主键
+- source_type 为枚举字段，包含取值：0、4、1、2、3
+
+## bss_service_area_mapper（服务区信息映射表）
+bss_service_area_mapper 表服务区信息映射表，用于管理高速公路上各服务区的编码与名称对应关系。
+字段列表：
+- id (varchar(32)) - 唯一标识符 [主键, 非空] [示例: 00e1e893909211ed8ee6fa163eaf653f, 013867f5962211ed8ee6fa163eaf653f]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2023-01-10 10:54:03, 2023-01-17 12:47:29]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2023-01-10 10:54:07, 2023-01-17 12:47:32]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- service_name (varchar(255)) - 服务区名称 [示例: 信丰西服务区, 南康北服务区]
+- service_no (varchar(255)) - 服务区编码 [示例: 1067, 1062]
+- service_area_id (varchar(32)) - 服务区业务ID [示例: 97cd6cd516a551409a4d453a58f9e170, fdbdd042962011ed8ee6fa163eaf653f]
+- source_system_type (varchar(50)) - 数据来源系统 [示例: 驿美, 驿购]
+- source_type (integer) - 来源系统类型ID [示例: 3, 1]
+字段补充说明：
+- id 为主键
+- source_system_type 为枚举字段，包含取值：司乘管理、商业管理、驿购、驿美、手工录入
+- source_type 为枚举字段，包含取值：5、0、1、3、4
+
+## bss_service_area（高速公路服务区基础信息表）
+bss_service_area 表高速公路服务区基础信息表，存储服务区名称、编码及全生命周期管理数据。
+字段列表：
+- id (varchar(32)) - 唯一标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 数据版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 经纬度坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 运营状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_section_route_area_link（高速公路路线与服务区关联表）
+bss_section_route_area_link 表高速公路路线与服务区关联表，用于管理各路段所属的服务区信息。
+字段列表：
+- section_route_id (varchar(32)) - 路段路线唯一标识 [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
+- service_area_id (varchar(32)) - 服务区唯一标识 [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
+字段补充说明：
+- 复合主键：section_route_id, service_area_id
+
+## bss_car_day_count（高速公路服务区每日车辆流量统计表）
+bss_car_day_count 表高速公路服务区每日车辆流量统计表，记录各类型车辆数量及变更历史。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 00022c1c99ff11ec86d4fa163ec0f8fc, 00022caa99ff11ec86d4fa163ec0f8fc]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2022-03-02 16:01:43, 2022-02-02 14:18:55]
+- created_by (varchar(50)) - 创建人
+- update_ts (timestamp) - 更新时间 [示例: 2022-03-02 16:01:43, 2022-02-02 14:18:55]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- customer_count (bigint) - 车辆数量 [示例: 1114, 295]
+- car_type (varchar(100)) - 车辆类别 [示例: 其他]
+- count_date (date) - 统计日期 [示例: 2022-03-02, 2022-02-02]
+- service_area_id (varchar(32)) - 服务区ID [示例: 17461166e7fa3ecda03534a5795ce985, 81f4eb731fb0728aef17ae61f1f1daef]
+字段补充说明：
+- id 为主键
+- car_type 为枚举字段，包含取值：其他、危化品、城际、过境
+
+## bss_section_route（路段路线信息表）
+bss_section_route 表路段路线信息表，记录服务区所属路段及路线名称，支撑高速路网运营管理。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 04ri3j67a806uw2c6o6dwdtz4knexczh, 0g5mnefxxtukql2cq6acul7phgskowy7]
+- version (integer) - 数据版本号 [非空] [示例: 1, 0]
+- create_ts (timestamp) - 创建时间 [示例: 2021-10-29 19:43:50, 2022-03-04 16:07:16]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- section_name (varchar(255)) - 路段名称 [示例: 昌栗, 昌宁]
+- route_name (varchar(255)) - 路线名称 [示例: 昌栗, 昌韶]
+- code (varchar(255)) - 路段编号 [示例: SR0001, SR0002]
+字段补充说明：
+- id 为主键
+- created_by 为枚举字段，包含取值：admin
+
+===Response Guidelines 
+**IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+
+1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+3. If the provided context is insufficient, please explain why it can't be generated. 
+4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+     interpret it as 'How many dining stalls does Nancheng Service Area have?'
+5. Please use the most relevant table(s). 
+6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+7. Ensure that the output SQL is PostgreSQL-compliant and executable, and free of syntax errors. 
+8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+   - Every column MUST use AS with a Chinese alias
+   - Raw column names without aliases are NOT acceptable
+   - Examples: 
+     * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+     * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+     * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+   - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 统计每个路线名称下服务区的数量，并按服务区数量降序排列。
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sr.route_name AS 路线名称, COUNT(DISTINCT link.service_area_id) AS 服务区数量 FROM bss_section_route sr JOIN bss_section_route_area_link link ON sr.id = link.section_route_id WHERE sr.delete_ts IS NULL GROUP BY sr.route_name ORDER BY 服务区数量 DESC;
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 分析庐山服务区2023年4月各档口收入占比（仅显示前3名）？
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT branch_name AS 档口名称, ROUND(SUM(pay_sum)::numeric, 2) AS 收入总额 FROM bss_business_day_data WHERE service_name = '庐山服务区' AND oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND delete_ts IS NULL GROUP BY branch_name ORDER BY 收入总额 DESC LIMIT 3;
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 最近一周哪个服务区总车流量最高？取前5名。
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT s.service_area_name AS 服务区名称, SUM(c.customer_count) AS 总车流量 FROM bss_car_day_count c JOIN bss_service_area s ON c.service_area_id = s.id WHERE c.count_date >= CURRENT_DATE - 7 AND c.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.service_area_name ORDER BY 总车流量 DESC LIMIT 5;
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:19 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:70 - [Vanna] SQL Prompt: [{'role': 'system', 'content': "You are a PostgreSQL expert. \nPlease help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the respon...
+2025-07-22 20:54:19 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 3195.75 tokens (approx)
+2025-07-22 20:54:19 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-22 20:54:19 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-22 20:54:23 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:77 - [Vanna] LLM Response: SELECT 
+    service_name AS 服务区名称,
+    COUNT(*) AS 餐饮档口数量
+FROM 
+    bss_business_day_data
+WHERE 
+    service_name = '南城服务区'
+    AND branch_name LIKE '%餐饮%'
+    AND delete_ts IS NULL
+GROUP BY 
+    serv...
+2025-07-22 20:54:23 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:80 - [Vanna] Extracted SQL: SELECT 
+    service_name AS 服务区名称,
+    COUNT(*) AS 餐饮档口数量
+FROM 
+    bss_business_day_data
+WHERE 
+    service_name = '南城服务区'
+    AND branch_name LIKE '%餐饮%'
+    AND delete_ts IS NULL
+GROUP BY 
+    service_name;
+2025-07-22 20:54:23 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:320 - 成功生成SQL:
+ SELECT 
+    service_name AS 服务区名称,
+    COUNT(*) AS 餐饮档口数量
+FROM 
+    bss_business_day_data
+WHERE 
+    service_name = '南城服务区'
+    AND branch_name LIKE '%餐饮%'
+    AND delete_ts IS NULL
+GROUP BY 
+    service_name;
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:270 - 尝试为问题生成SQL: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 统计每个路线名称下服务区的数量，并按服务区数量降序排列。 | similarity: 0.6985
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 分析庐山服务区2023年4月各档口收入占比（仅显示前3名）？ | similarity: 0.6528
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 最近一周哪个服务区总车流量最高？取前5名。 | similarity: 0.6383
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 查询2023年4月1日各服务区总收入排名前5的明细（包含订单总数）？ | similarity: 0.636
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 找出2023年4月平均每日订单数最高的服务区TOP3？ | similarity: 0.6116
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:153 - SQL Match: 计算每个服务区的“状态影响指数”=日均营收 × 平均车流量，并按此指数排序TOP 10？ | similarity: 0.6106
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - SQL 阈值过滤: 总数=6, 阈值=0.65, 最少保留=3
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:348 - SQL 过滤结果: 保留 3 条, 过滤掉 3 条 (满足阈值: 2, 强制保留: 1)
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 1: similarity=0.6985 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 2: similarity=0.6528 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - SQL 保留 3: similarity=0.6383 ✗
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区每日经营数据统计表
+-- 描述: 高速公路服务区每日经营数据统计表，记... | similarity: 0.6253
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路路线与服务区关联表
+-- 描述: 高速公路路线与服务区关联表，用于管理各路段... | similarity: 0.5987
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区基础信息表
+-- 描述: 高速公路服务区基础信息表，存储服务区名称、编... | similarity: 0.5917
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 服务区信息映射表
+-- 描述: 服务区信息映射表，用于管理高速公路上各服务区的编码与... | similarity: 0.574
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 路段路线信息表
+-- 描述: 路段路线信息表，记录服务区所属路段及路线名称，支撑高速... | similarity: 0.5615
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:210 - DDL Match: -- 中文名: 高速公路服务区每日车辆流量统计表
+-- 描述: 高速公路服务区每日车辆流量统计表，记... | similarity: 0.5517
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DDL 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DDL 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 1: similarity=0.6253 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 2: similarity=0.5987 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 3: similarity=0.5917 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 4: similarity=0.574 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 5: similarity=0.5615 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DDL 保留 6: similarity=0.5517 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_business_day_data（高速公路服务区每日经营数据统计表）
+bss_bus... | similarity: 0.6161
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area_mapper（服务区信息映射表）
+bss_service_a... | similarity: 0.6125
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_service_area（高速公路服务区基础信息表）
+bss_service_area... | similarity: 0.6007
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route_area_link（高速公路路线与服务区关联表）
+bss_... | similarity: 0.5907
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_car_day_count（高速公路服务区每日车辆流量统计表）
+bss_car_day... | similarity: 0.5816
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:269 - Doc Match: ## bss_section_route（路段路线信息表）
+bss_section_route 表路... | similarity: 0.5589
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:328 - DOC 阈值过滤: 总数=6, 阈值=0.5, 最少保留=3
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:341 - DOC 过滤结果: 保留 6 条, 过滤掉 0 条 (全部满足阈值)
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 1: similarity=0.6161 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 2: similarity=0.6125 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 3: similarity=0.6007 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 4: similarity=0.5907 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 5: similarity=0.5816 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] pgvector.py:354 - DOC 保留 6: similarity=0.5589 ✓
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:104 - 开始生成SQL提示词，问题: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:40 [WARNING] [vanna.BaseLLMChat] pgvector.py:666 - 向量查询未找到任何相关的错误SQL示例，问题: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:159 - 未找到相关的错误SQL示例
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:87 - system_content: You are a PostgreSQL expert. 
+Please help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the response guidelines and format instructions.
+
+===Tables 
+-- 中文名: 高速公路服务区每日经营数据统计表
+-- 描述: 高速公路服务区每日经营数据统计表，记录各服务区按日维度的业务指标及操作信息。
+create table public.bss_business_day_data (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  oper_date date              -- 统计日期,
+  service_no varchar(255)     -- 服务区编码,
+  service_name varchar(255)   -- 服务区名称,
+  branch_no varchar(255)      -- 档口编码,
+  branch_name varchar(255)    -- 档口名称,
+  wx numeric(19,4)            -- 微信支付金额,
+  wx_order integer            -- 微信订单数量,
+  zfb numeric(19,4)           -- 支付宝支付金额,
+  zf_order integer            -- 支付宝订单数量,
+  rmb numeric(19,4)           -- 现金支付金额,
+  rmb_order integer           -- 现金订单数量,
+  xs numeric(19,4)            -- 行吧支付金额,
+  xs_order integer            -- 行吧支付订单数,
+  jd numeric(19,4)            -- 金豆支付金额,
+  jd_order integer            -- 金豆支付订单数,
+  order_sum integer           -- 订单总数,
+  pay_sum numeric(19,4)       -- 总支付金额,
+  source_type integer         -- 数据来源类型,
+  primary key (id)
+)
+
+-- 中文名: 高速公路路线与服务区关联表
+-- 描述: 高速公路路线与服务区关联表，用于管理各路段所属的服务区信息。
+create table public.bss_section_route_area_link (
+  section_route_id varchar(32) not null -- 路段路线唯一标识，主键,
+  service_area_id varchar(32) not null -- 服务区唯一标识，主键,
+  primary key (section_route_id, service_area_id)
+)
+
+-- 中文名: 高速公路服务区基础信息表
+-- 描述: 高速公路服务区基础信息表，存储服务区名称、编码及全生命周期管理数据。
+create table public.bss_service_area (
+  id varchar(32) not null     -- 唯一标识符，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  service_area_name varchar(255) -- 服务区名称,
+  service_area_no varchar(255) -- 服务区编码,
+  company_id varchar(32)      -- 所属公司ID,
+  service_position varchar(255) -- 经纬度坐标,
+  service_area_type varchar(50) -- 服务区类型,
+  service_state varchar(50)   -- 运营状态,
+  primary key (id)
+)
+
+-- 中文名: 服务区信息映射表
+-- 描述: 服务区信息映射表，用于管理高速公路上各服务区的编码与名称对应关系。
+create table public.bss_service_area_mapper (
+  id varchar(32) not null     -- 唯一标识符，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  service_name varchar(255)   -- 服务区名称,
+  service_no varchar(255)     -- 服务区编码,
+  service_area_id varchar(32) -- 服务区业务ID,
+  source_system_type varchar(50) -- 数据来源系统,
+  source_type integer         -- 来源系统类型ID,
+  primary key (id)
+)
+
+-- 中文名: 路段路线信息表
+-- 描述: 路段路线信息表，记录服务区所属路段及路线名称，支撑高速路网运营管理。
+create table public.bss_section_route (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  section_name varchar(255)   -- 路段名称,
+  route_name varchar(255)     -- 路线名称,
+  code varchar(255)           -- 路段编号,
+  primary key (id)
+)
+
+-- 中文名: 高速公路服务区每日车辆流量统计表
+-- 描述: 高速公路服务区每日车辆流量统计表，记录各类型车辆数量及变更历史。
+create table public.bss_car_day_count (
+  id varchar(32) not null     -- 主键ID，主键,
+  version integer not null    -- 数据版本号,
+  create_ts timestamp         -- 创建时间,
+  created_by varchar(50)      -- 创建人,
+  update_ts timestamp         -- 更新时间,
+  updated_by varchar(50)      -- 更新人,
+  delete_ts timestamp         -- 删除时间,
+  deleted_by varchar(50)      -- 删除人,
+  customer_count bigint       -- 车辆数量,
+  car_type varchar(100)       -- 车辆类别,
+  count_date date             -- 统计日期,
+  service_area_id varchar(32) -- 服务区ID,
+  primary key (id)
+)
+
+
+===Additional Context 
+
+## bss_business_day_data（高速公路服务区每日经营数据统计表）
+bss_business_day_data 表高速公路服务区每日经营数据统计表，记录各服务区按日维度的业务指标及操作信息。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 00827DFF993D415488EA1F07CAE6C440, 00e799048b8cbb8ee758eac9c8b4b820]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2023-04-02 08:31:51, 2023-04-02 02:30:08]
+- created_by (varchar(50)) - 创建人 [示例: xingba]
+- update_ts (timestamp) - 更新时间 [示例: 2023-04-02 08:31:51, 2023-04-02 02:30:08]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- oper_date (date) - 统计日期 [示例: 2023-04-01]
+- service_no (varchar(255)) - 服务区编码 [示例: 1028, H0501]
+- service_name (varchar(255)) - 服务区名称 [示例: 宜春服务区, 庐山服务区]
+- branch_no (varchar(255)) - 档口编码 [示例: 1, H05016]
+- branch_name (varchar(255)) - 档口名称 [示例: 宜春南区, 庐山鲜徕客东区]
+- wx (numeric(19,4)) - 微信支付金额 [示例: 4790.0000, 2523.0000]
+- wx_order (integer) - 微信订单数量 [示例: 253, 133]
+- zfb (numeric(19,4)) - 支付宝支付金额 [示例: 229.0000, 0.0000]
+- zf_order (integer) - 支付宝订单数量 [示例: 15, 0]
+- rmb (numeric(19,4)) - 现金支付金额 [示例: 1058.5000, 124.0000]
+- rmb_order (integer) - 现金订单数量 [示例: 56, 12]
+- xs (numeric(19,4)) - 行吧支付金额 [示例: 0.0000, 40.0000]
+- xs_order (integer) - 行吧支付订单数 [示例: 0, 1]
+- jd (numeric(19,4)) - 金豆支付金额 [示例: 0.0000]
+- jd_order (integer) - 金豆支付订单数 [示例: 0]
+- order_sum (integer) - 订单总数 [示例: 324, 146]
+- pay_sum (numeric(19,4)) - 总支付金额 [示例: 6077.5000, 2687.0000]
+- source_type (integer) - 数据来源类型 [示例: 1, 0, 4]
+字段补充说明：
+- id 为主键
+- source_type 为枚举字段，包含取值：0、4、1、2、3
+
+## bss_service_area_mapper（服务区信息映射表）
+bss_service_area_mapper 表服务区信息映射表，用于管理高速公路上各服务区的编码与名称对应关系。
+字段列表：
+- id (varchar(32)) - 唯一标识符 [主键, 非空] [示例: 00e1e893909211ed8ee6fa163eaf653f, 013867f5962211ed8ee6fa163eaf653f]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2023-01-10 10:54:03, 2023-01-17 12:47:29]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2023-01-10 10:54:07, 2023-01-17 12:47:32]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- service_name (varchar(255)) - 服务区名称 [示例: 信丰西服务区, 南康北服务区]
+- service_no (varchar(255)) - 服务区编码 [示例: 1067, 1062]
+- service_area_id (varchar(32)) - 服务区业务ID [示例: 97cd6cd516a551409a4d453a58f9e170, fdbdd042962011ed8ee6fa163eaf653f]
+- source_system_type (varchar(50)) - 数据来源系统 [示例: 驿美, 驿购]
+- source_type (integer) - 来源系统类型ID [示例: 3, 1]
+字段补充说明：
+- id 为主键
+- source_system_type 为枚举字段，包含取值：司乘管理、商业管理、驿购、驿美、手工录入
+- source_type 为枚举字段，包含取值：5、0、1、3、4
+
+## bss_service_area（高速公路服务区基础信息表）
+bss_service_area 表高速公路服务区基础信息表，存储服务区名称、编码及全生命周期管理数据。
+字段列表：
+- id (varchar(32)) - 唯一标识符 [主键, 非空] [示例: 0271d68ef93de9684b7ad8c7aae600b6, 08e01d7402abd1d6a4d9fdd5df855ef8]
+- version (integer) - 数据版本号 [非空] [示例: 3, 6]
+- create_ts (timestamp) - 创建时间 [示例: 2021-05-21 13:26:40.589000, 2021-05-20 19:51:46.314000]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间 [示例: 2021-07-10 15:41:28.795000, 2021-07-11 09:33:08.455000]
+- updated_by (varchar(50)) - 更新人 [示例: admin]
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人 [示例: ]
+- service_area_name (varchar(255)) - 服务区名称 [示例: 白鹭湖停车区, 南昌南服务区]
+- service_area_no (varchar(255)) - 服务区编码 [示例: H0814, H0105]
+- company_id (varchar(32)) - 所属公司ID [示例: b1629f07c8d9ac81494fbc1de61f1ea5, ee9bf1180a2b45003f96e597a4b7f15a]
+- service_position (varchar(255)) - 经纬度坐标 [示例: 114.574721,26.825584, 115.910549,28.396355]
+- service_area_type (varchar(50)) - 服务区类型 [示例: 信息化服务区]
+- service_state (varchar(50)) - 运营状态 [示例: 开放, 关闭]
+字段补充说明：
+- id 为主键
+- service_area_type 为枚举字段，包含取值：信息化服务区、智能化服务区
+- service_state 为枚举字段，包含取值：开放、关闭、上传数据
+
+## bss_section_route_area_link（高速公路路线与服务区关联表）
+bss_section_route_area_link 表高速公路路线与服务区关联表，用于管理各路段所属的服务区信息。
+字段列表：
+- section_route_id (varchar(32)) - 路段路线唯一标识 [主键, 非空] [示例: v8elrsfs5f7lt7jl8a6p87smfzesn3rz, hxzi2iim238e3s1eajjt1enmh9o4h3wp]
+- service_area_id (varchar(32)) - 服务区唯一标识 [主键, 非空] [示例: 08e01d7402abd1d6a4d9fdd5df855ef8, 091662311d2c737029445442ff198c4c]
+字段补充说明：
+- 复合主键：section_route_id, service_area_id
+
+## bss_car_day_count（高速公路服务区每日车辆流量统计表）
+bss_car_day_count 表高速公路服务区每日车辆流量统计表，记录各类型车辆数量及变更历史。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 00022c1c99ff11ec86d4fa163ec0f8fc, 00022caa99ff11ec86d4fa163ec0f8fc]
+- version (integer) - 数据版本号 [非空] [示例: 1]
+- create_ts (timestamp) - 创建时间 [示例: 2022-03-02 16:01:43, 2022-02-02 14:18:55]
+- created_by (varchar(50)) - 创建人
+- update_ts (timestamp) - 更新时间 [示例: 2022-03-02 16:01:43, 2022-02-02 14:18:55]
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- customer_count (bigint) - 车辆数量 [示例: 1114, 295]
+- car_type (varchar(100)) - 车辆类别 [示例: 其他]
+- count_date (date) - 统计日期 [示例: 2022-03-02, 2022-02-02]
+- service_area_id (varchar(32)) - 服务区ID [示例: 17461166e7fa3ecda03534a5795ce985, 81f4eb731fb0728aef17ae61f1f1daef]
+字段补充说明：
+- id 为主键
+- car_type 为枚举字段，包含取值：其他、危化品、城际、过境
+
+## bss_section_route（路段路线信息表）
+bss_section_route 表路段路线信息表，记录服务区所属路段及路线名称，支撑高速路网运营管理。
+字段列表：
+- id (varchar(32)) - 主键ID [主键, 非空] [示例: 04ri3j67a806uw2c6o6dwdtz4knexczh, 0g5mnefxxtukql2cq6acul7phgskowy7]
+- version (integer) - 数据版本号 [非空] [示例: 1, 0]
+- create_ts (timestamp) - 创建时间 [示例: 2021-10-29 19:43:50, 2022-03-04 16:07:16]
+- created_by (varchar(50)) - 创建人 [示例: admin]
+- update_ts (timestamp) - 更新时间
+- updated_by (varchar(50)) - 更新人
+- delete_ts (timestamp) - 删除时间
+- deleted_by (varchar(50)) - 删除人
+- section_name (varchar(255)) - 路段名称 [示例: 昌栗, 昌宁]
+- route_name (varchar(255)) - 路线名称 [示例: 昌栗, 昌韶]
+- code (varchar(255)) - 路段编号 [示例: SR0001, SR0002]
+字段补充说明：
+- id 为主键
+- created_by 为枚举字段，包含取值：admin
+
+===Response Guidelines 
+**IMPORTANT**: All SQL queries MUST use Chinese aliases for ALL columns in SELECT clause.
+
+1. If the provided context is sufficient, please generate a valid SQL query without any explanations for the question. 
+2. If the provided context is almost sufficient but requires knowledge of a specific string in a particular column, please generate an intermediate SQL query to find the distinct strings in that column. Prepend the query with a comment saying intermediate_sql 
+3. If the provided context is insufficient, please explain why it can't be generated. 
+4. **Context Understanding**: If the question follows [CONTEXT]...[CURRENT] format, replace pronouns in [CURRENT] with specific entities from [CONTEXT].
+   - Example: If context mentions 'Nancheng Service Area has the most stalls', and current question is 'How many dining stalls does this service area have?', 
+     interpret it as 'How many dining stalls does Nancheng Service Area have?'
+5. Please use the most relevant table(s). 
+6. If the question has been asked and answered before, please repeat the answer exactly as it was given before. 
+7. Ensure that the output SQL is PostgreSQL-compliant and executable, and free of syntax errors. 
+8. Always add NULLS LAST to ORDER BY clauses to handle NULL values properly (e.g., ORDER BY total DESC NULLS LAST).
+9. **MANDATORY**: ALL columns in SELECT must have Chinese aliases. This is non-negotiable:
+   - Every column MUST use AS with a Chinese alias
+   - Raw column names without aliases are NOT acceptable
+   - Examples: 
+     * CORRECT: SELECT service_name AS 服务区名称, SUM(pay_sum) AS 总收入
+     * WRONG: SELECT service_name, SUM(pay_sum) AS total_revenue
+     * WRONG: SELECT service_name AS service_area, SUM(pay_sum) AS 总收入
+   - Common aliases: COUNT(*) AS 数量, SUM(...) AS 总计, AVG(...) AS 平均值, MAX(...) AS 最大值, MIN(...) AS 最小值
+
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 统计每个路线名称下服务区的数量，并按服务区数量降序排列。
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT sr.route_name AS 路线名称, COUNT(DISTINCT link.service_area_id) AS 服务区数量 FROM bss_section_route sr JOIN bss_section_route_area_link link ON sr.id = link.section_route_id WHERE sr.delete_ts IS NULL GROUP BY sr.route_name ORDER BY 服务区数量 DESC;
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 分析庐山服务区2023年4月各档口收入占比（仅显示前3名）？
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT branch_name AS 档口名称, ROUND(SUM(pay_sum)::numeric, 2) AS 收入总额 FROM bss_business_day_data WHERE service_name = '庐山服务区' AND oper_date BETWEEN '2023-04-01' AND '2023-04-30' AND delete_ts IS NULL GROUP BY branch_name ORDER BY 收入总额 DESC LIMIT 3;
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: 最近一周哪个服务区总车流量最高？取前5名。
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:97 - assistant_content: SELECT s.service_area_name AS 服务区名称, SUM(c.customer_count) AS 总车流量 FROM bss_car_day_count c JOIN bss_service_area s ON c.service_area_id = s.id WHERE c.count_date >= CURRENT_DATE - 7 AND c.delete_ts IS NULL AND s.delete_ts IS NULL GROUP BY s.service_area_name ORDER BY 总车流量 DESC LIMIT 5;
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:92 - 
+user_content: Previous conversation context:
+human: 请问系统中哪个服务区档口最多？
+ai: 根据查询结果，系统中档口数量最多的服务区是**南城服务区**，共有**38个档口**。
+
+Current user question:
+human: 请问这个服务区有几个餐饮档口？
+
+Please analyze the conversation history to understand any references (like "this service area", "that branch", etc.) in the current question, and generate the appropriate SQL query.
+2025-07-22 20:54:40 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:70 - [Vanna] SQL Prompt: [{'role': 'system', 'content': "You are a PostgreSQL expert. \nPlease help to generate a SQL query to answer the question. Your response should ONLY be based on the given context and follow the respon...
+2025-07-22 20:54:40 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:115 - 
+Using model qwen-plus-latest for 3195.75 tokens (approx)
+2025-07-22 20:54:40 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:116 - Enable thinking: False, Stream mode: False
+2025-07-22 20:54:40 [INFO] [vanna.BaseLLMChat] qianwen_chat.py:158 - 使用非流式处理模式
+2025-07-22 20:54:48 [DEBUG] [vanna.BaseLLMChat] base_llm_chat.py:77 - [Vanna] LLM Response: SELECT 
+    service_name AS 服务区名称,
+    COUNT(*) AS 餐饮档口数量
+FROM 
+    bss_business_day_data
+WHERE 
+    service_name = '南城服务区'
+    AND branch_name LIKE '%餐饮%'
+    AND delete_ts IS NULL
+GROUP BY 
+    serv...
+2025-07-22 20:54:48 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:80 - [Vanna] Extracted SQL: SELECT 
+    service_name AS 服务区名称,
+    COUNT(*) AS 餐饮档口数量
+FROM 
+    bss_business_day_data
+WHERE 
+    service_name = '南城服务区'
+    AND branch_name LIKE '%餐饮%'
+    AND delete_ts IS NULL
+GROUP BY 
+    service_name;
+2025-07-22 20:54:48 [INFO] [vanna.BaseLLMChat] base_llm_chat.py:320 - 成功生成SQL:
+ SELECT 
+    service_name AS 服务区名称,
+    COUNT(*) AS 餐饮档口数量
+FROM 
+    bss_business_day_data
+WHERE 
+    service_name = '南城服务区'
+    AND branch_name LIKE '%餐饮%'
+    AND delete_ts IS NULL
+GROUP BY 
+    service_name;

@@ -1289,6 +1289,38 @@ def get_user_conversations_redis(user_id: str):
         limit = request.args.get('limit', USER_MAX_CONVERSATIONS, type=int)
         conversations = redis_conversation_manager.get_conversations(user_id, limit)
         
+        # 为每个对话动态获取标题（第一条用户消息）
+        for conversation in conversations:
+            conversation_id = conversation['conversation_id']
+            
+            try:
+                # 获取所有消息，然后取第一条用户消息作为标题
+                messages = redis_conversation_manager.get_conversation_messages(conversation_id)
+                
+                if messages and len(messages) > 0:
+                    # 找到第一条用户消息（按时间顺序）
+                    first_user_message = None
+                    for message in messages:
+                        if message.get('role') == 'user':
+                            first_user_message = message
+                            break
+                    
+                    if first_user_message:
+                        title = first_user_message.get('content', '对话').strip()
+                        # 限制标题长度，保持整洁
+                        if len(title) > 50:
+                            conversation['conversation_title'] = title[:47] + "..."
+                        else:
+                            conversation['conversation_title'] = title
+                    else:
+                        conversation['conversation_title'] = "对话"
+                else:
+                    conversation['conversation_title'] = "空对话"
+                    
+            except Exception as e:
+                logger.warning(f"获取对话标题失败 {conversation_id}: {str(e)}")
+                conversation['conversation_title'] = "对话"
+        
         return jsonify(success_response(
             response_text="获取用户对话列表成功",
             data={
