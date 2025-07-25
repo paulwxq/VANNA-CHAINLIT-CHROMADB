@@ -1,0 +1,110 @@
+version: 1
+
+# 全局配置
+global:
+  base_level: INFO
+  
+# 默认配置（用于app.log）
+default:
+  level: INFO
+  console:
+    enabled: true
+    level: INFO
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  file:
+    enabled: true
+    level: DEBUG
+    filename: "app.log"
+    format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
+    rotation:
+      enabled: true
+      when: "midnight"
+      interval: 1
+      backup_count: 30
+
+# 模块特定配置
+modules:
+  app:
+    level: INFO
+    console:
+      enabled: true
+      level: INFO
+      format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    file:
+      enabled: true
+      level: DEBUG
+      filename: "app.log"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
+      rotation:
+        enabled: true
+        when: "midnight"
+        interval: 1
+        backup_count: 30
+  
+  data_pipeline:
+    level: DEBUG
+    console:
+      enabled: true
+      level: INFO
+      format: "%(asctime)s [%(levelname)s] Pipeline: %(message)s"
+    file:
+      enabled: true
+      level: DEBUG
+      filename: "data_pipeline.log"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
+      rotation:
+        enabled: true
+        when: "midnight"
+        interval: 1
+        backup_count: 30
+  
+  agent:
+    level: DEBUG
+    console:
+      enabled: true
+      level: INFO
+      format: "%(asctime)s [%(levelname)s] Agent: %(message)s"
+    file:
+      enabled: true
+      level: DEBUG
+      filename: "agent.log"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
+      rotation:
+        enabled: true
+        when: "H"
+        interval: 24
+        backup_count: 7
+  
+  vanna:
+    level: DEBUG
+    console:
+      enabled: true
+      level: INFO
+      format: "%(asctime)s [%(levelname)s] Vanna: %(message)s"
+    file:
+      enabled: true
+      level: DEBUG
+      filename: "vanna.log"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
+      rotation:
+        enabled: true
+        when: "midnight"
+        interval: 1
+        backup_count: 30
+  
+  react_agent:
+    level: DEBUG
+    console:
+      enabled: true
+      level: INFO
+      format: "%(asctime)s [%(levelname)s] ReactAgent: %(message)s"
+    file:
+      enabled: true
+      level: DEBUG
+      filename: "react_agent.log"
+      format: "%(asctime)s [%(levelname)s] [%(name)s] %(filename)s:%(lineno)d - %(message)s"
+      rotation:
+        enabled: true
+        when: "midnight"
+        interval: 1
+        backup_count: 30 

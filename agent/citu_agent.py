@@ -40,146 +40,48 @@ class CituLangGraphAgent:
         self.logger.info("LangGraph Agent with Direct Tools初始化完成")
     
     def _create_workflow(self, routing_mode: str = None) -> StateGraph:
-        """根据路由模式创建不同的工作流"""
-        self.logger.info(f"🏗️ [WORKFLOW] 动态创建workflow被调用")
-        
-        # 确定使用的路由模式
-        if routing_mode:
-            QUESTION_ROUTING_MODE = routing_mode
-            self.logger.info(f"使用传入的路由模式: {QUESTION_ROUTING_MODE}")
-        else:
-            try:
-                from app_config import QUESTION_ROUTING_MODE
-                self.logger.info(f"使用配置文件路由模式: {QUESTION_ROUTING_MODE}")
-            except ImportError:
-                QUESTION_ROUTING_MODE = "hybrid"
-                self.logger.warning(f"配置导入失败，使用默认路由模式: {QUESTION_ROUTING_MODE}")
+        """创建统一的工作流，所有路由模式都通过classify_question进行分类"""
+        self.logger.info(f"🏗️ [WORKFLOW] 创建统一workflow")
         
         workflow = StateGraph(AgentState)
         
-        # 根据路由模式创建不同的工作流
-        if QUESTION_ROUTING_MODE == "database_direct":
-            # 直接数据库模式：跳过分类，直接进入数据库处理（使用新的拆分节点）
-            workflow.add_node("init_direct_database", self._init_direct_database_node)
-            workflow.add_node("agent_sql_generation", self._agent_sql_generation_node)
-            workflow.add_node("agent_sql_execution", self._agent_sql_execution_node)
-            workflow.add_node("format_response", self._format_response_node)
-            
-            workflow.set_entry_point("init_direct_database")
-            
-            # 添加条件路由
-            workflow.add_edge("init_direct_database", "agent_sql_generation")
-            workflow.add_conditional_edges(
-                "agent_sql_generation",
-                self._route_after_sql_generation,
-                {
-                    "continue_execution": "agent_sql_execution",
-                    "return_to_user": "format_response"
-                }
-            )
-            workflow.add_edge("agent_sql_execution", "format_response")
-            workflow.add_edge("format_response", END)
-            
-        elif QUESTION_ROUTING_MODE == "chat_direct":
-            # 直接聊天模式：跳过分类，直接进入聊天处理
-            workflow.add_node("init_direct_chat", self._init_direct_chat_node)
-            workflow.add_node("agent_chat", self._agent_chat_node)
-            workflow.add_node("format_response", self._format_response_node)
-            
-            workflow.set_entry_point("init_direct_chat")
-            workflow.add_edge("init_direct_chat", "agent_chat")
-            workflow.add_edge("agent_chat", "format_response")
-            workflow.add_edge("format_response", END)
-            
-        else:
-            self.logger.info(f"🧠 [WORKFLOW] 构建hybrid模式的workflow...")
-            # 其他模式(hybrid, llm_only)：使用新的拆分工作流
-            workflow.add_node("classify_question", self._classify_question_node)
-            workflow.add_node("agent_chat", self._agent_chat_node)
-            workflow.add_node("agent_sql_generation", self._agent_sql_generation_node)
-            workflow.add_node("agent_sql_execution", self._agent_sql_execution_node)
-            workflow.add_node("format_response", self._format_response_node)
-            
-            workflow.set_entry_point("classify_question")
-            
-            # 添加条件边：分类后的路由
-            workflow.add_conditional_edges(
-                "classify_question",
-                self._route_after_classification,
-                {
-                    "DATABASE": "agent_sql_generation",
-                    "CHAT": "agent_chat"
-                }
-            )
-            
-            # 添加条件边：SQL生成后的路由
-            workflow.add_conditional_edges(
-                "agent_sql_generation",
-                self._route_after_sql_generation,
-                {
-                    "continue_execution": "agent_sql_execution",
-                    "return_to_user": "format_response"
-                }
-            )
-            
-            # 普通边
-            workflow.add_edge("agent_chat", "format_response")
-            workflow.add_edge("agent_sql_execution", "format_response")
-            workflow.add_edge("format_response", END)
+        # 统一的工作流结构 - 所有模式都使用相同的节点和路由
+        workflow.add_node("classify_question", self._classify_question_node)
+        workflow.add_node("agent_chat", self._agent_chat_node) 
+        workflow.add_node("agent_sql_generation", self._agent_sql_generation_node)
+        workflow.add_node("agent_sql_execution", self._agent_sql_execution_node)
+        workflow.add_node("format_response", self._format_response_node)
+        
+        # 统一入口点
+        workflow.set_entry_point("classify_question")
+        
+        # 添加条件边：分类后的路由
+        workflow.add_conditional_edges(
+            "classify_question",
+            self._route_after_classification,
+            {
+                "DATABASE": "agent_sql_generation",
+                "CHAT": "agent_chat"
+            }
+        )
+        
+        # 添加条件边：SQL生成后的路由
+        workflow.add_conditional_edges(
+            "agent_sql_generation", 
+            self._route_after_sql_generation,
+            {
+                "continue_execution": "agent_sql_execution",
+                "return_to_user": "format_response"
+            }
+        )
+        
+        # 普通边
+        workflow.add_edge("agent_chat", "format_response")
+        workflow.add_edge("agent_sql_execution", "format_response") 
+        workflow.add_edge("format_response", END)
         
         return workflow.compile()
-    
-    def _init_direct_database_node(self, state: AgentState) -> AgentState:
-        """初始化直接数据库模式的状态"""
-        try:
-            # 从state中获取路由模式，而不是从配置文件读取
-            routing_mode = state.get("routing_mode", "database_direct")
-            
-            # 设置直接数据库模式的分类状态
-            state["question_type"] = "DATABASE"
-            state["classification_confidence"] = 1.0
-            state["classification_reason"] = "配置为直接数据库查询模式"
-            state["classification_method"] = "direct_database"
-            state["routing_mode"] = routing_mode
-            state["current_step"] = "direct_database_init"
-            state["execution_path"].append("init_direct_database")
-            
-            self.logger.info("直接数据库模式初始化完成")
-            
-            return state
-            
-        except Exception as e:
-            self.logger.error(f"直接数据库模式初始化异常: {str(e)}")
-            state["error"] = f"直接数据库模式初始化失败: {str(e)}"
-            state["error_code"] = 500
-            state["execution_path"].append("init_direct_database_error")
-            return state
 
-    def _init_direct_chat_node(self, state: AgentState) -> AgentState:
-        """初始化直接聊天模式的状态"""
-        try:
-            # 从state中获取路由模式，而不是从配置文件读取
-            routing_mode = state.get("routing_mode", "chat_direct")
-            
-            # 设置直接聊天模式的分类状态
-            state["question_type"] = "CHAT"
-            state["classification_confidence"] = 1.0
-            state["classification_reason"] = "配置为直接聊天模式"
-            state["classification_method"] = "direct_chat"
-            state["routing_mode"] = routing_mode
-            state["current_step"] = "direct_chat_init"
-            state["execution_path"].append("init_direct_chat")
-            
-            self.logger.info("直接聊天模式初始化完成")
-            
-            return state
-            
-        except Exception as e:
-            self.logger.error(f"直接聊天模式初始化异常: {str(e)}")
-            state["error"] = f"直接聊天模式初始化失败: {str(e)}"
-            state["error_code"] = 500
-            state["execution_path"].append("init_direct_chat_error")
-            return state
     
     def _classify_question_node(self, state: AgentState) -> AgentState:
         """问题分类节点 - 支持渐进式分类策略"""
