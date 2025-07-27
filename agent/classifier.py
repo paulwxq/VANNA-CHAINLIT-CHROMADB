@@ -301,9 +301,50 @@ class QuestionClassifier:
         else:
             return rule_result
     
+    def _extract_current_question_for_rule_classification(self, question: str) -> str:
+        """
+        从enhanced_question中提取[CURRENT]部分用于规则分类
+        如果没有[CURRENT]标签，返回原问题
+        
+        Args:
+            question: 可能包含上下文的完整问题
+            
+        Returns:
+            str: 用于规则分类的当前问题
+        """
+        try:
+            # 处理None或非字符串输入
+            if question is None:
+                self.logger.warning("输入问题为None，返回空字符串")
+                return ""
+            
+            if not isinstance(question, str):
+                self.logger.warning(f"输入问题类型错误: {type(question)}，转换为字符串")
+                question = str(question)
+            
+            # 检查是否为enhanced_question格式
+            if "\n[CURRENT]\n" in question:
+                current_start = question.find("\n[CURRENT]\n")
+                if current_start != -1:
+                    current_question = question[current_start + len("\n[CURRENT]\n"):].strip()
+                    self.logger.debug(f"规则分类提取到当前问题: {current_question}")
+                    return current_question
+            
+            # 如果不是enhanced_question格式，直接返回原问题
+            self.logger.debug("未检测到[CURRENT]标签，使用完整问题进行规则分类")
+            return question.strip()
+            
+        except Exception as e:
+            self.logger.warning(f"提取当前问题失败: {str(e)}，返回空字符串")
+            return ""
+
     def _rule_based_classify(self, question: str) -> ClassificationResult:
         """基于规则的预分类"""
-        question_lower = question.lower()
+        # 提取当前问题用于规则判断，避免上下文干扰
+        current_question = self._extract_current_question_for_rule_classification(question)
+        question_lower = current_question.lower()
+        
+        self.logger.debug(f"规则分类使用问题: {current_question}")
         
         # 检查非业务实体词
         non_business_matched = []

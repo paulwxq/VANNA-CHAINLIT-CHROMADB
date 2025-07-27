@@ -477,6 +477,15 @@ class CituLangGraphAgent:
     def _agent_chat_node(self, state: AgentState) -> AgentState:
         """聊天Agent节点 - 直接工具调用模式"""
         try:
+            # 🔹 添加State调试日志 - 打印agent_chat接收到的完整State内容
+            import json
+            try:
+                state_debug = dict(state)
+                self.logger.debug(f"agent_chat接收到的State内容: {json.dumps(state_debug, ensure_ascii=False, indent=2)}")
+            except Exception as debug_e:
+                self.logger.debug(f"State序列化失败: {debug_e}")
+                self.logger.debug(f"agent_chat接收到的State内容: {state}")
+            
             self.logger.info(f"开始处理聊天: {state['question']}")
             
             question = state["question"]
@@ -486,9 +495,8 @@ class CituLangGraphAgent:
             enable_context_injection = self.config.get("chat_agent", {}).get("enable_context_injection", True)
             context = None
             if enable_context_injection:
-                # TODO: 在这里可以添加真实的对话历史上下文
-                # 例如从Redis或其他存储中获取最近的对话记录
-                # context = get_conversation_history(state.get("conversation_id"))
+                # 实际上上下文已经在API层面处理，并合并到question中了
+                # 这里不需要再次获取Redis上下文
                 pass
             
             # 直接调用general_chat工具
