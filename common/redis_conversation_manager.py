@@ -155,9 +155,10 @@ class RedisConversationManager:
     
     def create_conversation(self, user_id: str) -> str:
         """创建新对话"""
-        # 生成包含时间戳的conversation_id
-        timestamp = int(datetime.now().timestamp())
-        conversation_id = f"conv_{timestamp}_{uuid.uuid4().hex[:8]}"
+        # 生成包含时间戳的conversation_id，格式：{user_id}:YYYYMMDDHHMMSSsss
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d%H%M%S") + f"{now.microsecond // 1000:03d}"
+        conversation_id = f"{user_id}:{timestamp}"
         
         if not self.is_available():
             return conversation_id  # Redis不可用时返回ID，但不存储

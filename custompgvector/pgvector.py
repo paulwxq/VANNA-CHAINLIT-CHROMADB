@@ -663,7 +663,7 @@ class PG_VectorStore(VannaBase):
             
             # 检查原始查询结果是否为空
             if not results:
-                self.logger.warning(f"向量查询未找到任何相关的错误SQL示例，问题: {question}")
+                self.logger.warning(f"向量查询未找到任何相关的错误SQL示例")
 
             # 应用错误SQL特有的阈值过滤逻辑
             filtered_results = self._apply_error_sql_threshold_filter(results)
@@ -671,7 +671,7 @@ class PG_VectorStore(VannaBase):
             # 检查过滤后结果是否为空
             if results and not filtered_results:
                 self.logger.warning(f"向量查询找到了 {len(results)} 条错误SQL示例，但全部被阈值过滤掉.")
-                self.logger.warning(f"问题: {question}")
+                # self.logger.warning(f"问题: {question}")
 
             return filtered_results
             

@@ -488,7 +488,7 @@ class CituLangGraphAgent:
             if enable_context_injection:
                 # TODO: 在这里可以添加真实的对话历史上下文
                 # 例如从Redis或其他存储中获取最近的对话记录
-                # context = get_conversation_history(state.get("session_id"))
+                # context = get_conversation_history(state.get("conversation_id"))
                 pass
             
             # 直接调用general_chat工具
@@ -646,6 +646,17 @@ class CituLangGraphAgent:
                 }
             
             self.logger.info("响应格式化完成")
+            
+            # 输出完整的 STATE 内容用于调试
+            import json
+            try:
+                # 创建一个可序列化的 state 副本
+                debug_state = dict(state)
+                self.logger.debug(f"format_response_node 完整 STATE 内容: {json.dumps(debug_state, ensure_ascii=False, indent=2)}")
+            except Exception as debug_e:
+                self.logger.debug(f"STATE 序列化失败，使用简单输出: {debug_e}")
+                self.logger.debug(f"format_response_node STATE 内容: {state}")
+            
             return state
             
         except Exception as e:
@@ -656,6 +667,16 @@ class CituLangGraphAgent:
                 "error_code": 500,
                 "execution_path": state["execution_path"]
             }
+            
+            # 即使在异常情况下也输出 STATE 内容用于调试
+            import json
+            try:
+                debug_state = dict(state)
+                self.logger.debug(f"format_response_node 异常情况下的完整 STATE 内容: {json.dumps(debug_state, ensure_ascii=False, indent=2)}")
+            except Exception as debug_e:
+                self.logger.debug(f"异常情况下 STATE 序列化失败: {debug_e}")
+                self.logger.debug(f"format_response_node 异常情况下的 STATE 内容: {state}")
+            
             return state
     
     def _route_after_sql_generation(self, state: AgentState) -> Literal["continue_execution", "return_to_user"]:
@@ -697,13 +718,13 @@ class CituLangGraphAgent:
             # 聊天Agent可以处理不确定的情况，并在必要时引导用户提供更多信息
             return "CHAT"
     
-    async def process_question(self, question: str, session_id: str = None, context_type: str = None, routing_mode: str = None) -> Dict[str, Any]:
+    async def process_question(self, question: str, conversation_id: str = None, context_type: str = None, routing_mode: str = None) -> Dict[str, Any]:
         """
         统一的问题处理入口
         
         Args:
             question: 用户问题
-            session_id: 会话ID
+            conversation_id: 对话ID
             context_type: 上下文类型 ("DATABASE" 或 "CHAT")，用于渐进式分类
             routing_mode: 路由模式，可选，用于覆盖配置文件设置
             
@@ -722,14 +743,14 @@ class CituLangGraphAgent:
             workflow = self._create_workflow(routing_mode)
             
             # 初始化状态
-            initial_state = self._create_initial_state(question, session_id, context_type, routing_mode)
+            initial_state = self._create_initial_state(question, conversation_id, context_type, routing_mode)
             
             # 执行工作流
             final_state = await workflow.ainvoke(
                 initial_state,
                 config={
-                    "configurable": {"session_id": session_id}
-                } if session_id else None
+                    "configurable": {"conversation_id": conversation_id}
+                } if conversation_id else None
             )
             
             # 提取最终结果
@@ -748,7 +769,7 @@ class CituLangGraphAgent:
                 "execution_path": ["error"]
             }
     
-    def _create_initial_state(self, question: str, session_id: str = None, context_type: str = None, routing_mode: str = None) -> AgentState:
+    def _create_initial_state(self, question: str, conversation_id: str = None, context_type: str = None, routing_mode: str = None) -> AgentState:
         """创建初始状态 - 支持渐进式分类"""
         # 确定使用的路由模式
         if routing_mode:
@@ -763,7 +784,7 @@ class CituLangGraphAgent:
         return AgentState(
             # 输入信息
             question=question,
-            session_id=session_id,
+            conversation_id=conversation_id,
             
             # 上下文信息
             context_type=context_type,
@@ -1043,7 +1064,7 @@ class CituLangGraphAgent:
             
             if enable_full_test:
                 # 完整流程测试
-                test_result = await self.process_question(test_question, "health_check")
+                test_result = await self.process_question(test_question, conversation_id="health_check")
                 
                 return {
                     "status": "healthy" if test_result.get("success") else "degraded",

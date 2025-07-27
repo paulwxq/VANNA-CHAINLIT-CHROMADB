@@ -101,14 +101,14 @@ def error_response(response_text, error_type=None, message=MessageTemplate.PROCE
 
 # ===== Ask Agent API 专用响应方法 =====
 
-def agent_success_response(response_type, session_id=None, execution_path=None, 
+def agent_success_response(response_type, conversation_id=None, execution_path=None, 
                           classification_info=None, agent_version="langgraph_v1", **kwargs):
     """
     Ask Agent API 成功响应格式
     
     Args:
         response_type: 响应类型 ("DATABASE" 或 "CHAT")
-        session_id: 会话ID
+        conversation_id: 对话ID
         execution_path: 执行路径
         classification_info: 分类信息
         agent_version: Agent版本
@@ -119,7 +119,7 @@ def agent_success_response(response_type, session_id=None, execution_path=None,
     """
     data = {
         "type": response_type,
-        "session_id": session_id,
+        "conversation_id": conversation_id,
         "execution_path": execution_path or [],
         "classification_info": classification_info or {},
         "agent_version": agent_version,
@@ -139,7 +139,7 @@ def agent_success_response(response_type, session_id=None, execution_path=None,
     }
 
 def agent_error_response(response_text, error_type=None, message=MessageTemplate.PROCESSING_FAILED,
-                        code=500, session_id=None, execution_path=None, 
+                        code=500, conversation_id=None, execution_path=None, 
                         classification_info=None, agent_version="langgraph_v1", **kwargs):
     """
     Ask Agent API 错误响应格式
@@ -149,7 +149,7 @@ def agent_error_response(response_text, error_type=None, message=MessageTemplate
         error_type: 错误类型标识
         message: 高层级描述信息
         code: HTTP状态码
-        session_id: 会话ID
+        conversation_id: 对话ID
         execution_path: 执行路径
         classification_info: 分类信息
         agent_version: Agent版本
@@ -160,7 +160,7 @@ def agent_error_response(response_text, error_type=None, message=MessageTemplate
     """
     data = {
         "response": response_text,
-        "session_id": session_id,
+        "conversation_id": conversation_id,
         "execution_path": execution_path or [],
         "classification_info": classification_info or {},
         "agent_version": agent_version,

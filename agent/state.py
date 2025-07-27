@@ -7,7 +7,7 @@ class AgentState(TypedDict):
     
     # 输入信息
     question: str
-    session_id: Optional[str]
+    conversation_id: Optional[str]
     
     # 上下文信息
     context_type: Optional[str]  # 上下文类型 ("DATABASE" 或 "CHAT")

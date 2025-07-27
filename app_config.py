@@ -169,7 +169,7 @@ REDIS_PASSWORD = None
 
 # 缓存开关配置
 ENABLE_CONVERSATION_CONTEXT = True      # 是否启用对话上下文
-ENABLE_QUESTION_ANSWER_CACHE = False     # 是否启用问答结果缓存
+ENABLE_QUESTION_ANSWER_CACHE = True     # 是否启用问答结果缓存
 ENABLE_EMBEDDING_CACHE = True           # 是否启用embedding向量缓存
 
 # TTL配置（单位：秒）

@@ -59,7 +59,7 @@ modules:
     level: DEBUG
     console:
       enabled: true
-      level: INFO
+      level: DEBUG
       format: "%(asctime)s [%(levelname)s] Agent: %(message)s"
     file:
       enabled: true
@@ -75,7 +75,7 @@ modules:
     level: DEBUG
     console:
       enabled: true
-      level: INFO
+      level: DEBUG
       format: "%(asctime)s [%(levelname)s] Vanna: %(message)s"
     file:
       enabled: true

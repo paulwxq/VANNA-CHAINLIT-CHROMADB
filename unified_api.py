@@ -711,7 +711,6 @@ def ask_agent():
     """支持对话上下文的ask_agent API"""
     req = request.get_json(force=True)
     question = req.get("question", None)
-    browser_session_id = req.get("session_id", None)
     user_id_input = req.get("user_id", None)
     conversation_id_input = req.get("conversation_id", None)
     continue_conversation = req.get("continue_conversation", False)
@@ -735,9 +734,38 @@ def ask_agent():
         # 获取登录用户ID
         login_user_id = session.get('user_id') if 'user_id' in session else None
         
+        # 用户ID和对话ID一致性校验
+        from common.session_aware_cache import ConversationAwareMemoryCache
+        
+        # 如果传递了conversation_id，从中解析user_id
+        extracted_user_id = None
+        if conversation_id_input:
+            extracted_user_id = ConversationAwareMemoryCache.extract_user_id(conversation_id_input)
+            
+            # 如果同时传递了user_id和conversation_id，进行一致性校验
+            if user_id_input:
+                is_valid, error_msg = ConversationAwareMemoryCache.validate_user_id_consistency(
+                    conversation_id_input, user_id_input
+                )
+                if not is_valid:
+                    return jsonify(bad_request_response(
+                        response_text=error_msg,
+                        invalid_params=["user_id", "conversation_id"]
+                    )), 400
+            
+            # 如果没有传递user_id，但有conversation_id，则从conversation_id中解析
+            elif not user_id_input and extracted_user_id:
+                user_id_input = extracted_user_id
+                logger.info(f"从conversation_id解析出user_id: {user_id_input}")
+        
+        # 如果没有传递user_id，使用默认值guest
+        if not user_id_input:
+            user_id_input = "guest"
+            logger.info("未传递user_id，使用默认值: guest")
+        
         # 智能ID解析
         user_id = redis_conversation_manager.resolve_user_id(
-            user_id_input, browser_session_id, request.remote_addr, login_user_id
+            user_id_input, None, request.remote_addr, login_user_id
         )
         conversation_id, conversation_status = redis_conversation_manager.resolve_conversation_id(
             user_id, conversation_id_input, continue_conversation
@@ -810,10 +838,9 @@ def ask_agent():
                 sql=cached_answer.get("sql"),
                 records=cached_answer.get("query_result"),
                 summary=cached_answer.get("summary"),
-                session_id=browser_session_id,
+                conversation_id=conversation_id,
                 execution_path=cached_answer.get("execution_path", []),
                 classification_info=cached_answer.get("classification_info", {}),
-                conversation_id=conversation_id,
                 user_id=user_id,
                 is_guest_user=(user_id == DEFAULT_ANONYMOUS_USER),
                 context_used=bool(context),
@@ -863,7 +890,7 @@ def ask_agent():
         import asyncio
         agent_result = asyncio.run(agent.process_question(
             question=enhanced_question,  # 使用增强后的问题
-            session_id=browser_session_id,
+            conversation_id=conversation_id,
             context_type=context_type,  # 传递上下文类型
             routing_mode=effective_routing_mode  # 新增：传递路由模式
         ))
@@ -913,10 +940,9 @@ def ask_agent():
                 sql=sql,
                 records=query_result,
                 summary=summary,
-                session_id=browser_session_id,
+                conversation_id=conversation_id,
                 execution_path=execution_path,
                 classification_info=classification_info,
-                conversation_id=conversation_id,
                 user_id=user_id,
                 is_guest_user=(user_id == DEFAULT_ANONYMOUS_USER),
                 context_used=bool(context),
@@ -936,7 +962,6 @@ def ask_agent():
                 response_text=error_message,
                 error_type="agent_processing_failed",
                 code=error_code,
-                session_id=browser_session_id,
                 conversation_id=conversation_id,
                 user_id=user_id
             )), error_code
