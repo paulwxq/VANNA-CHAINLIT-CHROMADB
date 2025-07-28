@@ -524,7 +524,7 @@ def ask_agent():
         if context:
             try:
                 # 获取最后一条助手消息的metadata
-                messages = redis_conversation_manager.get_messages(conversation_id, limit=10)
+                messages = redis_conversation_manager.get_conversation_messages(conversation_id, limit=10)
                 for message in reversed(messages):  # 从最新的开始找
                     if message.get("role") == "assistant":
                         metadata = message.get("metadata", {})
@@ -587,11 +587,9 @@ def ask_agent():
                 execution_path=cached_answer.get("execution_path", []),
                 classification_info=cached_answer.get("classification_info", {}),
                 user_id=user_id,
-                is_guest_user=(user_id == DEFAULT_ANONYMOUS_USER),
                 context_used=bool(context),
                 from_cache=True,
                 conversation_status=conversation_status["status"],
-                conversation_message=conversation_status["message"],
                 requested_conversation_id=conversation_status.get("requested_id")
             ))
         
@@ -696,11 +694,9 @@ def ask_agent():
                 execution_path=execution_path,
                 classification_info=classification_info,
                 user_id=user_id,
-                is_guest_user=(user_id == DEFAULT_ANONYMOUS_USER),
                 context_used=bool(context),
                 from_cache=False,
                 conversation_status=conversation_status["status"],
-                conversation_message=conversation_status["message"],
                 requested_conversation_id=conversation_status.get("requested_id"),
                 routing_mode_used=effective_routing_mode,  # 新增：实际使用的路由模式
                 routing_mode_source="api" if api_routing_mode else "config"  # 新增：路由模式来源

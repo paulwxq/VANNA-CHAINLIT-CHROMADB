@@ -160,4 +160,42 @@ def get_current_config() -> dict:
         此函数返回的是配置的引用，修改返回值会影响全局配置
         如需修改配置，建议创建副本后再修改
     """
-    return AGENT_CONFIG 
+    return AGENT_CONFIG
+
+# ==================== 分类器词典配置加载 ====================
+
+try:
+    from .dict_loader import load_classifier_dict_config, get_dict_loader
+    
+    def get_classifier_dict_config(force_reload: bool = False):
+        """
+        获取分类器词典配置
+        
+        Args:
+            force_reload: 是否强制重新加载
+            
+        Returns:
+            ClassifierDictConfig: 词典配置对象
+        """
+        return load_classifier_dict_config(force_reload)
+    
+    def reload_classifier_dict_config():
+        """重新加载分类器词典配置"""
+        return load_classifier_dict_config(force_reload=True)
+    
+    # 导出词典配置函数
+    __all__ = [
+        'get_current_config', 
+        'get_nested_config', 
+        'AGENT_CONFIG',
+        'get_classifier_dict_config',
+        'reload_classifier_dict_config'
+    ]
+    
+except ImportError as e:
+    # 如果dict_loader模块不存在，提供空实现
+    def get_classifier_dict_config(force_reload: bool = False):
+        raise ImportError("词典加载器模块不可用，请检查dict_loader.py是否存在")
+    
+    def reload_classifier_dict_config():
+        raise ImportError("词典加载器模块不可用，请检查dict_loader.py是否存在") 

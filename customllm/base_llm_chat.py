@@ -62,18 +62,18 @@ class BaseLLMChat(VannaBase, ABC):
         # 将Vanna的log输出转换为项目的日志格式
         if title == "SQL Prompt":
             # 对于SQL Prompt，使用debug级别，避免输出过长的内容
-            # 将列表格式转换为字符串，只显示前200个字符
+            # 将列表格式转换为字符串，只显示前500个字符
             if isinstance(message, list):
-                message_str = str(message)[:200] + "..." if len(str(message)) > 200 else str(message)
+                message_str = str(message)[:500] + "..." if len(str(message)) > 500 else str(message)
             else:
-                message_str = str(message)[:200] + "..." if len(str(message)) > 200 else str(message)
+                message_str = str(message)[:500] + "..." if len(str(message)) > 500 else str(message)
             self.logger.debug(f"[Vanna] {title}: {message_str}")
         elif title == "LLM Response":
             # 对于LLM响应，记录但不显示全部内容
             if isinstance(message, str):
-                message_str = message[:200] + "..." if len(message) > 200 else message
+                message_str = message[:500] + "..." if len(message) > 500 else message
             else:
-                message_str = str(message)[:200] + "..." if len(str(message)) > 200 else str(message)
+                message_str = str(message)[:500] + "..." if len(str(message)) > 500 else str(message)
             self.logger.debug(f"[Vanna] {title}: {message_str}")
         elif title == "Extracted SQL":
             # 对于提取的SQL，使用info级别
@@ -162,19 +162,19 @@ class BaseLLMChat(VannaBase, ABC):
 
         initial_prompt += self.prompt_loader.get_sql_response_guidelines(self.dialect)
 
-        message_log = [self.system_message(initial_prompt)]
+        sql_prompt_messages = [self.system_message(initial_prompt)]
 
         for example in question_sql_list:
             if example is None:
                 self.logger.warning("example is None")
             else:
                 if example is not None and "question" in example and "sql" in example:
-                    message_log.append(self.user_message(example["question"]))
-                    message_log.append(self.assistant_message(example["sql"]))
+                    sql_prompt_messages.append(self.user_message(example["question"]))
+                    sql_prompt_messages.append(self.assistant_message(example["sql"]))
 
-        message_log.append(self.user_message(question))
-        
-        return message_log
+        sql_prompt_messages.append(self.user_message(question))
+        # 实际发送给LLM的内容，当前做了格式化处理       
+        return sql_prompt_messages
 
     def generate_plotly_code(self, question: str = None, sql: str = None, df_metadata: str = None, **kwargs) -> str:
         """
@@ -190,13 +190,13 @@ class BaseLLMChat(VannaBase, ABC):
         # 构建用户消息
         user_msg = self.prompt_loader.get_chart_user_message()
 
-        message_log = [
+        chart_prompt_messages = [
             self.system_message(system_msg),
             self.user_message(user_msg),
         ]
 
         # 调用submit_prompt方法，并清理结果
-        plotly_code = self.submit_prompt(message_log, **kwargs)
+        plotly_code = self.submit_prompt(chart_prompt_messages, **kwargs)
         
         # 根据 DISPLAY_RESULT_THINKING 参数处理thinking内容
         if not DISPLAY_RESULT_THINKING:
@@ -485,12 +485,12 @@ class BaseLLMChat(VannaBase, ABC):
             # 构建用户消息，强调中文思考和回答
             user_content = self.prompt_loader.get_summary_user_instructions()
             
-            message_log = [
+            summary_prompt_messages = [
                 self.system_message(system_content),
                 self.user_message(user_content)
             ]
             
-            summary = self.submit_prompt(message_log, **kwargs)
+            summary = self.submit_prompt(summary_prompt_messages, **kwargs)
             
             # 检查是否需要隐藏 thinking 内容
             display_thinking = kwargs.get("display_result_thinking", DISPLAY_RESULT_THINKING)

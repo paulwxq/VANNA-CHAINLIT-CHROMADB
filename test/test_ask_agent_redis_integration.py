@@ -254,7 +254,7 @@ class TestAskAgentRedisIntegration(unittest.TestCase):
             if response.status_code == 200:
                 data = response.json()
                 user_id = data['data']['user_id']
-                is_guest = data['data'].get('is_guest_user', False)
+                is_guest = user_id == "guest"  # 直接通过user_id判断
                 
                 print(f"[TEST] 生成的用户ID: {user_id}")
                 print(f"[TEST] 是否为guest用户: {is_guest}")

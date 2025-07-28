@@ -81,7 +81,7 @@ class RedisConversationManager:
         Returns:
             tuple: (conversation_id, status_info)
             status_info包含:
-            - status: "existing" | "new" | "invalid_id_new"
+            - status: "continue" | "new" | "invalid_id_new"
             - message: 状态说明
             - requested_id: 原始请求的ID（如果有）
         """
@@ -91,7 +91,7 @@ class RedisConversationManager:
             if self._is_valid_conversation(conversation_id_input, user_id):
                 self.logger.debug(f"使用指定对话: {conversation_id_input}")
                 return conversation_id_input, {
-                    "status": "existing",
+                    "status": "continue",
                     "message": "继续已有对话"
                 }
             else:
@@ -109,7 +109,7 @@ class RedisConversationManager:
             if recent_conversation:
                 self.logger.debug(f"继续最近对话: {recent_conversation}")
                 return recent_conversation, {
-                    "status": "existing",
+                    "status": "continue",
                     "message": "继续最近对话"
                 }
         

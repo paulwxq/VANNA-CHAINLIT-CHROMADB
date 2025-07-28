@@ -10,7 +10,7 @@ class AgentState(TypedDict):
     conversation_id: Optional[str]
     
     # 上下文信息
-    context_type: Optional[str]  # 上下文类型 ("DATABASE" 或 "CHAT")
+    context_type: Optional[str]  # 上下文类型（保留兼容性字段，当前未使用）
     
     # 分类结果
     question_type: Literal["DATABASE", "CHAT", "UNCERTAIN"]

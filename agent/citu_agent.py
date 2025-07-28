@@ -84,19 +84,19 @@ class CituLangGraphAgent:
 
     
     def _classify_question_node(self, state: AgentState) -> AgentState:
-        """问题分类节点 - 支持渐进式分类策略"""
+        """问题分类节点 - 使用混合分类策略（规则+LLM）"""
         try:
             # 从state中获取路由模式，而不是从配置文件读取
             routing_mode = state.get("routing_mode", "hybrid")
             
             self.logger.info(f"开始分类问题: {state['question']}")
             
-            # 获取上下文类型（如果有的话）
+            # 获取上下文类型（保留兼容性，但不在分类中使用）
             context_type = state.get("context_type")
             if context_type:
                 self.logger.info(f"检测到上下文类型: {context_type}")
             
-            # 使用渐进式分类策略，传递路由模式
+            # 使用混合分类策略（规则+LLM），传递路由模式
             classification_result = self.classifier.classify(state["question"], context_type, routing_mode)
             
             # 更新状态
@@ -733,7 +733,7 @@ class CituLangGraphAgent:
         Args:
             question: 用户问题
             conversation_id: 对话ID
-            context_type: 上下文类型 ("DATABASE" 或 "CHAT")，用于渐进式分类
+            context_type: 上下文类型（保留兼容性参数，当前未使用）
             routing_mode: 路由模式，可选，用于覆盖配置文件设置
             
         Returns:
@@ -778,7 +778,7 @@ class CituLangGraphAgent:
             }
     
     def _create_initial_state(self, question: str, conversation_id: str = None, context_type: str = None, routing_mode: str = None) -> AgentState:
-        """创建初始状态 - 支持渐进式分类"""
+        """创建初始状态 - 支持兼容性参数"""
         # 确定使用的路由模式
         if routing_mode:
             effective_routing_mode = routing_mode

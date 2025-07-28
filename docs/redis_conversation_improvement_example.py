@@ -19,7 +19,7 @@ class ImprovedRedisConversationManager:
         Returns:
             tuple: (conversation_id, status_info)
             status_info包含:
-            - status: "existing" | "new" | "invalid_id_new" | "no_permission"
+            - status: "continue" | "new" | "invalid_id_new" | "no_permission"
             - message: 状态说明
             - requested_id: 原始请求的ID（如果有）
         """
@@ -31,7 +31,7 @@ class ImprovedRedisConversationManager:
             if validation_result["valid"]:
                 print(f"[REDIS_CONV] 使用指定对话: {conversation_id_input}")
                 return conversation_id_input, {
-                    "status": "existing",
+                    "status": "continue",
                     "message": "继续已有对话"
                 }
             else:
@@ -59,11 +59,11 @@ class ImprovedRedisConversationManager:
         if continue_conversation:
             recent_conversation = self._get_recent_conversation(user_id)
             if recent_conversation:
-                print(f"[REDIS_CONV] 继续最近对话: {recent_conversation}")
-                return recent_conversation, {
-                    "status": "existing",
-                    "message": "继续最近对话"
-                }
+                        print(f"[REDIS_CONV] 继续最近对话: {recent_conversation}")
+        return recent_conversation, {
+            "status": "continue",
+            "message": "继续最近对话"
+        }
         
         # 3. 创建新对话
         new_conversation_id = self.create_conversation(user_id)
@@ -183,7 +183,6 @@ def enhanced_ask_agent_response(conversation_status: Dict) -> Dict:
     # 添加对话状态信息
     response["data"].update({
         "conversation_status": conversation_status["status"],
-        "conversation_message": conversation_status["message"],
         "requested_conversation_id": conversation_status.get("requested_id")
     })
     
@@ -199,29 +198,34 @@ def frontend_handling_example():
         {
             "data": {
                 "conversation_status": "invalid_id_new",
-                "conversation_message": "您请求的对话不存在或已过期，已为您创建新对话",
                 "requested_conversation_id": "conv_old_123"
             }
         },
         {
             "data": {
                 "conversation_status": "no_permission",
-                "conversation_message": "您没有权限访问该对话，已为您创建新对话",
                 "requested_conversation_id": "conv_other_user"
             }
         },
         {
             "data": {
-                "conversation_status": "existing",
-                "conversation_message": "继续已有对话"
+                "conversation_status": "continue"
             }
         }
     ]
     
+    # 状态消息映射（支持本地化）
+    status_messages = {
+        "invalid_id_new": "您请求的对话不存在或已过期，已为您创建新对话",
+        "no_permission": "您没有权限访问该对话，已为您创建新对话", 
+        "continue": "继续已有对话",
+        "new": "创建新对话"
+    }
+    
     # 处理不同状态
     for response in api_responses:
         status = response["data"]["conversation_status"]
-        message = response["data"]["conversation_message"]
+        message = status_messages.get(status, "未知状态")
         
         if status == "invalid_id_new":
             print(f"⚠️ 警告通知: {message}")
@@ -233,7 +237,7 @@ def frontend_handling_example():
             print(f"  原请求ID: {response['data'].get('requested_conversation_id')}")
             print("  [清除本地无效的conversation_id]")
             
-        elif status == "existing":
+        elif status == "continue":
             print(f"✅ 成功: {message}")
             
         print()

@@ -49,7 +49,7 @@ class ConversationDemo:
             
             print(f"[结果] 对话ID: {self.conversation_id}")
             print(f"[结果] 用户ID: {self.user_id}")
-            print(f"[结果] 是否为Guest用户: {data['data'].get('is_guest_user')}")
+            print(f"[结果] 是否为Guest用户: {data['data']['user_id'] == 'guest'}")
             print(f"[结果] 回答: {data['data'].get('response', '')[:100]}...")
         else:
             print(f"[错误] 响应码: {response.status_code}")
@@ -198,7 +198,14 @@ class ConversationDemo:
         if response.status_code == 200:
             data = response.json()
             print(f"[结果] 对话状态: {data['data'].get('conversation_status')}")
-            print(f"[结果] 状态消息: {data['data'].get('conversation_message')}")
+            # 根据状态显示对应消息（本地化处理）
+            status = data['data'].get('conversation_status')
+            status_messages = {
+                'new': '创建新对话',
+                'continue': '继续已有对话', 
+                'invalid_id_new': '您请求的对话不存在或无权访问，已为您创建新对话'
+            }
+            print(f"[结果] 状态消息: {status_messages.get(status, '未知状态')}")
             print(f"[结果] 请求的ID: {data['data'].get('requested_conversation_id')}")
             print(f"[结果] 新创建的ID: {data['data'].get('conversation_id')}")
     

@@ -44,122 +44,59 @@ class QuestionClassifier:
             self.medium_confidence_threshold = 0.6
             self.logger.warning("配置文件不可用，使用默认分类器参数")
         
-        # 基于高速公路服务区业务的精准关键词
-        self.strong_business_keywords = {
-            "核心业务实体": [
-                "服务区", "档口", "商铺", "收费站", "高速公路",
-                "驿美", "驿购",  # 业务系统名称
-                "北区", "南区", "西区", "东区", "两区",  # 物理分区
-                "停车区", "公司", "管理公司", "运营公司", "驿美运营公司"  # 公司相关
-            ],
-            "支付业务": [
-                "微信支付", "支付宝支付", "现金支付", "行吧支付", "金豆支付",
-                "支付金额", "订单数量", "营业额", "收入", "营业收入",
-                "微信", "支付宝", "现金", "行吧", "金豆",  # 简化形式
-                "wx", "zfb", "rmb", "xs", "jd"  # 系统字段名
-            ],
-            "经营品类": [
-                "餐饮", "小吃", "便利店", "整体租赁",
-                "驿美餐饮", "品牌", "经营品类", "商业品类"
-            ],
-            "车流业务": [
-                "车流量", "车辆数量", "客车", "货车", 
-                "过境", "危化品", "城际", "车辆统计",
-                "流量统计", "车型分布"
-            ],
-            "地理路线": [
-                "大广", "昌金", "昌栗", "线路", "路段", "路线",
-                "高速线路", "公路线路"
-            ],
-            "系统查询指示词": [
-                "当前系统", "当前数据库", "当前数据", "数据库"
-                "本系统", "系统", "数据库中", "数据中",
-                "现有数据", "已有数据", "存储的数据",
-                "平台数据", "我们的数据库", "这个系统"
-            ]
-        }
-        
-        # 查询意图词（辅助判断）
-        self.query_intent_keywords = [
-            "统计", "查询", "分析", "排行", "排名",
-            "报表", "报告", "汇总", "计算", "对比",
-            "趋势", "占比", "百分比", "比例",
-            "最大", "最小", "最高", "最低", "平均",
-            "总计", "合计", "累计", "求和", "求平均",
-            "生成", "导出", "显示", "列出", "共有"
-        ]
-        
-        # 非业务实体词（包含则倾向CHAT）
-        self.non_business_keywords = [
-            # 农产品/食物
-            "荔枝", "苹果", "西瓜", "水果", "蔬菜", "大米", "小麦",
-            "橙子", "香蕉", "葡萄", "草莓", "樱桃", "桃子", "梨",
-            
-            # 技术概念  
-            "人工智能", "机器学习", "编程", "算法", "深度学习",
-            "AI", "神经网络", "模型训练", "数据挖掘",
-            
-            # 身份询问
-            "你是谁", "你是什么", "你叫什么", "你的名字", "你是什么AI",
-            "什么模型", "大模型", "AI助手", "助手", "机器人",
-            
-            # 天气相关
-            "天气", "气温", "下雨", "晴天", "阴天", "温度",
-            "天气预报", "气候", "降雨", "雪天",
-            
-            # 其他生活常识
-            "怎么做饭", "如何减肥", "健康", "医疗", "病症",
-            "历史", "地理", "文学", "电影", "音乐", "体育",
-            "娱乐", "游戏", "小说", "新闻", "政治", "战争",
-            "足球", "NBA", "篮球", "乒乓球", "冠军", "夺冠",
-            "高考",
+        # 加载词典配置（新增逻辑）
+        self._load_dict_config()
 
-            # 旅游出行
-            "旅游","景点","门票","酒店","机票","航班","高铁","的士",
-            #情绪
-            "伤心","开心","无聊","生气","孤独","累了","烦恼","心情","难过","抑郁",
-            #商业
-            "股票","基金","理财","投资","经济","通货膨胀","上市",
-            #哲学
-            "人生意义","价值观","道德","信仰","宗教","爱情",
-            #地理
-            "全球","全国","亚洲","发展中","欧洲","美洲","东亚","东南亚","南美","非洲","大洋"
-        ]
+    def _load_dict_config(self):
+        """加载分类器词典配置"""
+        try:
+            from agent.config import get_classifier_dict_config
+            dict_config = get_classifier_dict_config()
+            
+            # 加载关键词列表
+            self.strong_business_keywords = dict_config.strong_business_keywords
+            self.query_intent_keywords = dict_config.query_intent_keywords
+            self.non_business_keywords = dict_config.non_business_keywords
+            self.sql_patterns = dict_config.sql_patterns
+            self.chat_keywords = dict_config.chat_keywords
+            
+            # 加载权重配置
+            self.weights = dict_config.weights
+            
+            # 加载其他配置
+            self.metadata = dict_config.metadata
+            
+            total_keywords = (
+                sum(len(keywords) for keywords in self.strong_business_keywords.values()) +
+                len(self.query_intent_keywords) +
+                len(self.non_business_keywords) +
+                len(self.sql_patterns) +
+                len(self.chat_keywords)
+            )
+            
+            self.logger.info(f"从YAML配置文件加载词典完成，共加载 {total_keywords} 个关键词")
+            
+        except Exception as e:
+            self.logger.warning(f"加载YAML词典配置失败: {str(e)}，使用代码中的备用配置")
+            self._load_default_dict()
+
+    def _load_default_dict(self):
+        """YAML配置加载失败时的处理"""
+        error_msg = "YAML词典配置文件加载失败，无法初始化分类器"
+        self.logger.error(error_msg)
         
-        # SQL关键词（技术层面的数据库操作）
-        # business_score +3
-        self.sql_patterns = [
-            r"\b(select|from|where|group by|order by|having|join|update)\b",
-            r"\b(数据库|表名|表|字段名|SQL|sql|database|table)\b"
-        ]
+        # 初始化空的weights字典，使用代码中的默认值
+        self.weights = {}
         
-        # 聊天关键词（平台功能和帮助）
-        self.chat_keywords = [
-            "你好啊", "谢谢", "再见", "怎么样", "如何", "为什么", "什么是",
-            "介绍", "解释", "说明", "帮助", "操作", "使用方法", "功能",
-            "教程", "指南", "手册","讲解"
-        ]
-        
-        # 追问关键词（用于检测追问型问题）
-        self.follow_up_keywords = [
-            "还有", "详细", "具体", "更多", "继续", "再", "也",
-            "那么", "另外", "其他", "以及", "还", "进一步",
-            "深入", "补充", "额外", "此外", "同时", "并且"
-        ]
-        
-        # 话题切换关键词（明显的话题转换）
-        self.topic_switch_keywords = [
-            "你好", "你是", "介绍", "功能", "帮助", "使用方法",
-            "平台", "系统", "AI", "助手", "谢谢", "再见"
-        ]
+        raise RuntimeError(error_msg)
 
     def classify(self, question: str, context_type: Optional[str] = None, routing_mode: Optional[str] = None) -> ClassificationResult:
         """
-        主分类方法：支持渐进式分类策略
+        主分类方法：简化为混合分类策略
         
         Args:
             question: 当前问题
-            context_type: 上下文类型 ("DATABASE" 或 "CHAT")，可选
+            context_type: 上下文类型（保留参数兼容性，但不使用）
             routing_mode: 路由模式，可选，用于覆盖配置文件设置
         """
         # 确定使用的路由模式
@@ -192,93 +129,8 @@ class QuestionClassifier:
         elif QUESTION_ROUTING_MODE == "llm_only":
             return self._enhanced_llm_classify(question)
         else:
-            # hybrid模式：使用渐进式分类策略
-            return self._progressive_classify(question, context_type)
-
-    def _progressive_classify(self, question: str, context_type: Optional[str] = None) -> ClassificationResult:
-        """
-        渐进式分类策略：
-        1. 首先只基于问题本身分类
-        2. 如果置信度不够且有上下文，考虑上下文辅助
-        3. 检测话题切换，避免错误继承
-        """
-        self.logger.info(f"渐进式分类 - 问题: {question}")
-        if context_type:
-            self.logger.info(f"上下文类型: {context_type}")
-        
-        # 第一步：只基于问题本身分类
-        primary_result = self._hybrid_classify(question)
-        self.logger.info(f"主分类结果: {primary_result.question_type}, 置信度: {primary_result.confidence}")
-        
-        # 如果没有上下文，直接返回主分类结果
-        if not context_type:
-            self.logger.debug("无上下文，使用主分类结果")
-            return primary_result
-        
-        # 如果置信度足够高，直接使用主分类结果
-        if primary_result.confidence >= self.high_confidence_threshold:
-            self.logger.info(f"高置信度({primary_result.confidence}≥{self.high_confidence_threshold})，使用主分类结果")
-            return primary_result
-        
-        # 检测明显的话题切换
-        if self._is_topic_switch(question):
-            self.logger.info("检测到话题切换，忽略上下文")
-            return primary_result
-        
-        # 如果置信度较低，考虑上下文辅助
-        if primary_result.confidence < self.medium_confidence_threshold:
-            self.logger.info(f"低置信度({primary_result.confidence}<{self.medium_confidence_threshold})，考虑上下文辅助")
-            
-            # 检测是否为追问型问题
-            if self._is_follow_up_question(question):
-                self.logger.info(f"检测到追问型问题，继承上下文类型: {context_type}")
-                return ClassificationResult(
-                    question_type=context_type,
-                    confidence=0.75,  # 给予中等置信度
-                    reason=f"追问型问题，继承上下文类型。原分类: {primary_result.reason}",
-                    method="progressive_context_inherit"
-                )
-        
-        # 中等置信度或其他情况，保持主分类结果
-        self.logger.debug("保持主分类结果")
-        return primary_result
-
-    def _is_follow_up_question(self, question: str) -> bool:
-        """检测是否为追问型问题"""
-        question_lower = question.lower()
-        
-        # 检查追问关键词
-        for keyword in self.follow_up_keywords:
-            if keyword in question_lower:
-                return True
-        
-        # 检查问号开头的短问题（通常是追问）
-        if question.strip().startswith(('还', '再', '那', '这', '有')) and len(question.strip()) < 15:
-            return True
-        
-        return False
-
-    def _is_topic_switch(self, question: str) -> bool:
-        """检测是否为明显的话题切换"""
-        question_lower = question.lower()
-        
-        # 检查话题切换关键词
-        for keyword in self.topic_switch_keywords:
-            if keyword in question_lower:
-                return True
-        
-        # 检查问候语模式
-        greeting_patterns = [
-            r"^(你好|您好|hi|hello)",
-            r"(你是|您是).*(什么|谁|哪)",
-            r"(介绍|说明).*(功能|平台|系统)"
-        ]
-        
-        for pattern in greeting_patterns:
-            if re.search(pattern, question_lower):
-                return True
-        
-        return False
+            # hybrid模式：直接使用混合分类策略（规则+LLM）
+            return self._hybrid_classify(question)
 
     def _hybrid_classify(self, question: str) -> ClassificationResult:
         """
@@ -292,7 +144,7 @@ class QuestionClassifier:
         if rule_result.confidence >= self.high_confidence_threshold:
             return rule_result
         
-        # 第二步：使用增强的LLM分类
+        # 否则：使用增强的LLM分类
         llm_result = self._enhanced_llm_classify(question)
         
         # 选择置信度更高的结果
@@ -327,12 +179,13 @@ class QuestionClassifier:
                 current_start = question.find("\n[CURRENT]\n")
                 if current_start != -1:
                     current_question = question[current_start + len("\n[CURRENT]\n"):].strip()
-                    self.logger.debug(f"规则分类提取到当前问题: {current_question}")
+                    self.logger.info(f"规则分类从[CURRENT]标签提取到问题: {current_question}")
                     return current_question
             
             # 如果不是enhanced_question格式，直接返回原问题
-            self.logger.debug("未检测到[CURRENT]标签，使用完整问题进行规则分类")
-            return question.strip()
+            stripped_question = question.strip()
+            self.logger.info(f"规则分类未找到[CURRENT]标签，使用完整问题: {stripped_question}")
+            return stripped_question
             
         except Exception as e:
             self.logger.warning(f"提取当前问题失败: {str(e)}，返回空字符串")
@@ -344,8 +197,6 @@ class QuestionClassifier:
         current_question = self._extract_current_question_for_rule_classification(question)
         question_lower = current_question.lower()
         
-        self.logger.debug(f"规则分类使用问题: {current_question}")
-        
         # 检查非业务实体词
         non_business_matched = []
         for keyword in self.non_business_keywords:
@@ -356,7 +207,7 @@ class QuestionClassifier:
         if non_business_matched:
             return ClassificationResult(
                 question_type="CHAT",
-                confidence=0.85,
+                confidence=self.weights.get('non_business_confidence', 0.85),  # 使用YAML配置的置信度
                 reason=f"包含非业务实体词: {non_business_matched}",
                 method="rule_based_non_business"
             )
@@ -370,7 +221,7 @@ class QuestionClassifier:
                 continue
             for keyword in keywords:
                 if keyword in question_lower:
-                    business_score += 2  # 业务实体词权重更高
+                    business_score += self.weights.get('business_entity', 2)  # 使用YAML配置的权重
                     business_matched.append(f"{category}:{keyword}")
         
         # 检查系统查询指示词
@@ -378,7 +229,7 @@ class QuestionClassifier:
         system_matched = []
         for keyword in self.strong_business_keywords.get("系统查询指示词", []):
             if keyword in question_lower:
-                system_indicator_score += 1
+                system_indicator_score += self.weights.get('system_indicator', 1)  # 使用YAML配置的权重
                 system_matched.append(f"系统查询指示词:{keyword}")
         
         # 检查查询意图词
@@ -386,14 +237,14 @@ class QuestionClassifier:
         intent_matched = []
         for keyword in self.query_intent_keywords:
             if keyword in question_lower:
-                intent_score += 1
+                intent_score += self.weights.get('query_intent', 1)  # 使用YAML配置的权重
                 intent_matched.append(keyword)
         
         # 检查SQL模式
         sql_patterns_matched = []
         for pattern in self.sql_patterns:
             if re.search(pattern, question_lower, re.IGNORECASE):
-                business_score += 3  # SQL模式权重最高
+                business_score += self.weights.get('sql_pattern', 3)  # 使用YAML配置的权重
                 sql_patterns_matched.append(pattern)
         
         # 检查聊天关键词
@@ -401,25 +252,29 @@ class QuestionClassifier:
         chat_matched = []
         for keyword in self.chat_keywords:
             if keyword in question_lower:
-                chat_score += 1
+                chat_score += self.weights.get('chat_keyword', 1)  # 使用YAML配置的权重
                 chat_matched.append(keyword)
         
         # 系统指示词组合评分逻辑
         if system_indicator_score > 0 and business_score > 0:
             # 系统指示词 + 业务实体 = 强组合效应
-            business_score += 3  # 组合加分
+            business_score += self.weights.get('combination_bonus', 3)  # 使用YAML配置的组合加分权重
             business_matched.extend(system_matched)
         elif system_indicator_score > 0:
             # 仅有系统指示词 = 中等业务倾向
-            business_score += 1
+            business_score += self.weights.get('system_indicator', 1)  # 使用YAML配置的权重
             business_matched.extend(system_matched)
         
         # 分类决策逻辑
         total_business_score = business_score + intent_score
         
         # 强业务特征：包含业务实体 + 查询意图
-        if business_score >= 2 and intent_score >= 1:
-            confidence = min(self.max_confidence, 0.8 + (total_business_score * 0.05))
+        min_business_score = self.weights.get('strong_business_min_score', 2)
+        min_intent_score = self.weights.get('strong_business_min_intent', 1)
+        if business_score >= min_business_score and intent_score >= min_intent_score:
+            base_conf = self.weights.get('strong_business_base', 0.8)
+            increment = self.weights.get('strong_business_increment', 0.05)
+            confidence = min(self.max_confidence, base_conf + (total_business_score * increment))
             return ClassificationResult(
                 question_type="DATABASE",
                 confidence=confidence,
@@ -428,8 +283,10 @@ class QuestionClassifier:
             )
         
         # 中等业务特征：包含多个业务实体词
-        elif business_score >= 4:
-            confidence = min(self.max_confidence, 0.7 + (business_score * 0.03))
+        elif business_score >= self.weights.get('medium_business_min_score', 4):
+            base_conf = self.weights.get('medium_business_base', 0.7)
+            increment = self.weights.get('medium_business_increment', 0.03)
+            confidence = min(self.max_confidence, base_conf + (business_score * increment))
             return ClassificationResult(
                 question_type="DATABASE", 
                 confidence=confidence,
@@ -438,8 +295,10 @@ class QuestionClassifier:
             )
         
         # 聊天特征
-        elif chat_score >= 1 and business_score == 0:
-            confidence = min(self.max_confidence, self.base_confidence + (chat_score * self.confidence_increment))
+        elif chat_score >= self.weights.get('chat_min_score', 1) and business_score == 0:
+            base_conf = self.weights.get('chat_base_confidence', 0.4)
+            increment = self.weights.get('chat_confidence_increment', 0.08)
+            confidence = min(self.max_confidence, base_conf + (chat_score * increment))
             return ClassificationResult(
                 question_type="CHAT",
                 confidence=confidence,
@@ -556,7 +415,7 @@ class QuestionClassifier:
             self.logger.error(f"LLM分类失败，业务上下文不可用: {str(e)}")
             return ClassificationResult(
                 question_type="CHAT",  # 失败时默认为CHAT，更安全
-                confidence=0.1,  # 很低的置信度表示分类不可靠
+                confidence=self.weights.get('llm_error_confidence', 0.1),  # 使用YAML配置的低置信度
                 reason=f"业务上下文加载失败，无法进行准确分类: {str(e)}",
                 method="llm_context_error"
             )
