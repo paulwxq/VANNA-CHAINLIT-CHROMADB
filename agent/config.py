@@ -10,36 +10,8 @@ Agent配置文件
 """
 
 AGENT_CONFIG = {
-    # ==================== 问题分类器配置 ====================
-    "classification": {
-        # 高置信度阈值：当规则分类的置信度 >= 此值时，直接使用规则分类结果，不再调用LLM
-        # 建议范围：0.7-0.9，过高可能错过需要LLM辅助的边界情况，过低会增加LLM调用成本
-        "high_confidence_threshold": 0.7,
-        
-        # 低置信度阈值：当规则分类的置信度 <= 此值时，启用LLM二次分类进行辅助判断
-        # 建议范围：0.2-0.5，过高会频繁调用LLM，过低可能错过需要LLM辅助的情况
-        "low_confidence_threshold": 0.4,
-        
-        # 最大置信度上限：规则分类计算出的置信度不会超过此值，防止过度自信
-        # 建议范围：0.8-1.0，通常设为0.9以保留不确定性空间
-        "max_confidence": 0.9,
-        
-        # 基础置信度：规则分类的起始置信度，会根据匹配的关键词数量递增
-        # 建议范围：0.3-0.6，这是匹配到1个关键词时的基础置信度
-        "base_confidence": 0.4,
-        
-        # 置信度增量步长：每匹配一个额外关键词，置信度增加的数值
-        # 建议范围：0.05-0.2，过大会导致置信度增长过快，过小则区分度不够
-        "confidence_increment": 0.08,
-        
-        # LLM分类失败时的默认置信度：当LLM调用异常或解析失败时使用
-        # 建议范围：0.3-0.6，通常设为中等水平，避免过高或过低的错误影响
-        "llm_fallback_confidence": 0.5,
-        
-        # 不确定分类的默认置信度：当规则分类无法明确判断时使用
-        # 建议范围：0.1-0.3，应设为较低值，表示确实不确定
-        "uncertain_confidence": 0.2,
-    },
+    # ==================== 问题分类器配置已迁移到 classifier_dict.yaml ====================
+    # 注意：问题分类器的所有配置参数已迁移到 agent/classifier_dict.yaml 文件的 weights 部分
     
     # ==================== 数据库Agent配置 ====================
     "database_agent": {
@@ -133,11 +105,11 @@ def get_nested_config(config: dict, key_path: str, default=None):
         配置值或默认值
         
     Example:
-        >>> config = {"classification": {"high_confidence_threshold": 0.8}}
-        >>> get_nested_config(config, "classification.high_confidence_threshold", 0.5)
-        0.8
-        >>> get_nested_config(config, "classification.missing_key", 0.5)
-        0.5
+        >>> config = {"database_agent": {"max_iterations": 10}}
+        >>> get_nested_config(config, "database_agent.max_iterations", 5)
+        10
+        >>> get_nested_config(config, "database_agent.missing_key", 5)
+        5
     """
     keys = key_path.split('.')
     current = config

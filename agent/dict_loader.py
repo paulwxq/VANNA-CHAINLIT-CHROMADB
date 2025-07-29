@@ -112,7 +112,12 @@ class DictLoader:
             'query_intent',
             'sql_pattern',
             'chat_keyword',
-            'non_business_confidence'
+            'non_business_confidence',
+            'high_confidence_threshold',
+            'max_confidence',
+            'llm_fallback_confidence',
+            'uncertain_confidence',
+            'llm_error_confidence'
         ]
         
         for weight in required_weights:

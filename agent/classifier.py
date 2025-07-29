@@ -20,29 +20,11 @@ class QuestionClassifier:
         # 初始化日志
         self.logger = get_agent_logger("Classifier")
         
-        # 从配置文件加载阈值参数
-        try:
-            from agent.config import get_current_config, get_nested_config
-            config = get_current_config()
-            self.high_confidence_threshold = get_nested_config(config, "classification.high_confidence_threshold", 0.7)
-            self.low_confidence_threshold = get_nested_config(config, "classification.low_confidence_threshold", 0.4)
-            self.max_confidence = get_nested_config(config, "classification.max_confidence", 0.9)
-            self.base_confidence = get_nested_config(config, "classification.base_confidence", 0.4)
-            self.confidence_increment = get_nested_config(config, "classification.confidence_increment", 0.08)
-            self.llm_fallback_confidence = get_nested_config(config, "classification.llm_fallback_confidence", 0.5)
-            self.uncertain_confidence = get_nested_config(config, "classification.uncertain_confidence", 0.2)
-            self.medium_confidence_threshold = get_nested_config(config, "classification.medium_confidence_threshold", 0.6)
-            self.logger.info("从配置文件加载分类器参数完成")
-        except ImportError:
-            self.high_confidence_threshold = 0.7
-            self.low_confidence_threshold = 0.4
-            self.max_confidence = 0.9
-            self.base_confidence = 0.4
-            self.confidence_increment = 0.08
-            self.llm_fallback_confidence = 0.5
-            self.uncertain_confidence = 0.2
-            self.medium_confidence_threshold = 0.6
-            self.logger.warning("配置文件不可用，使用默认分类器参数")
+        # 初始化默认参数（作为后备）
+        self.high_confidence_threshold = 0.7
+        self.max_confidence = 0.9
+        self.llm_fallback_confidence = 0.5
+        self.uncertain_confidence = 0.2
         
         # 加载词典配置（新增逻辑）
         self._load_dict_config()
@@ -63,6 +45,12 @@ class QuestionClassifier:
             # 加载权重配置
             self.weights = dict_config.weights
             
+            # 从YAML权重配置中加载分类器参数（优先使用YAML配置）
+            self.high_confidence_threshold = self.weights.get('high_confidence_threshold', self.high_confidence_threshold)
+            self.max_confidence = self.weights.get('max_confidence', self.max_confidence)
+            self.llm_fallback_confidence = self.weights.get('llm_fallback_confidence', self.llm_fallback_confidence)
+            self.uncertain_confidence = self.weights.get('uncertain_confidence', self.uncertain_confidence)
+            
             # 加载其他配置
             self.metadata = dict_config.metadata
             
@@ -75,6 +63,8 @@ class QuestionClassifier:
             )
             
             self.logger.info(f"从YAML配置文件加载词典完成，共加载 {total_keywords} 个关键词")
+            self.logger.info(f"从YAML配置文件加载分类器参数完成：高置信度阈值={self.high_confidence_threshold}")
+            self.logger.debug(f"所有分类器参数：high_threshold={self.high_confidence_threshold}, max_conf={self.max_confidence}, llm_fallback={self.llm_fallback_confidence}")
             
         except Exception as e:
             self.logger.warning(f"加载YAML词典配置失败: {str(e)}，使用代码中的备用配置")
@@ -406,6 +396,8 @@ class QuestionClassifier:
                 question=classification_prompt,
                 system_prompt=system_prompt
             )
+
+            self.logger.debug(f"LLM原始分类响应信息: {response}")
             
             # 解析响应
             return self._parse_llm_response(response)
