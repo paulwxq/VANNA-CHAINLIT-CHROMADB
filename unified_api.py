@@ -3210,6 +3210,378 @@ def get_conversation_summary_api(thread_id: str):
 
 
 
+# ================== Checkpoint 管理 API ==================
+
+@app.route('/api/v0/checkpoint/direct/cleanup', methods=['POST'])
+async def cleanup_checkpoints():
+    """
+    清理checkpoint，保留最近N个
+    
+    请求参数:
+        - keep_count: 可选，保留数量，默认使用配置值
+        - user_id: 可选，指定用户ID
+        - thread_id: 可选，指定线程ID
+        
+    参数逻辑:
+        - 无任何参数：清理所有thread_id的checkpoint
+        - 只有user_id：清理指定用户的所有thread
+        - 只有thread_id：清理指定的thread
+        - user_id和thread_id同时存在：以thread_id为准
+    """
+    try:
+        # 获取请求参数
+        data = request.get_json() or {}
+        keep_count = data.get('keep_count', react_agent_config.CHECKPOINT_KEEP_COUNT)
+        user_id = data.get('user_id')
+        thread_id = data.get('thread_id')
+        
+        logger.info(f"🧹 开始checkpoint清理 - keep_count: {keep_count}, user_id: {user_id}, thread_id: {thread_id}")
+        
+        # 参数验证
+        if keep_count <= 0:
+            return jsonify(bad_request_response(
+                response_text="keep_count必须大于0"
+            )), 400
+        
+        # 验证thread_id格式
+        if thread_id and ':' not in thread_id:
+            return jsonify(bad_request_response(
+                response_text="thread_id格式错误，期望格式: user_id:timestamp"
+            )), 400
+        
+        # 创建Redis连接（异步版本）
+        redis_client = redis.Redis(
+            host=react_agent_config.REDIS_HOST,
+            port=react_agent_config.REDIS_PORT,
+            db=react_agent_config.REDIS_DB,
+            password=react_agent_config.REDIS_PASSWORD,
+            decode_responses=True
+        )
+        await redis_client.ping()
+        
+        # 确定扫描模式和操作类型
+        if thread_id:
+            # 清理指定thread
+            pattern = f"checkpoint:{thread_id}:*"
+            operation_type = "cleanup_thread"
+            target = thread_id
+        elif user_id:
+            # 清理指定用户的所有thread
+            pattern = f"checkpoint:{user_id}:*"
+            operation_type = "cleanup_user"
+            target = user_id
+        else:
+            # 清理所有thread
+            pattern = "checkpoint:*"
+            operation_type = "cleanup_all"
+            target = "all"
+        
+        logger.info(f"   扫描模式: {pattern}")
+        
+        # 扫描匹配的keys
+        keys = []
+        cursor = 0
+        while True:
+            cursor, batch = await redis_client.scan(cursor=cursor, match=pattern, count=1000)
+            keys.extend(batch)
+            if cursor == 0:
+                break
+        
+        logger.info(f"   找到 {len(keys)} 个checkpoint keys")
+        
+        if not keys:
+            await redis_client.close()
+            return jsonify(success_response(
+                response_text="未找到需要清理的checkpoint",
+                data={
+                    "operation_type": operation_type,
+                    "target": target,
+                    "keep_count": keep_count,
+                    "total_processed": 0,
+                    "total_deleted": 0,
+                    "details": {}
+                }
+            )), 200
+        
+        # 按thread_id分组
+        thread_groups = {}
+        for key in keys:
+            parts = key.split(':')
+            if len(parts) >= 3:
+                key_user_id = parts[1]
+                timestamp = parts[2]
+                key_thread_id = f"{key_user_id}:{timestamp}"
+                
+                if key_thread_id not in thread_groups:
+                    thread_groups[key_thread_id] = []
+                thread_groups[key_thread_id].append(key)
+        
+        logger.info(f"   分组结果: {len(thread_groups)} 个threads")
+        
+        # 清理每个thread的checkpoint
+        details = {}
+        total_deleted = 0
+        total_processed = 0
+        
+        for tid, tid_keys in thread_groups.items():
+            original_count = len(tid_keys)
+            
+            if original_count <= keep_count:
+                # 无需清理
+                details[tid] = {
+                    "original_count": original_count,
+                    "deleted_count": 0,
+                    "remaining_count": original_count,
+                    "status": "no_cleanup_needed"
+                }
+                total_processed += 1
+                continue
+            
+            # 按key排序（key包含timestamp，天然有序）
+            tid_keys.sort()
+            keys_to_delete = tid_keys[:-keep_count]
+            
+            # 使用Redis Pipeline批量删除
+            deleted_count = 0
+            if keys_to_delete:
+                try:
+                    pipeline = redis_client.pipeline()
+                    for key in keys_to_delete:
+                        pipeline.delete(key)
+                    await pipeline.execute()
+                    deleted_count = len(keys_to_delete)
+                    
+                    logger.info(f"   Thread {tid}: 删除了 {deleted_count} 个checkpoint")
+                    
+                except Exception as e:
+                    logger.error(f"   Thread {tid}: 批量删除失败: {e}")
+                    # 尝试逐个删除
+                    for key in keys_to_delete:
+                        try:
+                            await redis_client.delete(key)
+                            deleted_count += 1
+                        except Exception as del_error:
+                            logger.error(f"   删除key失败: {key}, 错误: {del_error}")
+            
+            details[tid] = {
+                "original_count": original_count,
+                "deleted_count": deleted_count,
+                "remaining_count": original_count - deleted_count,
+                "status": "success" if deleted_count > 0 else "failed"
+            }
+            
+            total_deleted += deleted_count
+            total_processed += 1
+        
+        await redis_client.aclose()
+        
+        logger.info(f"✅ Checkpoint清理完成 - 处理{total_processed}个threads，删除{total_deleted}个checkpoints")
+        
+        return jsonify(success_response(
+            response_text=f"Checkpoint清理完成，删除了{total_deleted}个checkpoint",
+            data={
+                "operation_type": operation_type,
+                "target": target,
+                "keep_count": keep_count,
+                "total_processed": total_processed,
+                "total_deleted": total_deleted,
+                "details": details
+            }
+        )), 200
+        
+    except redis.ConnectionError as e:
+        logger.error(f"❌ Redis连接失败: {e}")
+        return jsonify(internal_error_response(
+            response_text="Redis连接失败，请检查Redis服务状态"
+        )), 500
+        
+    except Exception as e:
+        logger.error(f"❌ Checkpoint清理失败: {e}")
+        return jsonify(internal_error_response(
+            response_text=f"Checkpoint清理失败: {str(e)}"
+        )), 500
+
+
+@app.route('/api/v0/checkpoint/direct/stats', methods=['GET'])
+async def get_checkpoint_stats():
+    """
+    获取checkpoint统计信息
+    
+    查询参数:
+        - user_id: 可选，指定用户ID
+        
+    调用方式:
+        GET /api/v0/checkpoint/direct/stats                  # 获取全部统计信息
+        GET /api/v0/checkpoint/direct/stats?user_id=wang1   # 获取指定用户统计信息
+    """
+    try:
+        user_id = request.args.get('user_id')
+        
+        logger.info(f"📊 获取checkpoint统计 - user_id: {user_id}")
+        
+        # 创建Redis连接（异步版本）
+        redis_client = redis.Redis(
+            host=react_agent_config.REDIS_HOST,
+            port=react_agent_config.REDIS_PORT,
+            db=react_agent_config.REDIS_DB,
+            password=react_agent_config.REDIS_PASSWORD,
+            decode_responses=True
+        )
+        await redis_client.ping()
+        
+        # 确定扫描模式
+        if user_id:
+            pattern = f"checkpoint:{user_id}:*"
+            operation_type = "user_stats"
+        else:
+            pattern = "checkpoint:*"
+            operation_type = "system_stats"
+        
+        logger.info(f"   扫描模式: {pattern}")
+        
+        # 扫描匹配的keys
+        keys = []
+        cursor = 0
+        while True:
+            cursor, batch = await redis_client.scan(cursor=cursor, match=pattern, count=1000)
+            keys.extend(batch)
+            if cursor == 0:
+                break
+        
+        logger.info(f"   找到 {len(keys)} 个checkpoint keys")
+        
+        await redis_client.aclose()
+        
+        if not keys:
+            if user_id:
+                return jsonify(not_found_response(
+                    response_text=f"用户 {user_id} 没有任何checkpoint"
+                )), 404
+            else:
+                return jsonify(success_response(
+                    response_text="系统中暂无checkpoint数据",
+                    data={
+                        "operation_type": operation_type,
+                        "total_users": 0,
+                        "total_threads": 0,
+                        "total_checkpoints": 0,
+                        "users": []
+                    }
+                )), 200
+        
+        # 按用户和thread分组统计
+        user_stats = {}
+        for key in keys:
+            parts = key.split(':')
+            if len(parts) >= 3:
+                key_user_id = parts[1]
+                timestamp = parts[2]
+                thread_id = f"{key_user_id}:{timestamp}"
+                
+                if key_user_id not in user_stats:
+                    user_stats[key_user_id] = {}
+                
+                if thread_id not in user_stats[key_user_id]:
+                    user_stats[key_user_id][thread_id] = 0
+                
+                user_stats[key_user_id][thread_id] += 1
+        
+        # 构建响应数据
+        if user_id:
+            # 返回指定用户的统计信息
+            if user_id not in user_stats:
+                return jsonify(not_found_response(
+                    response_text=f"用户 {user_id} 没有任何checkpoint"
+                )), 404
+            
+            threads = []
+            total_checkpoints = 0
+            for thread_id, count in user_stats[user_id].items():
+                threads.append({
+                    "thread_id": thread_id,
+                    "checkpoint_count": count
+                })
+                total_checkpoints += count
+            
+            # 按checkpoint数量排序
+            threads.sort(key=lambda x: x["checkpoint_count"], reverse=True)
+            
+            result_data = {
+                "operation_type": operation_type,
+                "user_id": user_id,
+                "thread_count": len(threads),
+                "total_checkpoints": total_checkpoints,
+                "threads": threads
+            }
+            
+            logger.info(f"✅ 获取用户 {user_id} 统计完成 - {len(threads)} threads, {total_checkpoints} checkpoints")
+            
+            return jsonify(success_response(
+                response_text=f"获取用户{user_id}统计成功",
+                data=result_data
+            )), 200
+        
+        else:
+            # 返回系统全部统计信息
+            users = []
+            total_threads = 0
+            total_checkpoints = 0
+            
+            for uid, threads_data in user_stats.items():
+                user_threads = []
+                user_total_checkpoints = 0
+                
+                for thread_id, count in threads_data.items():
+                    user_threads.append({
+                        "thread_id": thread_id,
+                        "checkpoint_count": count
+                    })
+                    user_total_checkpoints += count
+                
+                # 按checkpoint数量排序
+                user_threads.sort(key=lambda x: x["checkpoint_count"], reverse=True)
+                
+                users.append({
+                    "user_id": uid,
+                    "thread_count": len(user_threads),
+                    "total_checkpoints": user_total_checkpoints,
+                    "threads": user_threads
+                })
+                
+                total_threads += len(user_threads)
+                total_checkpoints += user_total_checkpoints
+            
+            # 按用户的checkpoint数量排序
+            users.sort(key=lambda x: x["total_checkpoints"], reverse=True)
+            
+            result_data = {
+                "operation_type": operation_type,
+                "total_users": len(users),
+                "total_threads": total_threads,
+                "total_checkpoints": total_checkpoints,
+                "users": users
+            }
+            
+            logger.info(f"✅ 获取系统统计完成 - {len(users)} users, {total_threads} threads, {total_checkpoints} checkpoints")
+            
+            return jsonify(success_response(
+                response_text="获取系统checkpoint统计成功",
+                data=result_data
+            )), 200
+        
+    except redis.ConnectionError as e:
+        logger.error(f"❌ Redis连接失败: {e}")
+        return jsonify(internal_error_response(
+            response_text="Redis连接失败，请检查Redis服务状态"
+        )), 500
+        
+    except Exception as e:
+        logger.error(f"❌ 获取checkpoint统计失败: {e}")
+        return jsonify(internal_error_response(
+            response_text=f"获取checkpoint统计失败: {str(e)}"
+        )), 500
+
+
 # Data Pipeline 全局变量 - 从 citu_app.py 迁移
 data_pipeline_manager = None
 data_pipeline_file_manager = None

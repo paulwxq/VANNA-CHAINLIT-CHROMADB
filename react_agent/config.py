@@ -65,4 +65,7 @@ MAX_LOG_LENGTH = 1000              # 非调试模式下的最大日志长度
 # --- State管理配置 ---
 MESSAGE_TRIM_ENABLED = True        # 是否启用消息裁剪
 MESSAGE_TRIM_COUNT = 100          # 消息数量超过此值时触发裁剪，裁剪后保留此数量的消息
-MESSAGE_TRIM_SEARCH_LIMIT = 20    # 向前搜索HumanMessage的最大条数 
+MESSAGE_TRIM_SEARCH_LIMIT = 20    # 向前搜索HumanMessage的最大条数
+
+# --- Checkpoint管理配置 ---
+CHECKPOINT_KEEP_COUNT = 10         # 每个thread保留的checkpoint数量（API默认值） 
