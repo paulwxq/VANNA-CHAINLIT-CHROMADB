@@ -60,4 +60,9 @@ HTTP_POOL_TIMEOUT = 5.0            # 连接池超时（秒）
 
 # --- 调试配置 ---
 DEBUG_MODE = True                  # 调试模式：True=完整日志，False=简化日志
-MAX_LOG_LENGTH = 1000              # 非调试模式下的最大日志长度 
+MAX_LOG_LENGTH = 1000              # 非调试模式下的最大日志长度
+
+# --- State管理配置 ---
+MESSAGE_TRIM_ENABLED = True        # 是否启用消息裁剪
+MESSAGE_TRIM_COUNT = 100          # 消息数量超过此值时触发裁剪，裁剪后保留此数量的消息
+MESSAGE_TRIM_SEARCH_LIMIT = 20    # 向前搜索HumanMessage的最大条数 
