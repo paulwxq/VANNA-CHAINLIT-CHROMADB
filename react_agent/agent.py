@@ -1429,9 +1429,9 @@ class CustomReactAgent:
         """Get database scope prompt for intelligent query decision making"""
         try:
             import os
-            # Read agent/tools/db_query_decision_prompt.txt
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            db_scope_file = os.path.join(project_root, "agent", "tools", "db_query_decision_prompt.txt")
+            # Read local db_query_decision_prompt.txt
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            db_scope_file = os.path.join(current_dir, "db_query_decision_prompt.txt")
             
             with open(db_scope_file, 'r', encoding='utf-8') as f:
                 db_scope_content = f.read().strip()
