@@ -776,6 +776,80 @@ class CituLangGraphAgent:
                 "error_code": 500,
                 "execution_path": ["error"]
             }
+
+    async def process_question_stream(self, question: str, user_id: str, conversation_id: str = None, context_type: str = None, routing_mode: str = None):
+        """
+        流式处理用户问题 - 复用process_question()的所有逻辑
+        
+        Args:
+            question: 用户问题
+            user_id: 用户ID，用于生成conversation_id
+            conversation_id: 对话ID，可选，不提供则自动生成
+            context_type: 上下文类型（保留兼容性参数，当前未使用）
+            routing_mode: 路由模式，可选，用于覆盖配置文件设置
+            
+        Yields:
+            Dict: 流式状态更新，包含进度信息或最终结果
+        """
+        try:
+            self.logger.info(f"🌊 [STREAM] 开始流式处理问题: {question}")
+            if context_type:
+                self.logger.info(f"🌊 [STREAM] 上下文类型: {context_type}")
+            if routing_mode:
+                self.logger.info(f"🌊 [STREAM] 使用指定路由模式: {routing_mode}")
+            
+            # 生成conversation_id（如果未提供）
+            if not conversation_id:
+                conversation_id = self._generate_conversation_id(user_id)
+            
+            # 1. 复用现有的初始化逻辑
+            self.logger.info(f"🌊 [STREAM] 动态创建workflow")
+            workflow = self._create_workflow(routing_mode)
+            
+            # 2. 创建初始状态（复用现有逻辑）
+            initial_state = self._create_initial_state(question, conversation_id, context_type, routing_mode)
+            
+            # 3. 使用astream流式执行
+            self.logger.info(f"🌊 [STREAM] 开始流式执行workflow")
+            async for chunk in workflow.astream(
+                initial_state,
+                config={
+                    "configurable": {"conversation_id": conversation_id}
+                } if conversation_id else None
+            ):
+                # 处理每个节点的输出
+                for node_name, node_data in chunk.items():
+                    self.logger.debug(f"🌊 [STREAM] 收到节点输出: {node_name}")
+                    
+                    # 映射节点状态为用户友好的进度信息
+                    progress_info = self._map_node_to_progress(node_name, node_data)
+                    if progress_info:
+                        yield {
+                            "type": "progress",
+                            "node": node_name,
+                            "progress": progress_info,
+                            "state_data": self._extract_relevant_state(node_data),
+                            "conversation_id": conversation_id
+                        }
+            
+            # 4. 最终结果处理（复用现有的结果提取逻辑）
+            # 注意：由于astream的特性，最后一个chunk包含最终状态
+            final_result = node_data.get("final_response", {})
+            
+            self.logger.info(f"🌊 [STREAM] 流式处理完成: {final_result.get('success', False)}")
+            yield {
+                "type": "completed",
+                "result": final_result,
+                "conversation_id": conversation_id
+            }
+            
+        except Exception as e:
+            self.logger.error(f"🌊 [STREAM] Agent流式执行异常: {str(e)}")
+            yield {
+                "type": "error", 
+                "error": str(e),
+                "conversation_id": conversation_id
+            }
     
     def _create_initial_state(self, question: str, conversation_id: str = None, context_type: str = None, routing_mode: str = None) -> AgentState:
         """创建初始状态 - 支持兼容性参数"""
@@ -1033,6 +1107,107 @@ class CituLangGraphAgent:
                 "repaired_sql": None,
                 "error": f"修复异常: {str(e)}"
             }
+
+    def _generate_conversation_id(self, user_id: str) -> str:
+        """生成对话ID - 使用与React Agent一致的格式"""
+        import pandas as pd
+        timestamp = pd.Timestamp.now().strftime('%Y%m%d%H%M%S%f')[:-3]  # 去掉最后3位微秒
+        return f"{user_id}:{timestamp}"
+
+    def _map_node_to_progress(self, node_name: str, node_data: dict) -> dict:
+        """将节点执行状态映射为用户友好的进度信息"""
+        
+        if node_name == "classify_question":
+            question_type = node_data.get("question_type", "UNCERTAIN")
+            confidence = node_data.get("classification_confidence", 0)
+            return {
+                "display_name": "分析问题类型",
+                "icon": "🤔",
+                "details": f"问题类型: {question_type} (置信度: {confidence:.2f})",
+                "sub_status": f"使用{node_data.get('classification_method', '未知')}方法分类"
+            }
+        
+        elif node_name == "agent_sql_generation":
+            if node_data.get("sql_generation_success"):
+                sql = node_data.get("sql", "")
+                sql_preview = sql[:50] + "..." if len(sql) > 50 else sql
+                return {
+                    "display_name": "SQL生成成功",
+                    "icon": "✅",
+                    "details": f"生成SQL: {sql_preview}",
+                    "sub_status": "验证通过，准备执行"
+                }
+            else:
+                error_type = node_data.get("validation_error_type", "unknown")
+                return {
+                    "display_name": "SQL生成处理中",
+                    "icon": "🔧",
+                    "details": f"验证状态: {error_type}",
+                    "sub_status": node_data.get("user_prompt", "正在处理")
+                }
+        
+        elif node_name == "agent_sql_execution":
+            query_result = node_data.get("query_result", {})
+            row_count = query_result.get("row_count", 0)
+            return {
+                "display_name": "执行数据查询", 
+                "icon": "⚙️",
+                "details": f"查询完成，返回 {row_count} 行数据",
+                "sub_status": "正在生成摘要" if row_count > 0 else "查询执行完成"
+            }
+        
+        elif node_name == "agent_chat":
+            return {
+                "display_name": "思考回答",
+                "icon": "💭", 
+                "details": "正在处理您的问题",
+                "sub_status": "使用智能对话模式"
+            }
+        
+        elif node_name == "format_response":
+            return {
+                "display_name": "整理结果",
+                "icon": "📝",
+                "details": "正在格式化响应结果",
+                "sub_status": "即将完成"
+            }
+        
+        return None
+
+    def _extract_relevant_state(self, node_data: dict) -> dict:
+        """从节点数据中提取相关的状态信息，过滤敏感信息"""
+        try:
+            relevant_keys = [
+                "current_step", "execution_path", "question_type",
+                "classification_confidence", "classification_method", 
+                "sql_generation_success", "sql_validation_success",
+                "routing_mode"
+            ]
+            
+            extracted = {}
+            for key in relevant_keys:
+                if key in node_data:
+                    extracted[key] = node_data[key]
+            
+            # 特殊处理SQL：只返回前100个字符避免过长
+            if "sql" in node_data and node_data["sql"]:
+                sql = str(node_data["sql"])
+                extracted["sql_preview"] = sql[:100] + "..." if len(sql) > 100 else sql
+            
+            # 特殊处理查询结果：只返回行数统计
+            if "query_result" in node_data and node_data["query_result"]:
+                query_result = node_data["query_result"]
+                if isinstance(query_result, dict):
+                    extracted["query_summary"] = {
+                        "row_count": query_result.get("row_count", 0),
+                        "column_count": len(query_result.get("columns", []))
+                    }
+            
+            return extracted
+            
+        except Exception as e:
+            self.logger.warning(f"提取状态信息失败: {str(e)}")
+            return {"error": "state_extraction_failed"}
 
     # ==================== 原有方法 ====================
     
