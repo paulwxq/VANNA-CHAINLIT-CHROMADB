@@ -1830,21 +1830,59 @@ def format_sse_react_progress(chunk: dict) -> str:
     """格式化React Agent进度事件为SSE格式"""
     node = chunk.get("node")
     thread_id = chunk.get("thread_id")
+    node_data = chunk.get("data", {})
     
-    # 节点显示名称映射
-    node_display_map = {
+    # 基础节点显示名称映射
+    base_node_display_map = {
         "__start__": "开始处理",
-        "trim_messages": "准备消息", 
-        "agent": "AI思考中",
-        "prepare_tool_input": "准备工具",
-        "tools": "执行查询",
-        "update_state_after_tool": "处理结果",
+        "trim_messages": "检查问题上下文", 
+        "agent": "AI分析中",
+        "prepare_tool_input": "准备工具参数",
+        "tools": "执行操作",
+        "update_state_after_tool": "检查结果",
         "format_final_response": "生成回答",
         "__end__": "完成"
     }
     
-    display_name = node_display_map.get(node, "处理中")
+    # 工具名称映射
+    tool_display_map = {
+        "generate_sql": "生成SQL语句",
+        "valid_sql": "验证SQL语法", 
+        "run_sql": "执行SQL查询"
+    }
     
+    display_name = base_node_display_map.get(node, "处理中")
+    tool_name = None
+    
+    # 特殊处理：提取具体工具信息
+    if node_data and "messages" in node_data and node_data["messages"]:
+        messages = node_data["messages"]
+        last_message = messages[-1]
+        
+        # 方法1：从 AIMessage 的 tool_calls 中提取（agent节点输出）
+        if (hasattr(last_message, 'tool_calls') and 
+            last_message.tool_calls and 
+            len(last_message.tool_calls) > 0):
+            tool_call = last_message.tool_calls[0]
+            tool_name = tool_call.get('name')
+            
+        # 方法2：从 ToolMessage 的 name 属性中提取（tools节点输出）
+        elif (hasattr(last_message, 'name') and 
+              last_message.name):
+            tool_name = last_message.name
+    
+    # 根据节点和工具信息生成更精确的显示名称
+    if tool_name and tool_name in tool_display_map:
+        if node == "agent":
+            display_name = f"准备{tool_display_map[tool_name]}"
+        elif node == "tools":
+            display_name = tool_display_map[tool_name]  # 去掉"正在"前缀
+        elif node == "update_state_after_tool":
+            display_name = "检查结果"  # 统一为"检查结果"
+        elif node == "prepare_tool_input":
+            display_name = "准备工具参数"  # 统一为通用描述
+    
+    # 构建响应数据
     data = {
         "code": 200,
         "success": True,
@@ -1857,6 +1895,10 @@ def format_sse_react_progress(chunk: dict) -> str:
             "timestamp": datetime.now().isoformat()
         }
     }
+    
+    # 可选：在调试模式下添加工具信息
+    if tool_name:
+        data["data"]["tool_name"] = tool_name
     
     import json
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
