@@ -6092,48 +6092,11 @@ if __name__ == '__main__':
     logger.info("📥 Vector恢复API: http://localhost:8084/api/v0/data_pipeline/vector/restore")
     logger.info("📋 备份列表API: http://localhost:8084/api/v0/data_pipeline/vector/restore/list")
     
-    # 并发问题解决方案：已确认WsgiToAsgi导致阻塞，使用原生Flask解决
-    USE_WSGI_TO_ASGI = False  # 暂时回到原生Flask模式，解决ASGI兼容性问题
+    # 原生Flask单进程模式启动
+    # 如需多进程ASGI模式，请使用：uvicorn asgi_app:asgi_app --workers 4
+    logger.info("🚀 使用原生Flask单进程模式启动...")
+    logger.info("   优点：避免WsgiToAsgi并发阻塞问题")
+    logger.info("   多进程模式请使用：uvicorn asgi_app:asgi_app --workers 4")
     
-    if USE_WSGI_TO_ASGI:
-        try:
-            # 方案A：使用ASGI模式启动（可能有并发限制）
-            import uvicorn
-            from asgiref.wsgi import WsgiToAsgi
-            
-            logger.info("🚀 使用ASGI模式启动异步Flask应用...")
-            logger.info("   这将解决事件循环冲突问题，支持LangGraph异步checkpoint保存")
-            
-            # 将Flask WSGI应用转换为ASGI应用
-            asgi_app = WsgiToAsgi(app)
-            
-            # 使用uvicorn启动ASGI应用，增加并发配置
-            uvicorn.run(
-                asgi_app,
-                host="0.0.0.0",
-                port=8084,
-                log_level="info",
-                access_log=True,
-                workers=1,  # 单进程多协程
-                loop="asyncio",  # 使用asyncio事件循环
-                limit_concurrency=100,  # 增加并发限制
-                limit_max_requests=1000  # 增加请求限制
-            )
-            
-        except ImportError as e:
-            # 如果缺少ASGI依赖，fallback到传统Flask模式
-            logger.warning("⚠️ ASGI依赖缺失，使用传统Flask模式启动")
-            logger.warning("   建议安装: pip install uvicorn asgiref")
-            logger.warning("   传统模式可能存在异步事件循环冲突问题")
-            
-            # 启动标准Flask应用（支持异步路由）
-            app.run(host="0.0.0.0", port=8084, debug=False, threaded=True)
-    
-    else:
-        # 方案B：使用原生Flask并发（可能解决WsgiToAsgi并发问题）
-        logger.info("🚀 使用原生Flask并发模式启动...")
-        logger.info("   绕过WsgiToAsgi，测试是否解决并发阻塞问题")
-        logger.info("   使用Flask内置多线程并发支持")
-        
-        # 启动标准Flask应用（支持异步路由）
-        app.run(host="0.0.0.0", port=8084, debug=False, threaded=True)
+    # 启动标准Flask应用（支持异步路由）
+    app.run(host="0.0.0.0", port=8084, debug=False, threaded=True)
