@@ -10,6 +10,7 @@ import logging
 import atexit
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 import pytz
 from typing import Optional, Dict, Any, TYPE_CHECKING, Union
@@ -88,7 +89,8 @@ redis_conversation_manager = RedisConversationManager()
 
 # ==================== React Agent 全局实例管理 ====================
 
-_react_agent_instance: Optional[Any] = None
+_react_agent_instance: Optional[Any] = None  # 同步工具，用于 ask_react_agent
+_react_agent_stream_instance: Optional[Any] = None  # 异步工具，用于 ask_react_agent_stream
 _redis_client: Optional[redis.Redis] = None
 
 def _format_timestamp_to_china_time(timestamp_str):
@@ -318,6 +320,29 @@ async def ensure_agent_ready() -> bool:
         _react_agent_instance = None
         await get_react_agent()
         return True
+
+async def create_stream_agent_instance():
+    """为每个流式请求创建新的Agent实例（使用异步工具）"""
+    if CustomReactAgent is None:
+        logger.error("❌ CustomReactAgent 未能导入，无法初始化流式Agent")
+        raise ImportError("CustomReactAgent 未能导入")
+        
+    logger.info("🚀 正在为流式请求创建新的 React Agent 实例...")
+    try:
+        # 创建流式专用 Agent 实例
+        stream_agent = await CustomReactAgent.create()
+        
+        # 配置使用异步 SQL 工具
+        from react_agent.async_sql_tools import async_sql_tools
+        stream_agent.tools = async_sql_tools
+        stream_agent.llm_with_tools = stream_agent.llm.bind_tools(async_sql_tools)
+        
+        logger.info("✅ 流式 React Agent 实例创建完成（配置异步工具）")
+        return stream_agent
+        
+    except Exception as e:
+        logger.error(f"❌ 流式 React Agent 实例创建失败: {e}")
+        raise
 
 def get_user_conversations_simple_sync(user_id: str, limit: int = 10):
     """直接从Redis获取用户对话，测试版本"""
@@ -683,6 +708,119 @@ async def ask_react_agent():
             "success": False,
             "error": "服务暂时不可用，请稍后重试"
         }), 500
+
+@app.route('/api/v0/ask_react_agent_stream', methods=['GET'])
+def ask_react_agent_stream():
+    """React Agent 流式API - 使用异步工具的专用 Agent 实例
+    功能与ask_react_agent完全相同，除了采用流式输出
+    """
+    def generate():
+        try:
+            # 1. 参数获取和验证（从URL参数，因为EventSource只支持GET）
+            question = request.args.get('question')
+            user_id_input = request.args.get('user_id')
+            thread_id_input = request.args.get('thread_id')
+            
+            # 参数验证（复用现有validate_request_data逻辑）
+            if not question:
+                yield format_sse_error("缺少必需参数：question")
+                return
+                
+            # 2. 数据预处理（与ask_react_agent相同）
+            try:
+                validated_data = validate_request_data({
+                    'question': question,
+                    'user_id': user_id_input,
+                    'thread_id': thread_id_input
+                })
+            except ValueError as ve:
+                yield format_sse_error(f"参数验证失败: {str(ve)}")
+                return
+            
+            logger.info(f"📨 收到React Agent流式请求 - User: {validated_data['user_id']}, Question: {validated_data['question'][:50]}...")
+            
+            # 3. 为当前请求创建新的事件循环和Agent实例
+            import asyncio
+            
+            # 创建新的事件循环
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            stream_agent = None
+            try:
+                # 为当前请求创建新的Agent实例
+                stream_agent = loop.run_until_complete(create_stream_agent_instance())
+                
+                if not stream_agent:
+                    yield format_sse_error("流式 React Agent 初始化失败")
+                    return
+            except Exception as e:
+                logger.error(f"流式 Agent 初始化异常: {str(e)}")
+                yield format_sse_error(f"流式 Agent 初始化失败: {str(e)}")
+                return
+            
+            # 4. 在同一个事件循环中执行流式处理
+            try:
+                # 创建异步生成器
+                async def stream_worker():
+                    try:
+                        # 使用当前请求的 Agent 实例（已配置异步工具）
+                        async for chunk in stream_agent.chat_stream(
+                            message=validated_data['question'],
+                            user_id=validated_data['user_id'],
+                            thread_id=validated_data['thread_id']
+                        ):
+                            yield chunk
+                            if chunk.get("type") == "completed":
+                                break
+                    except Exception as e:
+                        logger.error(f"流式处理异常: {str(e)}", exc_info=True)
+                        yield {
+                            "type": "error", 
+                            "error": f"流式处理异常: {str(e)}"
+                        }
+                
+                # 在当前事件循环中运行异步生成器
+                async_gen = stream_worker()
+                
+                # 同步迭代异步生成器
+                while True:
+                    try:
+                        chunk = loop.run_until_complete(async_gen.__anext__())
+                        
+                        if chunk["type"] == "progress":
+                            yield format_sse_react_progress(chunk)
+                        elif chunk["type"] == "completed":
+                            yield format_sse_react_completed(chunk)
+                            break
+                        elif chunk["type"] == "error":
+                            yield format_sse_error(chunk.get("error", "未知错误"))
+                            break
+                            
+                    except StopAsyncIteration:
+                        break
+                    except Exception as e:
+                        logger.error(f"处理流式数据异常: {str(e)}")
+                        yield format_sse_error(f"处理异常: {str(e)}")
+                        break
+                        
+            except Exception as e:
+                logger.error(f"React Agent流式处理异常: {str(e)}")
+                yield format_sse_error(f"流式处理异常: {str(e)}")
+            finally:
+                # 清理：流式处理完成后关闭事件循环
+                try:
+                    loop.close()
+                except Exception as e:
+                    logger.warning(f"关闭事件循环时出错: {e}")
+                    
+        except Exception as e:
+            logger.error(f"React Agent流式API异常: {str(e)}")
+            yield format_sse_error(f"服务异常: {str(e)}")
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
 
 @app.route('/api/v0/react/status/<thread_id>', methods=['GET'])
 async def get_react_agent_status(thread_id: str):
@@ -1688,6 +1826,78 @@ def format_sse_completed(chunk: dict) -> str:
     import json
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
+def format_sse_react_progress(chunk: dict) -> str:
+    """格式化React Agent进度事件为SSE格式"""
+    node = chunk.get("node")
+    thread_id = chunk.get("thread_id")
+    
+    # 节点显示名称映射
+    node_display_map = {
+        "__start__": "开始处理",
+        "trim_messages": "准备消息", 
+        "agent": "AI思考中",
+        "prepare_tool_input": "准备工具",
+        "tools": "执行查询",
+        "update_state_after_tool": "处理结果",
+        "format_final_response": "生成回答",
+        "__end__": "完成"
+    }
+    
+    display_name = node_display_map.get(node, "处理中")
+    
+    data = {
+        "code": 200,
+        "success": True,
+        "message": f"正在执行: {display_name}",
+        "data": {
+            "type": "progress",
+            "node": node,
+            "display_name": display_name,
+            "thread_id": thread_id,
+            "timestamp": datetime.now().isoformat()
+        }
+    }
+    
+    import json
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+def format_sse_react_completed(chunk: dict) -> str:
+    """格式化React Agent完成事件为SSE格式"""
+    result = chunk.get("result", {})
+    api_data = result.get("api_data", {})
+    thread_id = result.get("thread_id")
+    
+    # 构建与ask_react_agent相同的响应格式
+    response_data = {
+        "response": api_data.get("response", ""),
+        "conversation_id": thread_id,
+        "user_id": api_data.get("react_agent_meta", {}).get("user_id", ""),
+        "react_agent_meta": api_data.get("react_agent_meta", {
+            "thread_id": thread_id,
+            "agent_version": "custom_react_v1_async"
+        }),
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # 可选字段
+    if "sql" in api_data:
+        response_data["sql"] = api_data["sql"]
+    if "records" in api_data:
+        response_data["records"] = api_data["records"]
+    
+    data = {
+        "code": 200,
+        "success": True,
+        "message": "处理完成",
+        "data": {
+            "type": "completed",
+            **response_data
+        }
+    }
+    
+    import json
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
 def format_sse_error(error_message: str) -> str:
     """格式化错误事件为SSE格式"""
     data = {
@@ -1701,6 +1911,11 @@ def format_sse_error(error_message: str) -> str:
         }
     }
     
+    import json
+    return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+def format_sse_data(data: dict) -> str:
+    """格式化普通数据事件为SSE格式"""
     import json
     return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
@@ -5836,7 +6051,7 @@ if __name__ == '__main__':
     logger.info("📋 备份列表API: http://localhost:8084/api/v0/data_pipeline/vector/restore/list")
     
     # 并发问题解决方案：已确认WsgiToAsgi导致阻塞，使用原生Flask解决
-    USE_WSGI_TO_ASGI = False  # 使用原生Flask并发，解决状态API阻塞问题
+    USE_WSGI_TO_ASGI = False  # 暂时回到原生Flask模式，解决ASGI兼容性问题
     
     if USE_WSGI_TO_ASGI:
         try:

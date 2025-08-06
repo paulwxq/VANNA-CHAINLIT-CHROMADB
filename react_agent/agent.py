@@ -1124,6 +1124,162 @@ class CustomReactAgent:
             else:
                 logger.error(f"❌ 处理过程中发生严重错误 - Thread: {thread_id}: {e}", exc_info=True)
                 return {"success": False, "error": str(e), "thread_id": thread_id}
+
+    async def chat_stream(self, message: str, user_id: str, thread_id: Optional[str] = None):
+        """
+        流式处理用户聊天请求 - 复用chat()方法的所有逻辑
+        
+        Args:
+            message: 用户消息
+            user_id: 用户ID
+            thread_id: 会话ID，可选，不传则自动生成
+            
+        Yields:
+            Dict: 包含进度信息或最终结果的字典
+                - type: "progress" | "completed" | "error"
+                - node: 节点名称 (仅progress)
+                - data: 节点数据 (仅progress) 
+                - thread_id: 会话ID
+                - result: 最终结果 (仅completed)
+                - error: 错误信息 (仅error)
+        """
+        # 1. 复用现有的初始化逻辑（thread_id生成、配置检查等）
+        if not thread_id:
+            now = pd.Timestamp.now()
+            milliseconds = int(now.microsecond / 1000)
+            thread_id = f"{user_id}:{now.strftime('%Y%m%d%H%M%S')}{milliseconds:03d}"
+            logger.info(f"🆕 流式处理 - 新建会话，Thread ID: {thread_id}")
+        
+        # 2. 复用现有的配置和错误处理
+        self._recursion_count = 0
+        
+        run_config = {
+            "configurable": {
+                "thread_id": thread_id,
+            },
+            "recursion_limit": config.RECURSION_LIMIT
+        }
+        
+        logger.info(f"🔢 流式处理 - 递归限制设置: {config.RECURSION_LIMIT}")
+        
+        inputs = {
+            "messages": [HumanMessage(content=message)],
+            "user_id": user_id,
+            "thread_id": thread_id,
+            "suggested_next_step": None,
+        }
+
+        try:
+            logger.info(f"🚀 流式处理开始 - 用户消息: {message[:50]}...")
+            
+            # 3. 复用checkpointer检查逻辑
+            if self.checkpointer:
+                try:
+                    # 简单的连接测试 - 不用aget_tuple因为可能没有数据
+                    # 直接测试Redis连接
+                    if hasattr(self.checkpointer, 'conn') and self.checkpointer.conn:
+                        await self.checkpointer.conn.ping()
+                except Exception as checkpoint_error:
+                    if "Event loop is closed" in str(checkpoint_error) or "closed" in str(checkpoint_error).lower():
+                        logger.warning(f"⚠️ 流式处理 - Checkpointer连接异常，尝试重新初始化: {checkpoint_error}")
+                        await self._reinitialize_checkpointer()
+                        # 重新构建graph使用新的checkpointer
+                        self.agent_executor = self._create_graph()
+                    else:
+                        logger.warning(f"⚠️ 流式处理 - Checkpointer测试失败，但继续执行: {checkpoint_error}")
+            
+            # 4. 使用astream流式执行
+            final_state = None
+            async for chunk in self.agent_executor.astream(inputs, run_config, stream_mode="updates"):
+                for node_name, node_data in chunk.items():
+                    logger.debug(f"🔄 流式进度 - 节点: {node_name}")
+                    yield {
+                        "type": "progress",
+                        "node": node_name,
+                        "data": node_data,
+                        "thread_id": thread_id
+                    }
+                    final_state = node_data
+            
+            # 获取完整的最终状态（包含所有字段）
+            if final_state:
+                # 确保 final_state 包含必需的字段
+                if "thread_id" not in final_state:
+                    final_state["thread_id"] = thread_id
+                if "user_id" not in final_state:
+                    final_state["user_id"] = user_id
+            
+            # 5. 复用现有的结果处理逻辑
+            if final_state and "messages" in final_state:
+                # 🔍 调试：打印 final_state 的所有 keys
+                logger.info(f"🔍 流式处理 - Final state keys: {list(final_state.keys())}")
+                
+                answer = final_state["messages"][-1].content
+                
+                # 🎯 提取最近的 run_sql 执行结果（不修改messages）
+                sql_data = await self._async_extract_latest_sql_data(final_state["messages"])
+                
+                logger.info(f"✅ 流式处理完成 - Final Answer: '{answer}'")
+                
+                # 构建返回结果（保持简化格式用于shell.py）
+                result = {
+                    "success": True, 
+                    "answer": answer, 
+                    "thread_id": thread_id
+                }
+                
+                # 只有当存在SQL数据时才添加到返回结果中
+                if sql_data:
+                    result["sql_data"] = sql_data
+                    logger.info("   📊 流式处理 - 已包含SQL原始数据")
+                
+                # 生成API格式数据
+                api_data = await self._async_generate_api_data(final_state)
+                result["api_data"] = api_data
+                logger.info("   🔌 流式处理 - 已生成API格式数据")
+                
+                yield {
+                    "type": "completed",
+                    "result": {"api_data": api_data, "thread_id": thread_id}
+                }
+            else:
+                # 如果没有获取到正确的final_state，返回错误
+                logger.error(f"❌ 流式处理 - 未获取到有效的final_state")
+                yield {
+                    "type": "error",
+                    "error": "处理失败：未获取到有效的执行结果",
+                    "thread_id": thread_id
+                }
+            
+        except Exception as e:
+            logger.error(f"❌ 流式处理异常 - Thread: {thread_id}: {e}", exc_info=True)
+            
+            # 特殊处理Redis相关的Event loop错误
+            if "Event loop is closed" in str(e):
+                # 尝试重新初始化checkpointer
+                try:
+                    await self._reinitialize_checkpointer()
+                    self.agent_executor = self._create_graph()
+                    logger.info("🔄 流式处理 - 已重新初始化checkpointer，请重试请求")
+                    yield {
+                        "type": "error",
+                        "error": "Redis连接问题，请重试",
+                        "thread_id": thread_id,
+                        "retry_suggested": True
+                    }
+                except Exception as reinit_error:
+                    logger.error(f"❌ 流式处理 - 重新初始化失败: {reinit_error}")
+                    yield {
+                        "type": "error", 
+                        "error": "服务暂时不可用，请稍后重试",
+                        "thread_id": thread_id
+                    }
+            else:
+                yield {
+                    "type": "error",
+                    "error": str(e),
+                    "thread_id": thread_id
+                }
     
     async def get_conversation_history(self, thread_id: str, include_tools: bool = False) -> Dict[str, Any]:
         """
