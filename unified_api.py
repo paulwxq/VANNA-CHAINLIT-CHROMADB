@@ -720,6 +720,7 @@ def ask_react_agent_stream():
             question = request.args.get('question')
             user_id_input = request.args.get('user_id')
             thread_id_input = request.args.get('thread_id')
+            conversation_id_input = request.args.get('conversation_id')
             
             # 参数验证（复用现有validate_request_data逻辑）
             if not question:
@@ -731,7 +732,8 @@ def ask_react_agent_stream():
                 validated_data = validate_request_data({
                     'question': question,
                     'user_id': user_id_input,
-                    'thread_id': thread_id_input
+                    'thread_id': thread_id_input,
+                    'conversation_id': conversation_id_input
                 })
             except ValueError as ve:
                 yield format_sse_error(f"参数验证失败: {str(ve)}")

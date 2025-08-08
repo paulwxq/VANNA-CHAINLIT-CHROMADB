@@ -18,3 +18,10 @@ asgi_app = WsgiToAsgi(app)
 
 # 生产环境（多进程 + 性能优化）：
 # uvicorn asgi_app:asgi_app --host 0.0.0.0 --port 8084 --workers 4 --limit-concurrency 100 --limit-max-requests 1000 --access-log
+
+# uvicorn asgi_app:asgi_app --host 0.0.0.0 --port 8084 --workers 4 --limit-concurrency 100 --limit-max-requests 1000
+
+#在 Ubuntu 上安装 uvloop、httptools 没坏处，建议保留，不必显式加 --loop uvloop，Uvicorn 默认 --loop auto
+
+
+# uvicorn asgi_app:asgi_app --host 0.0.0.0 --port 8084 --workers 4 --limit-concurrency 12 --limit-max-requests 5000 --timeout-graceful-shutdown 30
