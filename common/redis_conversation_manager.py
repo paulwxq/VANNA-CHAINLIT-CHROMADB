@@ -519,12 +519,13 @@ class RedisConversationManager:
     def cleanup_expired_conversations(self):
         """清理过期对话（Redis TTL自动处理，这里可添加额外逻辑）"""
         if not self.is_available():
-            return
+            return {"processed_users": 0, "cleaned_references": 0}
         
         try:
             # 清理用户对话列表中的无效对话ID
             user_keys = self.redis_client.keys("user:*:conversations")
             cleaned_count = 0
+            processed_users = len(user_keys)
             
             for user_key in user_keys:
                 conversation_ids = self.redis_client.lrange(user_key, 0, -1)
@@ -543,12 +544,299 @@ class RedisConversationManager:
                     if valid_ids:
                         self.redis_client.lpush(user_key, *reversed(valid_ids))
                         # 重新设置TTL
-                        self.redis_client.expire(user_key, USER_CONVERSATIONS_TTL)
+                        if USER_CONVERSATIONS_TTL:
+                            self.redis_client.expire(user_key, USER_CONVERSATIONS_TTL)
             
             self.logger.info(f"清理完成，移除了 {cleaned_count} 个无效对话引用")
+            return {"processed_users": processed_users, "cleaned_references": cleaned_count}
             
         except Exception as e:
             self.logger.error(f"清理失败: {str(e)}")
+            raise e
+
+    def enforce_conversation_limits(self, user_id: Optional[str] = None, 
+                                  user_max_conversations: Optional[int] = None,
+                                  conversation_max_length: Optional[int] = None,
+                                  dry_run: bool = False) -> Dict[str, Any]:
+        """
+        执行对话限额策略
+        
+        Args:
+            user_id: 指定用户ID，如果为None则处理所有用户
+            user_max_conversations: 用户最大对话数，如果为None则使用配置值
+            conversation_max_length: 对话最大消息数，如果为None则使用配置值
+            dry_run: 是否为试运行模式
+            
+        Returns:
+            执行结果统计
+        """
+        if not self.is_available():
+            raise Exception("Redis连接不可用")
+        
+        # 使用传入参数或默认配置
+        max_conversations = user_max_conversations if user_max_conversations is not None else USER_MAX_CONVERSATIONS
+        max_length = conversation_max_length if conversation_max_length is not None else CONVERSATION_MAX_LENGTH
+        
+        try:
+            start_time = time.time()
+            
+            # 确定要处理的用户
+            if user_id:
+                user_keys = [f"user:{user_id}:conversations"]
+                mode = "user_specific"
+            else:
+                user_keys = self.redis_client.keys("user:*:conversations")
+                mode = "global"
+            
+            processed_users = 0
+            total_conversations_processed = 0
+            total_conversations_deleted = 0
+            total_messages_trimmed = 0
+            execution_summary = []
+            
+            for user_key in user_keys:
+                user_id_from_key = user_key.split(":")[1]
+                conversation_ids = self.redis_client.lrange(user_key, 0, -1)
+                
+                original_conversations = len(conversation_ids)
+                total_conversations_processed += original_conversations
+                
+                # 1. 检查用户对话数量限制
+                conversations_to_keep = []
+                conversations_to_delete = []
+                
+                if len(conversation_ids) > max_conversations:
+                    # 获取对话的创建时间并排序
+                    conversations_with_time = []
+                    for conv_id in conversation_ids:
+                        meta_key = f"conversation:{conv_id}:meta"
+                        if self.redis_client.exists(meta_key):
+                            meta_data = self.redis_client.hgetall(meta_key)
+                            created_at = meta_data.get('created_at', '0')
+                            conversations_with_time.append((conv_id, created_at))
+                    
+                    # 按创建时间降序排序，保留最新的
+                    conversations_with_time.sort(key=lambda x: x[1], reverse=True)
+                    conversations_to_keep = [conv_id for conv_id, _ in conversations_with_time[:max_conversations]]
+                    conversations_to_delete = [conv_id for conv_id, _ in conversations_with_time[max_conversations:]]
+                else:
+                    conversations_to_keep = conversation_ids
+                
+                # 2. 处理要删除的对话
+                if conversations_to_delete and not dry_run:
+                    for conv_id in conversations_to_delete:
+                        self.redis_client.delete(f"conversation:{conv_id}:meta")
+                        self.redis_client.delete(f"conversation:{conv_id}:messages")
+                    
+                    # 更新用户对话列表
+                    self.redis_client.delete(user_key)
+                    if conversations_to_keep:
+                        self.redis_client.lpush(user_key, *reversed(conversations_to_keep))
+                        if USER_CONVERSATIONS_TTL:
+                            self.redis_client.expire(user_key, USER_CONVERSATIONS_TTL)
+                
+                total_conversations_deleted += len(conversations_to_delete)
+                
+                # 3. 检查每个保留对话的消息数量限制
+                messages_trimmed_for_user = 0
+                for conv_id in conversations_to_keep:
+                    messages_key = f"conversation:{conv_id}:messages"
+                    current_length = self.redis_client.llen(messages_key)
+                    
+                    if current_length > max_length:
+                        messages_to_trim = current_length - max_length
+                        if not dry_run:
+                            self.redis_client.ltrim(messages_key, 0, max_length - 1)
+                        messages_trimmed_for_user += messages_to_trim
+                
+                total_messages_trimmed += messages_trimmed_for_user
+                processed_users += 1
+                
+                # 记录用户处理结果
+                execution_summary.append({
+                    "user_id": user_id_from_key,
+                    "original_conversations": original_conversations,
+                    "kept_conversations": len(conversations_to_keep),
+                    "deleted_conversations": len(conversations_to_delete),
+                    "messages_trimmed": messages_trimmed_for_user
+                })
+            
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            
+            return {
+                "mode": mode,
+                "dry_run": dry_run,
+                "parameters": {
+                    "user_max_conversations": max_conversations,
+                    "conversation_max_length": max_length
+                },
+                "processed_users": processed_users,
+                "total_conversations_processed": total_conversations_processed,
+                "total_conversations_deleted": total_conversations_deleted,
+                "total_messages_trimmed": total_messages_trimmed,
+                "execution_summary": execution_summary,
+                "execution_time_ms": execution_time_ms
+            }
+            
+        except Exception as e:
+            self.logger.error(f"执行对话限额策略失败: {str(e)}")
+            raise e
+
+    def delete_user_conversations(self, user_id: str) -> Dict[str, Any]:
+        """
+        删除指定用户的所有对话数据
+        
+        Args:
+            user_id: 用户ID
+            
+        Returns:
+            删除结果统计
+        """
+        if not self.is_available():
+            raise Exception("Redis连接不可用")
+        
+        try:
+            start_time = time.time()
+            
+            user_key = f"user:{user_id}:conversations"
+            conversation_ids = self.redis_client.lrange(user_key, 0, -1)
+            
+            deleted_conversations = 0
+            deleted_messages = 0
+            
+            # 删除每个对话的数据
+            for conv_id in conversation_ids:
+                meta_key = f"conversation:{conv_id}:meta"
+                messages_key = f"conversation:{conv_id}:messages"
+                
+                if self.redis_client.exists(meta_key):
+                    self.redis_client.delete(meta_key)
+                    deleted_conversations += 1
+                
+                if self.redis_client.exists(messages_key):
+                    message_count = self.redis_client.llen(messages_key)
+                    self.redis_client.delete(messages_key)
+                    deleted_messages += message_count
+            
+            # 删除用户对话索引
+            self.redis_client.delete(user_key)
+            
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            
+            return {
+                "user_id": user_id,
+                "deleted_conversations": deleted_conversations,
+                "deleted_messages": deleted_messages,
+                "execution_time_ms": execution_time_ms
+            }
+            
+        except Exception as e:
+            self.logger.error(f"删除用户对话失败: {str(e)}")
+            raise e
+
+    def delete_conversation(self, conversation_id: str) -> Dict[str, Any]:
+        """
+        删除指定的对话
+        
+        Args:
+            conversation_id: 对话ID
+            
+        Returns:
+            删除结果统计
+        """
+        if not self.is_available():
+            raise Exception("Redis连接不可用")
+        
+        try:
+            start_time = time.time()
+            
+            meta_key = f"conversation:{conversation_id}:meta"
+            messages_key = f"conversation:{conversation_id}:messages"
+            
+            # 检查对话是否存在
+            if not self.redis_client.exists(meta_key):
+                # 对话不存在，返回空结果（符合DELETE操作的幂等性原则）
+                return {
+                    "conversation_id": conversation_id,
+                    "user_id": None,
+                    "deleted_messages": 0,
+                    "execution_time_ms": int((time.time() - start_time) * 1000),
+                    "existed": False
+                }
+            
+            # 获取对话所属用户
+            meta_data = self.redis_client.hgetall(meta_key)
+            user_id = meta_data.get('user_id')
+            
+            # 统计要删除的消息数
+            deleted_messages = self.redis_client.llen(messages_key) if self.redis_client.exists(messages_key) else 0
+            
+            # 删除对话数据
+            self.redis_client.delete(meta_key)
+            self.redis_client.delete(messages_key)
+            
+            # 从用户对话列表中移除
+            if user_id:
+                user_key = f"user:{user_id}:conversations"
+                self.redis_client.lrem(user_key, 0, conversation_id)
+            
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            
+            return {
+                "conversation_id": conversation_id,
+                "user_id": user_id,
+                "deleted_messages": deleted_messages,
+                "execution_time_ms": execution_time_ms,
+                "existed": True
+            }
+            
+        except Exception as e:
+            self.logger.error(f"删除对话失败: {str(e)}")
+            raise e
+
+    def clear_all_agent_data(self) -> Dict[str, Any]:
+        """
+        清空所有agent对话数据
+        
+        Returns:
+            删除结果统计
+        """
+        if not self.is_available():
+            raise Exception("Redis连接不可用")
+        
+        try:
+            start_time = time.time()
+            
+            # 扫描并删除所有相关键
+            meta_keys = self.redis_client.keys("conversation:*:meta")
+            messages_keys = self.redis_client.keys("conversation:*:messages")
+            user_keys = self.redis_client.keys("user:*:conversations")
+            
+            deleted_conversation_metas = len(meta_keys)
+            deleted_conversation_messages = len(messages_keys)
+            deleted_user_conversations = len(user_keys)
+            
+            # 批量删除
+            all_keys = meta_keys + messages_keys + user_keys
+            if all_keys:
+                self.redis_client.delete(*all_keys)
+            
+            total_keys_deleted = len(all_keys)
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            
+            self.logger.warning(f"已清空所有agent对话数据，共删除 {total_keys_deleted} 个键")
+            
+            return {
+                "deleted_conversation_metas": deleted_conversation_metas,
+                "deleted_conversation_messages": deleted_conversation_messages,
+                "deleted_user_conversations": deleted_user_conversations,
+                "total_keys_deleted": total_keys_deleted,
+                "execution_time_ms": execution_time_ms
+            }
+            
+        except Exception as e:
+            self.logger.error(f"清空所有agent数据失败: {str(e)}")
+            raise e
     
     # ==================== 问答缓存管理方法 ====================
     

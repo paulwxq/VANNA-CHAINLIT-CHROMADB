@@ -31,7 +31,7 @@ import redis.asyncio as redis
 from werkzeug.utils import secure_filename
 
 # 导入标准化响应格式
-from common.result import success_response, internal_error_response, bad_request_response
+from common.result import success_response, internal_error_response, bad_request_response, error_response
 
 # 基础依赖
 import pandas as pd
@@ -2388,17 +2388,169 @@ def conversation_stats():
             response_text="获取统计信息失败，请稍后重试"
         )), 500
 
-@app.route('/api/v0/conversation_cleanup', methods=['POST'])
-def conversation_cleanup():
-    """手动清理过期对话"""
+@app.route('/api/v0/conversation_limit_enforcement', methods=['POST'])
+def conversation_limit_enforcement():
+    """对话限额执行API"""
     try:
-        redis_conversation_manager.cleanup_expired_conversations()
+        data = request.get_json() or {}
+        
+        # 获取参数
+        user_id = data.get('user_id')
+        user_max_conversations = data.get('user_max_conversations')
+        conversation_max_length = data.get('conversation_max_length')
+        dry_run = data.get('dry_run', False)
+        
+        # 参数验证
+        if user_max_conversations is not None and (not isinstance(user_max_conversations, int) or user_max_conversations < 1):
+            return jsonify(bad_request_response(
+                response_text="user_max_conversations 必须是大于0的整数"
+            )), 400
+            
+        if conversation_max_length is not None and (not isinstance(conversation_max_length, int) or conversation_max_length < 1):
+            return jsonify(bad_request_response(
+                response_text="conversation_max_length 必须是大于0的整数"
+            )), 400
+        
+        if dry_run is not None and not isinstance(dry_run, bool):
+            return jsonify(bad_request_response(
+                response_text="dry_run 必须是布尔值"
+            )), 400
+        
+        # 执行对话限额策略
+        result = redis_conversation_manager.enforce_conversation_limits(
+            user_id=user_id,
+            user_max_conversations=user_max_conversations,
+            conversation_max_length=conversation_max_length,
+            dry_run=dry_run
+        )
         
         return jsonify(success_response(
-            response_text="对话清理完成"
+            response_text="限额执行完成",
+            data=result
         ))
         
     except Exception as e:
+        logger.error(f"对话限额执行失败: {str(e)}")
+        return jsonify(internal_error_response(
+            response_text="对话限额执行失败，请稍后重试"
+        )), 500
+
+@app.route('/api/v0/conversation_cleanup', methods=['POST'])
+def conversation_cleanup():
+    """增强的对话清理API"""
+    try:
+        # 处理请求数据，包括非JSON请求的情况
+        try:
+            data = request.get_json() or {}
+        except Exception as e:
+            # 非JSON请求
+            return jsonify(error_response(
+                response_text="请求格式错误：需要JSON格式的数据",
+                error_type="missing_required_params",
+                message="请求参数错误",
+                code=400
+            )), 400
+        
+        # 获取参数
+        user_id = data.get('user_id')
+        conversation_id = data.get('conversation_id')
+        thread_id = data.get('thread_id')
+        clear_all_agent_data = data.get('clear_all_agent_data', False)
+        cleanup_invalid_refs = data.get('cleanup_invalid_refs', False)
+        
+        # 参数互斥检查
+        provided_params = []
+        if user_id:
+            provided_params.append('user_id')
+        if conversation_id:
+            provided_params.append('conversation_id')
+        if thread_id:
+            provided_params.append('thread_id')
+        if clear_all_agent_data:
+            provided_params.append('clear_all_agent_data')
+        if cleanup_invalid_refs:
+            provided_params.append('cleanup_invalid_refs')
+        
+        # conversation_id 和 thread_id 是等效的
+        if conversation_id and thread_id:
+            return jsonify(error_response(
+                response_text="参数冲突：conversation_id 和 thread_id 不能同时提供",
+                error_type="missing_required_params",
+                message="请求参数错误",
+                code=400
+            )), 400
+        
+        # 检查参数冲突
+        if len(provided_params) > 1:
+            # 简化逻辑：只要不是conversation_id和thread_id的组合，就报错
+            if not (len(provided_params) == 2 and 
+                   'conversation_id' in provided_params and 'thread_id' in provided_params):
+                return jsonify(error_response(
+                    response_text=f"参数冲突：不能同时提供多个操作模式参数，检测到: {', '.join(provided_params)}",
+                    error_type="missing_required_params",
+                    message="请求参数错误",
+                    code=400,
+                    data={
+                        "conflicting_params": provided_params,
+                        "valid_modes": [
+                            "user_id (删除指定用户)",
+                            "conversation_id 或 thread_id (删除指定对话，两参数等同)",
+                            "clear_all_agent_data (清空所有数据)",
+                            "cleanup_invalid_refs (清理无效引用)"
+                        ]
+                    }
+                )), 400
+        
+        # 检查是否没有提供任何参数
+        if len(provided_params) == 0:
+            return jsonify(error_response(
+                response_text="参数错误：必须指定操作模式",
+                error_type="missing_required_params",
+                message="请求参数错误",
+                code=400,
+                data={
+                    "error": "请提供以下参数组合之一: user_id | conversation_id/thread_id | clear_all_agent_data | cleanup_invalid_refs"
+                }
+            )), 400
+        
+        # 执行相应的操作
+        start_time = time.time()
+        
+        if user_id:
+            # 模式1: 删除指定用户
+            result = redis_conversation_manager.delete_user_conversations(user_id)
+            operation_mode = "delete_user"
+            message = "用户对话数据删除完成"
+            
+        elif conversation_id or thread_id:
+            # 模式2: 删除指定对话
+            target_id = conversation_id or thread_id
+            result = redis_conversation_manager.delete_conversation(target_id)
+            operation_mode = "delete_conversation"
+            message = "对话删除完成"
+            
+        elif clear_all_agent_data:
+            # 模式3: 清空所有agent对话数据
+            result = redis_conversation_manager.clear_all_agent_data()
+            operation_mode = "clear_all_agent_data"
+            message = "所有agent对话数据清空完成"
+            
+        elif cleanup_invalid_refs:
+            # 模式4: 清理无效引用
+            result = redis_conversation_manager.cleanup_expired_conversations()
+            operation_mode = "cleanup_invalid_refs"
+            message = "无效引用清理完成"
+        
+        # 添加操作模式到结果中
+        result["operation_mode"] = operation_mode
+        
+        return jsonify(success_response(
+            response_text=message,
+            data=result
+        ))
+        
+    except Exception as e:
+        logger.error(f"对话清理失败: {str(e)}")
         return jsonify(internal_error_response(
             response_text="对话清理失败，请稍后重试"
         )), 500
